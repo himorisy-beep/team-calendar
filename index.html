@@ -27,7 +27,6 @@
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
 .layout{display:flex;min-height:100vh}
 
-  
 /* ── 사이드바 ── */
 .sidebar{width:220px;background:var(--bg);border-right:.5px solid var(--border);padding:20px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{font-size:15px;font-weight:700;padding:0 6px}
@@ -406,7 +405,8 @@ const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 function lsJ(k,v){if(v===undefined){const s=ls(k);return s?JSON.parse(s):null;}ls(k,JSON.stringify(v));}
 
-let apiUrl   = ls('apiUrl')||'';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyrwdYWzSmBG03YLR3nbBOVEX1ZflFYlnYY0Rzvn1JlPo9PNCYbc18E4E1OA4iNPKrpBg/exec';
+let apiUrl = ls('apiUrl') || DEFAULT_API_URL;
 let selfId   = ls('selfId')||'';
 let members  = [], projects = [], events = [], tasks = [], assigns = [];
 let hiddenMb = new Set();
@@ -885,12 +885,19 @@ function openChangeSelf(){
 }
 function changeSelf(){selfId=document.getElementById('self-sel').value;ls('selfId',selfId);closeModal();buildSidebar();renderPersonalList();showToast('계정 변경됐어요');}
 async function saveApiUrl(){
-  const url=document.getElementById('api-url-input').value.trim();
-  if(!url){showToast('URL을 입력해주세요');return;}
-  apiUrl=url;ls('apiUrl',url);
+  const url = document.getElementById('api-url-input').value.trim();
+  if(!url){
+    showToast('URL을 입력해주세요');
+    return;
+  }
+
+  apiUrl = url || DEFAULT_API_URL;
+  ls('apiUrl', url);
+
   document.getElementById('api-status').textContent='저장됐어요. 연결 확인 중...';
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
+}
 }
 // ── 멤버 관리 ─────────────────────────────────────────────────
 const PALETTE=[
