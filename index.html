@@ -437,6 +437,23 @@ async function apiPost(b){
   return r.json();
 }
 
+// API가 있으면 Sheets에 저장 후 콜백, 없으면 로컬만 반영
+async function apiSave(body, onSuccess){
+  if(!apiUrl){
+    // 데모 모드: 바로 로컬 반영
+    onSuccess();
+    return;
+  }
+  showToast('저장 중...');
+  try{
+    const r=await apiPost(body);
+    if(r.error)throw new Error(r.error);
+    onSuccess();
+  }catch(e){
+    showToast('저장 실패: '+e.message);
+  }
+}
+
 // ── 데이터 로드 ──────────────────────────────────────────────
 async function loadAll(){
   if(!apiUrl){loadDemo();return;}
@@ -802,6 +819,7 @@ async function submitEvent(){
     catch(e){showToast('저장 실패: '+e.message);return;}
   }
   events.push({...body});
+  // 폼 초기화
   ['ev-title','ev-start','ev-end'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ev-type').value='vacation';
   document.getElementById('ev-sub').value='';
@@ -815,6 +833,7 @@ async function deleteEv(id){
   if(apiUrl){try{const r=await apiPost({action:'deleteEvent',id});if(r.error)throw new Error(r.error);}catch(e){showToast('삭제 실패: '+e.message);return;}}
   events=events.filter(e=>e.id!==id);renderPersonalList();renderCal();showToast('삭제됐어요');
 }
+
 // ── 상세 팝업 ─────────────────────────────────────────────────
 function showEv(id){
   const e=events.find(ev=>ev.id===id);if(!e)return;
@@ -952,28 +971,36 @@ function createMember(){
   if(!name){showToast('이름을 입력해주세요');return;}
   const pal=getSelectedPalette();
   const id='mb_'+Date.now();
-  members.push({id,name,color:pal.color,bg:pal.bg,role:document.getElementById('mf-role').value.trim()});
-  closeModal();buildSidebar();renderMemberManageList();refreshProjSelect();
-  showToast(`${name} 님이 추가됐어요`);
+  const newMb={id,name,color:pal.color,bg:pal.bg,role:document.getElementById('mf-role').value.trim()};
+  apiSave({action:'addMember',...newMb}, ()=>{
+    members.push(newMb);
+    closeModal();buildSidebar();renderMemberManageList();refreshProjSelect();
+    showToast(`${name} 님이 추가됐어요`);
+  });
 }
 function saveMember(id){
   const name=document.getElementById('mf-name').value.trim();
   if(!name){showToast('이름을 입력해주세요');return;}
   const pal=getSelectedPalette();
   const m2=mb(id);if(!m2)return;
-  m2.name=name;m2.color=pal.color;m2.bg=pal.bg||lighten(pal.color);m2.role=document.getElementById('mf-role').value.trim();
-  closeModal();buildSidebar();renderMemberManageList();renderMembersPage();renderCal();
-  showToast('수정됐어요');
+  const updated={...m2,name,color:pal.color,bg:pal.bg||lighten(pal.color),role:document.getElementById('mf-role').value.trim()};
+  apiSave({action:'updateMember',...updated}, ()=>{
+    Object.assign(m2,updated);
+    closeModal();buildSidebar();renderMemberManageList();renderMembersPage();renderCal();
+    showToast('수정됐어요');
+  });
 }
 function deleteMember(id){
   const m2=mb(id);if(!m2)return;
   if(!confirm(`${m2.name} 님을 삭제할까요?\n해당 멤버의 일정과 업무 배정도 함께 제거됩니다.`))return;
-  members=members.filter(m=>m.id!==id);
-  events=events.filter(e=>e.who!==id);
-  tasks=tasks.filter(t=>t.assignee!==id);
-  assigns=assigns.filter(a=>a.memberId!==id);
-  buildSidebar();renderMemberManageList();renderMembersPage();renderCal();renderOverview();
-  showToast(`${m2.name} 님이 삭제됐어요`);
+  apiSave({action:'deleteMember',id}, ()=>{
+    members=members.filter(m=>m.id!==id);
+    events=events.filter(e=>e.who!==id);
+    tasks=tasks.filter(t=>t.assignee!==id);
+    assigns=assigns.filter(a=>a.memberId!==id);
+    buildSidebar();renderMemberManageList();renderMembersPage();renderCal();renderOverview();
+    showToast(`${m2.name} 님이 삭제됐어요`);
+  });
 }
 
 // ── 사업 관리 ─────────────────────────────────────────────────
@@ -1036,29 +1063,37 @@ function createProject(){
   const pal=getSelectedPalette();
   const status=document.getElementById('pf-status').value;
   const id='proj_'+Date.now();
-  projects.push({id,name,color:pal.color,status});
-  closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();
-  showToast(`${name} 추가됐어요`);
+  const newP={id,name,color:pal.color,status};
+  apiSave({action:'addProject',...newP}, ()=>{
+    projects.push(newP);
+    closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();
+    showToast(`${name} 추가됐어요`);
+  });
 }
 function saveProject(id){
   const name=document.getElementById('pf-name').value.trim();
   if(!name){showToast('사업명을 입력해주세요');return;}
   const pal=getSelectedPalette();
   const p=pj(id);if(!p)return;
-  p.name=name;p.color=pal.color;p.status=document.getElementById('pf-status').value;
-  closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
-  showToast('수정됐어요');
+  const updated={...p,name,color:pal.color,status:document.getElementById('pf-status').value};
+  apiSave({action:'updateProject',...updated}, ()=>{
+    Object.assign(p,updated);
+    closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
+    showToast('수정됐어요');
+  });
 }
 function deleteProject(id){
   const p=pj(id);if(!p)return;
   if(!confirm(`"${p.name}"을 삭제할까요?\n관련 업무 및 멤버 배정도 함께 제거됩니다.`))return;
-  projects=projects.filter(pr=>pr.id!==id);
-  tasks=tasks.filter(t=>t.project!==id);
-  assigns=assigns.filter(a=>a.projectId!==id);
-  events.forEach(e=>{if(e.project===id)e.project='';});
-  if(selProj===id)selProj='all';
-  buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
-  showToast(`${p.name} 삭제됐어요`);
+  apiSave({action:'deleteProject',id}, ()=>{
+    projects=projects.filter(pr=>pr.id!==id);
+    tasks=tasks.filter(t=>t.project!==id);
+    assigns=assigns.filter(a=>a.projectId!==id);
+    events.forEach(e=>{if(e.project===id)e.project='';});
+    if(selProj===id)selProj='all';
+    buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
+    showToast(`${p.name} 삭제됐어요`);
+  });
 }
 
 function goPage(p){
