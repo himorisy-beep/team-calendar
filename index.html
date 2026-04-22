@@ -580,7 +580,8 @@ function inDay(e,y,m,d){
 }
 function renderCal(){
   vm==='cal'?renderCalGrid():renderCalList();
-  document.getElementById('month-title').textContent=`${curY}년 ${curM+1}월`;
+  const mt=document.getElementById('month-title');
+  if(mt) mt.textContent=`${curY}년 ${curM+1}월`;
 }
 function renderCalGrid(){
   const days=['일','월','화','수','목','금','토'];
@@ -1125,8 +1126,17 @@ function hideStatus(){document.getElementById('status-bar').style.display='none'
 
 // ── 초기화 ───────────────────────────────────────────────────
 if(apiUrl)document.getElementById('api-url-input').value=apiUrl;
-document.getElementById('month-title').textContent=`${curY}년 ${curM+1}월`;
-loadAll();
+
+// month-title은 renderCal() 안에서도 세팅하지만 초기 렌더 전에 미리 세팅
+const _mt = document.getElementById('month-title');
+if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
+
+// DOM 완전히 로드된 후 실행 보장
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', ()=>loadAll());
+} else {
+  loadAll();
+}
 </script>
 </body>
 </html>
