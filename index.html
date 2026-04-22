@@ -330,6 +330,15 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 <!-- 설정 -->
 <div id="page-setup" class="page">
   <div class="page-header"><span class="page-title">설정</span></div>
+
+  <div class="card" style="max-width:580px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
+      <button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button>
+    </div>
+    <div id="member-manage-list"></div>
+  </div>
+
   <div class="card" style="max-width:580px">
     <div class="card-title">Google Sheets 연동</div>
     <div class="setup-step">
@@ -856,6 +865,111 @@ async function saveApiUrl(){
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
 }
+// ── 멤버 관리 ─────────────────────────────────────────────────
+const PALETTE=[
+  {color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},
+  {color:'#D85A30',bg:'#FAECE7'},{color:'#EF9F27',bg:'#FAEEDA'},
+  {color:'#533AB7',bg:'#EEEDFE'},{color:'#993556',bg:'#FBEAF0'},
+  {color:'#3B6D11',bg:'#EAF3DE'},{color:'#185FA5',bg:'#B5D4F4'},
+];
+
+function renderMemberManageList(){
+  document.getElementById('mb-count').textContent=`(${members.length}명)`;
+  if(!members.length){document.getElementById('member-manage-list').innerHTML='<div class="empty">팀원이 없습니다</div>';return;}
+  let h='';
+  members.forEach(m2=>{
+    const bg=lighten(m2.color);
+    const isSelf=m2.id===selfId;
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:${bg};color:${m2.color};flex-shrink:0">${ini(m2.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${m2.name}${isSelf?` <span style="font-size:10px;color:var(--text3);font-weight:400">(나)</span>`:''}</div>
+        <div style="font-size:11px;color:var(--text2)">${m2.role||'역할 없음'}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="openEditMember('${m2.id}')">수정</button>
+        ${!isSelf?`<button class="btn-danger-sm" onclick="deleteMember('${m2.id}')">삭제</button>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('member-manage-list').innerHTML=h;
+}
+
+function swatchHTML(selectedColor){
+  return PALETTE.map((p,i)=>`<div onclick="selectSwatch(${i})" data-sw="${i}" style="width:22px;height:22px;border-radius:50%;background:${p.color};cursor:pointer;border:2px solid ${p.color===selectedColor?'var(--text)':'transparent'};transition:border-color .12s;flex-shrink:0"></div>`).join('');
+}
+function selectSwatch(i){
+  document.querySelectorAll('[data-sw]').forEach((el,idx)=>{
+    el.style.borderColor=idx===i?'var(--text)':PALETTE[idx].color;
+  });
+}
+function getSelectedPalette(){
+  const swatches=document.querySelectorAll('[data-sw]');
+  for(let i=0;i<swatches.length;i++){
+    if(swatches[i].style.borderColor==='var(--text)'||swatches[i].style.borderColor===getComputedStyle(document.documentElement).getPropertyValue('--text').trim())
+      return PALETTE[i];
+  }
+  // fallback: 첫 번째
+  return PALETTE[0];
+}
+
+function memberFormHTML(m2){
+  const selColor=m2?m2.color:PALETTE[0].color;
+  return `
+    <div style="margin-bottom:8px"><div class="fl">이름</div><input type="text" id="mf-name" value="${m2?m2.name:''}" placeholder="홍길동"></div>
+    <div style="margin-bottom:8px"><div class="fl">역할</div><input type="text" id="mf-role" value="${m2?m2.role||'':''}" placeholder="개발자, 디자이너 등 (선택)"></div>
+    <div style="margin-bottom:14px">
+      <div class="fl" style="margin-bottom:6px">아바타 색상</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">${swatchHTML(selColor)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="${m2?`saveMember('${m2.id}')`:'createMember()'}">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`;
+}
+
+function openAddMember(){
+  document.getElementById('modal-body').innerHTML=memberFormHTML(null);
+  openModal('팀원 추가');
+}
+function openEditMember(id){
+  const m2=mb(id);if(!m2)return;
+  document.getElementById('modal-body').innerHTML=memberFormHTML(m2);
+  // 현재 색상 swatch 선택 표시
+  const idx=PALETTE.findIndex(p=>p.color===m2.color);
+  if(idx>=0) setTimeout(()=>selectSwatch(idx),0);
+  openModal('팀원 수정');
+}
+
+function createMember(){
+  const name=document.getElementById('mf-name').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const id='mb_'+Date.now();
+  members.push({id,name,color:pal.color,bg:pal.bg,role:document.getElementById('mf-role').value.trim()});
+  closeModal();buildSidebar();renderMemberManageList();refreshProjSelect();
+  showToast(`${name} 님이 추가됐어요`);
+}
+function saveMember(id){
+  const name=document.getElementById('mf-name').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const m2=mb(id);if(!m2)return;
+  m2.name=name;m2.color=pal.color;m2.bg=pal.bg||lighten(pal.color);m2.role=document.getElementById('mf-role').value.trim();
+  closeModal();buildSidebar();renderMemberManageList();renderMembersPage();renderCal();
+  showToast('수정됐어요');
+}
+function deleteMember(id){
+  const m2=mb(id);if(!m2)return;
+  if(!confirm(`${m2.name} 님을 삭제할까요?\n해당 멤버의 일정과 업무 배정도 함께 제거됩니다.`))return;
+  members=members.filter(m=>m.id!==id);
+  events=events.filter(e=>e.who!==id);
+  tasks=tasks.filter(t=>t.assignee!==id);
+  assigns=assigns.filter(a=>a.memberId!==id);
+  buildSidebar();renderMemberManageList();renderMembersPage();renderCal();renderOverview();
+  showToast(`${m2.name} 님이 삭제됐어요`);
+}
+
 function goPage(p){
   ['cal','overview','members','personal','setup'].forEach(id=>{
     document.getElementById('page-'+id).classList.toggle('active',id===p);
@@ -864,6 +978,7 @@ function goPage(p){
   if(p==='personal'){refreshProjSelect();renderPersonalList();}
   if(p==='overview')renderOverview();
   if(p==='members')renderMembersPage();
+  if(p==='setup')renderMemberManageList();
 }
 function openModal(t){document.getElementById('modal-title').textContent=t;document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
