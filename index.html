@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀 캘린더</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f7f5;
+    --bg3: #f0efe9;
+    --text: #1a1a1a;
+    --text2: #6b6b6b;
+    --text3: #a0a0a0;
+    --border: rgba(0,0,0,0.10);
+    --border2: rgba(0,0,0,0.18);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --bg2: #232323; --bg3: #2c2c2a;
+      --text: #f0efe9; --text2: #a0a09a; --text3: #6b6b6b;
+      --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+    }
+    .ev-vacation{background:#085041!important;color:#9FE1CB!important}
+    .ev-work{background:#0C447C!important;color:#B5D4F4!important}
+    .ev-trip{background:#633806!important;color:#FAC775!important}
+    .ev-meeting{background:#3C3489!important;color:#CECBF6!important}
+    .ev-personal{background:#444441!important;color:#D3D1C7!important}
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+
+  /* ── 레이아웃 ── */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 240px; background: var(--bg); border-right: 0.5px solid var(--border); padding: 24px 16px; flex-shrink: 0; display: flex; flex-direction: column; gap: 24px; }
+  .main { flex: 1; padding: 24px; overflow: auto; }
+
+  /* ── 사이드바 ── */
+  .logo { font-size: 16px; font-weight: 600; padding: 0 8px; }
+  .logo span { color: var(--text3); font-weight: 400; font-size: 13px; display: block; margin-top: 2px; }
+  .sidebar-section { }
+  .sidebar-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 8px; }
+  .sidebar-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: none; background: none; color: var(--text2); font-size: 13px; border-radius: var(--radius-sm); cursor: pointer; text-align: left; transition: background 0.12s, color 0.12s; }
+  .sidebar-btn:hover { background: var(--bg2); color: var(--text); }
+  .sidebar-btn.active { background: var(--bg3); color: var(--text); font-weight: 500; }
+  .sidebar-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .member-chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; }
+  .member-chip:hover { background: var(--bg2); }
+  .member-chip.off { opacity: 0.4; }
+  .avatar-sm { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+  .member-chip-name { font-size: 13px; }
+  .proj-chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.12s; font-size: 13px; color: var(--text2); }
+  .proj-chip:hover { background: var(--bg2); }
+  .proj-chip.active { color: var(--text); font-weight: 500; }
+
+  /* ── 헤더 ── */
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .month-nav-btn { border: 0.5px solid var(--border2); background: var(--bg); cursor: pointer; padding: 5px 11px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text); transition: background 0.12s; }
+  .month-nav-btn:hover { background: var(--bg2); }
+  .month-title { font-size: 20px; font-weight: 600; }
+  .header-right { margin-left: auto; display: flex; gap: 8px; }
+  .view-btn { padding: 5px 12px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2); transition: all 0.12s; }
+  .view-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* ── 달력 ── */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cal-header-cell { background: var(--bg2); padding: 8px 6px; text-align: center; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .cal-day { background: var(--bg); min-height: 90px; padding: 6px; cursor: pointer; transition: background 0.1s; }
+  .cal-day:hover { background: var(--bg2); }
+  .cal-day.empty { background: var(--bg2); cursor: default; pointer-events: none; }
+  .cal-day.today .day-num { background: var(--text); color: var(--bg); border-radius: 50%; }
+  .day-num { font-size: 12px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .cal-day.sunday .day-num { color: #D85A30; }
+  .cal-day.saturday .day-num { color: #378ADD; }
+  .event-pill { font-size: 10px; padding: 2px 5px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+  .pill-sub { font-size: 9px; opacity: 0.75; border-radius: 2px; padding: 0 3px; background: rgba(255,255,255,0.35); flex-shrink: 0; }
+  .more-pill { font-size: 10px; color: var(--text3); padding: 1px 3px; }
+  .ev-vacation { background: #E1F5EE; color: #0F6E56; }
+  .ev-work { background: #E6F1FB; color: #185FA5; }
+  .ev-trip { background: #FAEEDA; color: #854F0B; }
+  .ev-meeting { background: #EEEDFE; color: #3C3489; }
+  .ev-personal { background: #F1EFE8; color: #5F5E5A; }
+
+  /* ── 목록 뷰 ── */
+  .list-container { display: flex; flex-direction: column; gap: 8px; }
+  .list-item { display: flex; gap: 12px; padding: 12px 14px; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); align-items: flex-start; cursor: pointer; transition: border-color 0.12s; }
+  .list-item:hover { border-color: var(--border2); }
+  .list-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .list-info { flex: 1; min-width: 0; }
+  .list-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .list-meta { font-size: 12px; color: var(--text2); }
+  .tag-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 500; }
+  .tag-vacation { background: #E1F5EE; color: #0F6E56; }
+  .tag-work { background: #E6F1FB; color: #185FA5; }
+  .tag-trip { background: #FAEEDA; color: #854F0B; }
+  .tag-meeting { background: #EEEDFE; color: #3C3489; }
+  .tag-personal { background: #F1EFE8; color: #5F5E5A; }
+  .tag-project { background: #EAF3DE; color: #3B6D11; }
+  .tag-sub { background: #F1EFE8; color: #5F5E5A; }
+
+  /* ── 내 일정 탭 ── */
+  .page-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 14px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  input[type=text], input[type=date], select, textarea {
+    width: 100%; padding: 8px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit;
+    transition: border-color 0.12s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #378ADD; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .toggle { width: 36px; height: 20px; background: var(--border2); border-radius: 10px; cursor: pointer; position: relative; transition: background 0.18s; flex-shrink: 0; }
+  .toggle.on { background: #1D9E75; }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.18s; }
+  .toggle.on::after { left: 18px; }
+  .toggle-label { font-size: 13px; color: var(--text2); }
+  .btn { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; transition: opacity 0.12s; border: none; font-family: inherit; }
+  .btn-primary { background: var(--text); color: var(--bg); }
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-secondary { background: none; color: var(--text); border: 0.5px solid var(--border2); }
+  .btn-secondary:hover { background: var(--bg2); }
+  .btn-danger-sm { padding: 3px 8px; background: none; color: #A32D2D; border: 0.5px solid #F09595; border-radius: var(--radius-sm); font-size: 11px; cursor: pointer; }
+  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text2); transition: all 0.12s; }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* ── 모달 ── */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--bg); border-radius: var(--radius); padding: 22px; width: 380px; max-width: 92vw; border: 0.5px solid var(--border2); max-height: 85vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-close { border: none; background: none; cursor: pointer; color: var(--text2); font-size: 18px; line-height: 1; padding: 0; }
+  .detail-row { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .detail-label { color: var(--text2); min-width: 52px; flex-shrink: 0; }
+
+  /* ── 로딩/에러 ── */
+  .status-bar { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .status-loading { background: #E6F1FB; color: #185FA5; }
+  .status-error { background: #FCEBEB; color: #A32D2D; }
+  .status-success { background: #E1F5EE; color: #0F6E56; }
+  .spinner { width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── 설정 안내 ── */
+  .setup-guide { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 600px; }
+  .setup-step { display: flex; gap: 14px; margin-bottom: 20px; }
+  .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--text); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .code-block { background: var(--bg3); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-family: monospace; font-size: 12px; margin-top: 6px; word-break: break-all; }
+  .api-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ── 반응형 ── */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 16px; }
+    .cal-day { min-height: 60px; }
+  }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .sub-row { display: none; } .sub-row.show { display: block; }
+  .empty-state { padding: 2rem; text-align: center; color: var(--text2); font-size: 14px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 22px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; z-index: 300; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ── 사이드바 ── -->
+  <div class="sidebar">
+    <div class="logo">팀 캘린더<span id="team-name-display">우리 팀</span></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">보기</div>
+      <button class="sidebar-btn active" id="nav-team" onclick="switchPage('team')">
+        <span style="font-size:15px">📅</span> 팀 캘린더
+      </button>
+      <button class="sidebar-btn" id="nav-personal" onclick="switchPage('personal')">
+        <span style="font-size:15px">👤</span> 내 일정
+      </button>
+      <button class="sidebar-btn" id="nav-setup" onclick="switchPage('setup')">
+        <span style="font-size:15px">⚙️</span> 설정
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">멤버</div>
+      <div id="sidebar-members"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">사업</div>
+      <div id="sidebar-projects"></div>
+    </div>
+
+    <div style="margin-top:auto">
+      <div class="sidebar-label" style="margin-bottom:6px">현재 계정</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;border-radius:var(--radius-sm)" onclick="openChangeSelf()">
+        <div class="avatar-sm" id="self-avatar-sidebar"></div>
+        <span style="font-size:13px" id="self-name-sidebar">—</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto">변경</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 메인 ── -->
+  <div class="main">
+    <div id="status-bar" style="display:none"></div>
+
+    <!-- 팀 캘린더 -->
+    <div id="page-team">
+      <div class="header">
+        <button class="month-nav-btn" onclick="changeMonth(-1)">◀</button>
+        <span class="month-title" id="month-title"></span>
+        <button class="month-nav-btn" onclick="changeMonth(1)">▶</button>
+        <div class="header-right">
+          <button class="view-btn active" id="vm-cal" onclick="setViewMode('cal')">달력</button>
+          <button class="view-btn" id="vm-list" onclick="setViewMode('list')">목록</button>
+          <button class="btn btn-primary" onclick="loadData()">↻ 새로고침</button>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>휴가</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>업무</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>출장</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#533AB7"></div>회의</div>
+      </div>
+      <div id="cal-container"></div>
+    </div>
+
+    <!-- 내 일정 -->
+    <div id="page-personal" style="display:none">
+      <div class="page-title">내 일정</div>
+
+      <div class="card">
+        <div class="card-title">새 일정 추가</div>
+        <div class="form-row full"><input type="text" id="ev-title" placeholder="일정 제목"></div>
+        <div class="form-row">
+          <div><div class="form-label">시작일</div><input type="date" id="ev-start"></div>
+          <div><div class="form-label">종료일</div><input type="date" id="ev-end"></div>
+        </div>
+        <div class="form-row full" style="margin-bottom:4px">
+          <div><div class="form-label">유형</div>
+          <select id="ev-type" onchange="onTypeChange()">
+            <option value="vacation">휴가</option>
+            <option value="work">업무</option>
+            <option value="trip">출장</option>
+            <option value="meeting">회의</option>
+            <option value="personal">개인</option>
+          </select></div>
+        </div>
+        <div class="sub-row" id="sub-type-row" style="margin-bottom:8px">
+          <div class="form-label">업무 세부 유형</div>
+          <select id="ev-subtype" onchange="onSubtypeChange()">
+            <option value="">— 선택 안 함</option>
+            <option value="외근">외근</option>
+            <option value="교육/세미나">교육/세미나</option>
+            <option value="custom">직접 입력</option>
+          </select>
+          <div id="custom-wrap" style="display:none;margin-top:6px">
+            <input type="text" id="ev-subtype-custom" placeholder="세부 유형 직접 입력">
+          </div>
+        </div>
+        <div class="form-row full" style="margin-bottom:8px">
+          <div><div class="form-label">사업 (선택)</div>
+          <select id="ev-project"><option value="">— 없음</option></select></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle" id="pub-toggle" onclick="this.classList.toggle('on')"></div>
+          <span class="toggle-label">팀 캘린더에 공유</span>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="submitEvent()">일정 추가</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">내 일정 목록</div>
+        <div class="filter-chips">
+          <button class="chip active" id="pf-all" onclick="filterPersonal('all')">전체</button>
+          <button class="chip" id="pf-public" onclick="filterPersonal('public')">공유됨</button>
+          <button class="chip" id="pf-private" onclick="filterPersonal('private')">비공개</button>
+        </div>
+        <div id="personal-list"></div>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div id="page-setup" style="display:none">
+      <div class="page-title">설정</div>
+      <div class="setup-guide">
+        <div style="font-size:15px;font-weight:600;margin-bottom:20px">Google Sheets 연동 설정</div>
+
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Google Sheets 만들기</div>
+            <div class="step-desc">새 구글 스프레드시트를 만들고, <code>apps-script.js</code> 파일의 코드를 <strong>확장 프로그램 → Apps Script</strong>에 붙여넣으세요.<br>그 다음 <code>setupSheets()</code> 함수를 한 번 실행하면 시트 구조가 자동으로 만들어져요.</div>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Apps Script 배포</div>
+            <div class="step-desc">Apps Script 편집기에서 <strong>배포 → 새 배포</strong>를 클릭하세요.<br>유형: <strong>웹 앱</strong>, 다음 사용자로 실행: <strong>나</strong>, 액세스 권한: <strong>모든 사용자</strong>로 설정 후 배포하세요.<br>배포 후 표시되는 <strong>웹 앱 URL</strong>을 복사하세요.</div>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">API URL 입력</div>
+            <div class="step-desc">배포된 웹 앱 URL을 아래에 입력하세요.</div>
+            <div class="api-input-wrap">
+              <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/..." style="flex:1">
+              <button class="btn btn-primary" onclick="saveApiUrl()">저장</button>
+            </div>
+            <div id="api-url-status" style="font-size:12px;color:var(--text2);margin-top:6px"></div>
+          </div>
+        </div>
+
+        <div class="setup-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">팀원 정보 입력 (시트에서)</div>
+            <div class="step-desc">구글 시트의 <strong>멤버</strong> 탭에 팀원 정보를 입력하세요.<br>color 값은 HEX 코드 사용 (예: #378ADD)</div>
+            <div class="code-block">id | name | color | role<br>mj | 홍길동 | #378ADD | 팀장<br>sy | 이서연 | #1D9E75 | 디자이너</div>
+          </div>
+        </div>
+
+        <div class="setup-step" style="margin-bottom:0">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">GitHub Pages 배포 (선택)</div>
+            <div class="step-desc">이 <code>index.html</code> 파일을 GitHub 저장소에 올리고 Pages를 활성화하면 팀 전체가 URL로 접속할 수 있어요.</div>
+            <div class="code-block">저장소 → Settings → Pages → Source: main branch / root</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 모달 ── -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 설정 ────────────────────────────────────────────────────
+const STORAGE_KEY = 'teamcal_';
+const TYPE_LABELS = { vacation:'휴가', work:'업무', trip:'출장', meeting:'회의', personal:'개인' };
+const TYPE_CLASS  = { vacation:'ev-vacation', work:'ev-work', trip:'ev-trip', meeting:'ev-meeting', personal:'ev-personal' };
+const TYPE_TAG    = { vacation:'tag-vacation', work:'tag-work', trip:'tag-trip', meeting:'tag-meeting', personal:'tag-personal' };
+const TYPE_COLORS = { vacation:'#1D9E75', work:'#378ADD', trip:'#EF9F27', meeting:'#533AB7', personal:'#888780' };
+
+// ── 상태 ─────────────────────────────────────────────────────
+let apiUrl    = ls('apiUrl') || '';
+let selfId    = ls('selfId') || '';
+let members   = [];
+let projects  = [];
+let events    = [];
+let hiddenMembers = new Set();
+let selProject    = 'all';
+let viewMode      = 'cal';
+let personalFilter = 'all';
+const today = new Date();
+let curYear = today.getFullYear(), curMonth = today.getMonth();
+
+function ls(k, v) {
+  if (v === undefined) return localStorage.getItem(STORAGE_KEY + k);
+  v === null ? localStorage.removeItem(STORAGE_KEY + k) : localStorage.setItem(STORAGE_KEY + k, v);
+}
+function lsJ(k, v) {
+  if (v === undefined) { const s = ls(k); return s ? JSON.parse(s) : null; }
+  ls(k, JSON.stringify(v));
+}
+
+// ── API 호출 ─────────────────────────────────────────────────
+async function apiFetch(params) {
+  if (!apiUrl) throw new Error('API URL이 설정되지 않았어요. 설정 탭에서 입력해 주세요.');
+  const url = apiUrl + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+  return res.json();
+}
+
+async function apiPost(body) {
+  if (!apiUrl) throw new Error('API URL이 설정되지 않았어요.');
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+  return res.json();
+}
+
+// ── 데이터 로드 ──────────────────────────────────────────────
+async function loadData() {
+  if (!apiUrl) {
+    showStatus('API URL을 설정해 주세요. 설정 탭을 확인하세요.', 'error');
+    // 데모 데이터로 표시
+    loadDemoData();
+    return;
+  }
+  showStatus('데이터를 불러오는 중...', 'loading');
+  try {
+    const [evRes, mbRes, prRes] = await Promise.all([
+      apiFetch({ action: 'events' }),
+      apiFetch({ action: 'members' }),
+      apiFetch({ action: 'projects' }),
+    ]);
+    events   = evRes.events   || [];
+    members  = mbRes.members  || [];
+    projects = prRes.projects || [];
+    hideStatus();
+    refreshAll();
+    showToast('최신 데이터를 불러왔어요');
+  } catch(e) {
+    showStatus('불러오기 실패: ' + e.message, 'error');
+    loadDemoData();
+  }
+}
+
+function loadDemoData() {
+  members = [
+    { id:'mj', name:'김민준', color:'#378ADD', bg:'#E6F1FB', role:'팀장' },
+    { id:'sy', name:'이서연', color:'#1D9E75', bg:'#E1F5EE', role:'디자이너' },
+    { id:'jh', name:'박지현', color:'#D85A30', bg:'#FAECE7', role:'개발자' },
+    { id:'yj', name:'최유진', color:'#EF9F27', bg:'#FAEEDA', role:'기획자' },
+  ];
+  projects = [
+    { id:'p1', name:'알파 프로젝트', color:'#3B6D11' },
+    { id:'p2', name:'베타 런칭',   color:'#185FA5' },
+  ];
+  const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0');
+  events = [
+    { id:'1', title:'팀 OKR 회의', type:'meeting', subtype:'', start:`${y}-${m}-03`, end:`${y}-${m}-03`, who:'all', project:'p1', public:true },
+    { id:'2', title:'제주 여름휴가', type:'vacation', subtype:'', start:`${y}-${m}-10`, end:`${y}-${m}-14`, who:'sy', project:'', public:true },
+    { id:'3', title:'클라이언트 방문', type:'work', subtype:'외근', start:`${y}-${m}-07`, end:`${y}-${m}-07`, who:'mj', project:'p1', public:true },
+    { id:'4', title:'부산 출장', type:'trip', subtype:'', start:`${y}-${m}-20`, end:`${y}-${m}-22`, who:'yj', project:'p2', public:true },
+    { id:'5', title:'UX 컨퍼런스', type:'work', subtype:'교육/세미나', start:`${y}-${m}-18`, end:`${y}-${m}-19`, who:'sy', project:'', public:true },
+    { id:'6', title:'(비공개)', type:'personal', subtype:'', start:`${y}-${m}-15`, end:`${y}-${m}-15`, who:'mj', project:'', public:false },
+  ];
+  if (!selfId && members.length) selfId = members[0].id;
+  refreshAll();
+}
+
+// ── 이벤트 추가/삭제 ─────────────────────────────────────────
+async function submitEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const start = document.getElementById('ev-start').value;
+  const end   = document.getElementById('ev-end').value;
+  const type  = document.getElementById('ev-type').value;
+  const pub   = document.getElementById('pub-toggle').classList.contains('on');
+  const project = document.getElementById('ev-project').value || '';
+  let subtype = '';
+  if (type === 'work') {
+    const sv = document.getElementById('ev-subtype').value;
+    subtype = sv === 'custom' ? document.getElementById('ev-subtype-custom').value.trim() : sv;
+  }
+  if (!title || !start) { showToast('제목과 시작일을 입력해주세요'); return; }
+  if (!selfId) { showToast('먼저 내 계정을 설정해주세요'); return; }
+
+  const body = { action:'addEvent', title, type, subtype, start, end: end||start, who: selfId, project, public: pub };
+
+  if (apiUrl) {
+    try {
+      const res = await apiPost(body);
+      if (res.error) throw new Error(res.error);
+      showToast('저장됐어요! 잠시 후 새로고침하면 반영돼요.');
+    } catch(e) { showToast('저장 실패: ' + e.message); return; }
+  } else {
+    // 데모 모드: 로컬에만 추가
+    events.push({ ...body, id: 'local_' + Date.now() });
+  }
+
+  // 폼 초기화
+  document.getElementById('ev-title').value = '';
+  document.getElementById('ev-start').value = '';
+  document.getElementById('ev-end').value = '';
+  document.getElementById('ev-subtype').value = '';
+  document.getElementById('custom-wrap').style.display = 'none';
+  document.getElementById('sub-type-row').classList.remove('show');
+  document.getElementById('ev-type').value = 'vacation';
+  document.getElementById('pub-toggle').classList.remove('on');
+  renderPersonalList();
+  render();
+}
+
+async function deleteEventById(id) {
+  if (apiUrl) {
+    try {
+      const res = await apiPost({ action:'deleteEvent', id });
+      if (res.error) throw new Error(res.error);
+    } catch(e) { showToast('삭제 실패: ' + e.message); return; }
+  }
+  events = events.filter(e => e.id !== id);
+  renderPersonalList(); render();
+  showToast('삭제됐어요');
+}
+
+// ── 렌더링 ──────────────────────────────────────────────────
+function refreshAll() {
+  buildSidebar();
+  refreshProjectSelect();
+  render();
+  renderPersonalList();
+}
+
+function buildSidebar() {
+  // 멤버
+  const mc = document.getElementById('sidebar-members');
+  mc.innerHTML = '';
+  members.forEach(m => {
+    const bg  = m.bg  || lighten(m.color);
+    const div = document.createElement('div');
+    div.className = 'member-chip' + (hiddenMembers.has(m.id) ? ' off' : '');
+    div.onclick = () => { hiddenMembers.has(m.id) ? hiddenMembers.delete(m.id) : hiddenMembers.add(m.id); buildSidebar(); render(); };
+    div.innerHTML = `<div class="avatar-sm" style="background:${bg};color:${m.color}">${m.name.slice(0,2)}</div><span class="member-chip-name">${m.name}</span>`;
+    mc.appendChild(div);
+  });
+
+  // 사업
+  const pc = document.getElementById('sidebar-projects');
+  pc.innerHTML = `<div class="proj-chip${selProject==='all'?' active':''}" onclick="toggleProject('all')"><div class="legend-dot" style="background:var(--text2)"></div>전체</div>`;
+  projects.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'proj-chip' + (selProject === p.id ? ' active' : '');
+    div.innerHTML = `<div class="legend-dot" style="background:${p.color}"></div>${p.name}`;
+    div.onclick = () => toggleProject(p.id);
+    pc.appendChild(div);
+  });
+
+  // 내 계정
+  const self = members.find(m => m.id === selfId) || members[0];
+  if (self) {
+    const av = document.getElementById('self-avatar-sidebar');
+    av.textContent = self.name.slice(0,2);
+    av.style.background = self.bg || lighten(self.color);
+    av.style.color = self.color;
+    document.getElementById('self-name-sidebar').textContent = self.name;
+  }
+}
+
+function lighten(hex) {
+  // hex → 연한 버전 (배경용)
+  const map = { '#378ADD':'#E6F1FB','#1D9E75':'#E1F5EE','#D85A30':'#FAECE7','#EF9F27':'#FAEEDA','#533AB7':'#EEEDFE','#993556':'#FBEAF0','#3B6D11':'#EAF3DE','#185FA5':'#B5D4F4' };
+  return map[hex] || '#F1EFE8';
+}
+
+function refreshProjectSelect() {
+  const sel = document.getElementById('ev-project');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 없음</option>';
+  projects.forEach(p => sel.innerHTML += `<option value="${p.id}"${cur===p.id?' selected':''}>${p.name}</option>`);
+}
+
+function getVisibleEvents() {
+  return events.filter(e => {
+    if (!e.public && e.who !== selfId) return false;
+    if (hiddenMembers.size && e.who !== 'all' && hiddenMembers.has(e.who)) return false;
+    if (selProject !== 'all' && e.project !== selProject) return false;
+    return true;
+  });
+}
+
+function eventInDay(e, y, m, d) {
+  const s  = new Date(e.start + 'T00:00:00');
+  const en = new Date(e.end   + 'T00:00:00');
+  const day = new Date(y, m, d);
+  return day >= s && day <= en;
+}
+
+function render() { viewMode === 'cal' ? renderCal() : renderList(); }
+
+function renderCal() {
+  const container = document.getElementById('cal-container');
+  const days = ['일','월','화','수','목','금','토'];
+  const firstDay = new Date(curYear, curMonth, 1).getDay();
+  const lastDate = new Date(curYear, curMonth + 1, 0).getDate();
+  const vis = getVisibleEvents();
+
+  let html = '<div class="cal-grid">';
+  days.forEach(d => html += `<div class="cal-header-cell">${d}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= lastDate; d++) {
+    const dow = (firstDay + d - 1) % 7;
+    const isToday = d === today.getDate() && curMonth === today.getMonth() && curYear === today.getFullYear();
+    const dayEvs = vis.filter(e => eventInDay(e, curYear, curMonth, d));
+    const show = dayEvs.slice(0, 2), more = dayEvs.length - 2;
+    const cls = ['cal-day', isToday ? 'today' : '', dow === 0 ? 'sunday' : dow === 6 ? 'saturday' : ''].join(' ');
+    html += `<div class="${cls}" onclick="dayClick(${d})">`;
+    html += `<div class="day-num">${d}</div>`;
+    show.forEach(e => {
+      const mb = members.find(m => m.id === e.who);
+      const name = e.who === 'all' ? '전체' : (mb ? mb.name.slice(0,2) : '');
+      const sub  = e.subtype ? `<span class="pill-sub">${e.subtype.slice(0,3)}</span>` : '';
+      html += `<div class="event-pill ${TYPE_CLASS[e.type]||''}" onclick="event.stopPropagation();showEvent('${e.id}')" title="${e.title}">${name} ${e.title}${sub}</div>`;
+    });
+    if (more > 0) html += `<div class="more-pill">+${more}개</div>`;
+    html += '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderList() {
+  const vis = getVisibleEvents();
+  const sorted = [...vis].sort((a, b) => a.start.localeCompare(b.start));
+  if (!sorted.length) { document.getElementById('cal-container').innerHTML = '<div class="empty-state">표시할 일정이 없습니다</div>'; return; }
+  let html = '<div class="list-container">';
+  sorted.forEach(e => {
+    const mb   = members.find(m => m.id === e.who);
+    const proj = projects.find(p => p.id === e.project);
+    const who  = e.who === 'all' ? '전체팀' : (mb ? mb.name : e.who);
+    html += `<div class="list-item" onclick="showEvent('${e.id}')">
+      <div class="list-dot" style="background:${TYPE_COLORS[e.type]||'#888'}"></div>
+      <div class="list-info">
+        <div class="list-title">${e.title}</div>
+        <div class="list-meta">${e.start}${e.end !== e.start ? ' ~ ' + e.end : ''} · ${who}</div>
+        <div class="tag-row">
+          <span class="tag ${TYPE_TAG[e.type]||''}">${TYPE_LABELS[e.type]||e.type}</span>
+          ${e.subtype ? `<span class="tag tag-sub">${e.subtype}</span>` : ''}
+          ${proj ? `<span class="tag tag-project">${proj.name}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('cal-container').innerHTML = html + '</div>';
+}
+
+function renderPersonalList() {
+  const mine = events.filter(e => {
+    if (e.who !== selfId) return false;
+    if (personalFilter === 'public'  && !e.public) return false;
+    if (personalFilter === 'private' &&  e.public) return false;
+    return true;
+  }).sort((a, b) => a.start.localeCompare(b.start));
+
+  if (!mine.length) { document.getElementById('personal-list').innerHTML = '<div class="empty-state">일정이 없습니다</div>'; return; }
+  let html = '';
+  mine.forEach(e => {
+    const proj = projects.find(p => p.id === e.project);
+    html += `<div class="list-item" style="cursor:default">
+      <div class="list-dot" style="background:${TYPE_COLORS[e.type]||'#888'}"></div>
+      <div class="list-info">
+        <div class="list-title">${e.title}</div>
+        <div class="list-meta">${e.start}${e.end !== e.start ? ' ~ ' + e.end : ''}</div>
+        <div class="tag-row">
+          <span class="tag ${TYPE_TAG[e.type]||''}">${TYPE_LABELS[e.type]||e.type}</span>
+          ${e.subtype ? `<span class="tag tag-sub">${e.subtype}</span>` : ''}
+          ${proj ? `<span class="tag tag-project">${proj.name}</span>` : ''}
+          <span class="tag ${e.public ? 'tag-work' : 'tag-sub'}">${e.public ? '공유' : '비공개'}</span>
+        </div>
+      </div>
+      <button onclick="deleteEventById('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;flex-shrink:0;line-height:1">✕</button>
+    </div>`;
+  });
+  document.getElementById('personal-list').innerHTML = html;
+}
+
+// ── 이벤트 상세 ──────────────────────────────────────────────
+function showEvent(id) {
+  const e = events.find(ev => ev.id === id); if (!e) return;
+  const mb   = members.find(m => m.id === e.who);
+  const proj = projects.find(p => p.id === e.project);
+  document.getElementById('modal-body').innerHTML = `
+    <div class="detail-row"><span class="detail-label">기간</span><span>${e.start}${e.end !== e.start ? ' ~ ' + e.end : ''}</span></div>
+    <div class="detail-row"><span class="detail-label">유형</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="tag ${TYPE_TAG[e.type]||''}">${TYPE_LABELS[e.type]||e.type}</span>
+        ${e.subtype ? `<span class="tag tag-sub">${e.subtype}</span>` : ''}
+      </div>
+    </div>
+    ${proj ? `<div class="detail-row"><span class="detail-label">사업</span><span class="tag tag-project">${proj.name}</span></div>` : ''}
+    <div class="detail-row"><span class="detail-label">대상</span><span>${e.who === 'all' ? '전체팀' : (mb ? mb.name : e.who)}</span></div>
+    <div class="detail-row"><span class="detail-label">공개</span><span>${e.public ? '팀 캘린더에 공유됨' : '비공개'}</span></div>`;
+  openModal(e.title);
+}
+
+function dayClick(d) {
+  const vis = getVisibleEvents();
+  const dayEvs = vis.filter(e => eventInDay(e, curYear, curMonth, d));
+  if (!dayEvs.length) return;
+  if (dayEvs.length === 1) { showEvent(dayEvs[0].id); return; }
+  let html = '<div class="list-container" style="gap:6px">';
+  dayEvs.forEach(e => {
+    const mb = members.find(m => m.id === e.who);
+    html += `<div class="list-item" style="padding:8px 10px" onclick="closeModal();showEvent('${e.id}')">
+      <div class="list-dot" style="background:${TYPE_COLORS[e.type]||'#888'}"></div>
+      <div class="list-info">
+        <div class="list-title" style="font-size:13px">${e.title}</div>
+        <div class="tag-row">
+          <span class="tag ${TYPE_TAG[e.type]||''}">${TYPE_LABELS[e.type]||e.type}</span>
+          ${e.subtype ? `<span class="tag tag-sub">${e.subtype}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('modal-body').innerHTML = html + '</div>';
+  openModal(`${curMonth+1}월 ${d}일 일정 (${dayEvs.length}건)`);
+}
+
+// ── 계정 변경 ─────────────────────────────────────────────────
+function openChangeSelf() {
+  const opts = members.map(m => `<option value="${m.id}"${m.id===selfId?' selected':''}>${m.name}${m.role?' ('+m.role+')':''}</option>`).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px">아래에서 나를 선택해주세요</div>
+    <select id="self-select" style="margin-bottom:14px">${opts}</select>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="changeSelf()">확인</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`;
+  openModal('내 계정 변경');
+}
+function changeSelf() {
+  selfId = document.getElementById('self-select').value;
+  ls('selfId', selfId);
+  closeModal(); buildSidebar(); renderPersonalList();
+  showToast('계정이 변경됐어요');
+}
+
+// ── API URL 저장 ──────────────────────────────────────────────
+async function saveApiUrl() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url) { showToast('URL을 입력해주세요'); return; }
+  apiUrl = url;
+  ls('apiUrl', url);
+  document.getElementById('api-url-status').textContent = '저장됐어요. 연결을 확인하는 중...';
+  await loadData();
+  document.getElementById('api-url-status').textContent = '✅ 연결 성공!';
+}
+
+// ── 헬퍼 ─────────────────────────────────────────────────────
+function toggleProject(id) { selProject = selProject === id ? 'all' : id; buildSidebar(); render(); }
+function changeMonth(dir) {
+  curMonth += dir;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0)  { curMonth = 11; curYear--; }
+  document.getElementById('month-title').textContent = `${curYear}년 ${curMonth+1}월`;
+  render();
+}
+function setViewMode(m) {
+  viewMode = m;
+  document.getElementById('vm-cal').classList.toggle('active', m === 'cal');
+  document.getElementById('vm-list').classList.toggle('active', m === 'list');
+  render();
+}
+function filterPersonal(f) {
+  personalFilter = f;
+  ['all','public','private'].forEach(k => document.getElementById('pf-'+k).classList.toggle('active', k === f));
+  renderPersonalList();
+}
+function switchPage(p) {
+  ['team','personal','setup'].forEach(id => {
+    document.getElementById('page-'+id).style.display = id === p ? '' : 'none';
+    document.getElementById('nav-'+id).classList.toggle('active', id === p);
+  });
+  if (p === 'personal') { refreshProjectSelect(); renderPersonalList(); }
+}
+function onTypeChange() {
+  const t = document.getElementById('ev-type').value;
+  document.getElementById('sub-type-row').classList.toggle('show', t === 'work');
+  if (t !== 'work') { document.getElementById('ev-subtype').value = ''; document.getElementById('custom-wrap').style.display = 'none'; }
+}
+function onSubtypeChange() {
+  document.getElementById('custom-wrap').style.display = document.getElementById('ev-subtype').value === 'custom' ? 'block' : 'none';
+}
+function openModal(title) { document.getElementById('modal-title').textContent = title; document.getElementById('modal').classList.add('show'); }
+function closeModal()      { document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').onclick = function(e) { if (e.target === this) closeModal(); };
+
+let toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function showStatus(msg, type) {
+  const el = document.getElementById('status-bar');
+  el.style.display = 'flex';
+  el.className = 'status-bar status-' + type;
+  el.innerHTML = (type === 'loading' ? '<div class="spinner"></div>' : '') + msg;
+}
+function hideStatus() { document.getElementById('status-bar').style.display = 'none'; }
+
+// ── 초기화 ─────────────────────────────────────────────────
+document.getElementById('month-title').textContent = `${curYear}년 ${curMonth+1}월`;
+if (apiUrl) document.getElementById('api-url-input').value = apiUrl;
+
+// API URL이 있으면 실제 데이터, 없으면 데모 데이터
+loadData();
+</script>
+</body>
+</html>
