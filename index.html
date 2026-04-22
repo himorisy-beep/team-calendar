@@ -802,7 +802,6 @@ async function submitEvent(){
     catch(e){showToast('저장 실패: '+e.message);return;}
   }
   events.push({...body});
-  // 폼 초기화
   ['ev-title','ev-start','ev-end'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ev-type').value='vacation';
   document.getElementById('ev-sub').value='';
@@ -816,7 +815,6 @@ async function deleteEv(id){
   if(apiUrl){try{const r=await apiPost({action:'deleteEvent',id});if(r.error)throw new Error(r.error);}catch(e){showToast('삭제 실패: '+e.message);return;}}
   events=events.filter(e=>e.id!==id);renderPersonalList();renderCal();showToast('삭제됐어요');
 }
-
 // ── 상세 팝업 ─────────────────────────────────────────────────
 function showEv(id){
   const e=events.find(ev=>ev.id===id);if(!e)return;
