@@ -196,7 +196,6 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 <body>
 <div class="layout">
 
-<!-- ── 사이드바 ── -->
 <div class="sidebar">
   <div>
     <div class="logo">팀 캘린더</div>
@@ -232,11 +231,9 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   </div>
 </div>
 
-<!-- ── 메인 ── -->
 <div class="main">
 <div id="status-bar" style="display:none"></div>
 
-<!-- 캘린더 -->
 <div id="page-cal" class="page active">
   <div class="page-header">
     <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button>
@@ -257,7 +254,6 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   <div id="cal-container"></div>
 </div>
 
-<!-- 사업 현황 -->
 <div id="page-overview" class="page">
   <div class="page-header">
     <span class="page-title">사업 현황</span>
@@ -269,13 +265,11 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   <div id="overview-container"></div>
 </div>
 
-<!-- 멤버 현황 -->
 <div id="page-members" class="page">
   <div class="page-header"><span class="page-title">멤버 현황</span></div>
   <div id="members-container"></div>
 </div>
 
-<!-- 내 일정 -->
 <div id="page-personal" class="page">
   <div class="page-header"><span class="page-title">내 일정</span></div>
 
@@ -327,7 +321,6 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   </div>
 </div>
 
-<!-- 설정 -->
 <div id="page-setup" class="page">
   <div class="page-header"><span class="page-title">설정</span></div>
 
@@ -377,11 +370,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   </div>
 </div>
 
-</div><!-- /main -->
-</div><!-- /layout -->
-
-<!-- 모달 -->
-<div class="modal-bg" id="modal">
+</div></div><div class="modal-bg" id="modal">
   <div class="modal">
     <div class="modal-hdr">
       <div class="modal-title" id="modal-title"></div>
@@ -432,17 +421,14 @@ async function apiFetch(p){
   return r.json();
 }
 async function apiPost(b){
-  // Apps Script는 CORS 때문에 POST가 막힘 → GET 방식으로 쓰기 요청
   if(!apiUrl)throw new Error('no_api');
   const r=await fetch(apiUrl+'?'+new URLSearchParams(b));
   if(!r.ok)throw new Error('HTTP '+r.status);
   return r.json();
 }
 
-// API가 있으면 Sheets에 저장 후 콜백, 없으면 로컬만 반영
 async function apiSave(body, onSuccess){
   if(!apiUrl){
-    // 데모 모드: 바로 로컬 반영
     onSuccess();
     return;
   }
@@ -530,7 +516,6 @@ function refreshAll(){
 
 // ── 사이드바 ─────────────────────────────────────────────────
 function buildSidebar(){
-  // 멤버
   const mc=document.getElementById('sb-members');
   mc.innerHTML='';
   members.forEach(m=>{
@@ -541,7 +526,6 @@ function buildSidebar(){
     d.innerHTML=`<div class="av" style="background:${bg};color:${m.color}">${ini(m.name)}</div><span class="mb-chip-name">${m.name}</span>`;
     mc.appendChild(d);
   });
-  // 사업
   const pc=document.getElementById('sb-projects');
   pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
   projects.forEach(p=>{
@@ -551,7 +535,6 @@ function buildSidebar(){
     d.onclick=()=>toggleProj(p.id);
     pc.appendChild(d);
   });
-  // 내 계정
   const s=self();
   const av=document.getElementById('self-av');
   av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color;
@@ -681,13 +664,11 @@ function renderGantt(){
   });
   if(!allTasks.length){document.getElementById('overview-container').innerHTML='<div class="empty">업무가 없습니다</div>';return;}
 
-  // 날짜 범위 계산
   const dates=allTasks.flatMap(t=>[new Date(t.start+'T00:00:00'),new Date(t.end+'T00:00:00')]);
   let minD=new Date(Math.min(...dates));let maxD=new Date(Math.max(...dates));
   minD=new Date(minD.getTime()-2*864e5);maxD=new Date(maxD.getTime()+3*864e5);
   const totalDays=daysBetween(minD.toISOString().slice(0,10),maxD.toISOString().slice(0,10))+1;
 
-  // 헤더 날짜 배열
   const dayArr=[];
   for(let i=0;i<totalDays;i++){
     const d=new Date(minD.getTime()+i*864e5);
@@ -698,7 +679,6 @@ function renderGantt(){
 
   let h='<div class="gantt-wrap"><div class="gantt">';
 
-  // 헤더
   h+='<div class="gantt-header"><div class="gantt-label-col"></div><div class="gantt-timeline">';
   dayArr.forEach((d,i)=>{
     const show=d.getDate()===1||(i===0)||(i%7===0);
@@ -707,12 +687,10 @@ function renderGantt(){
   });
   h+='</div></div>';
 
-  // 사업별로 그룹
   const vp=projects.filter(p=>selProj==='all'||p.id===selProj);
   vp.forEach(p=>{
     const pt=allTasks.filter(t=>t.project===p.id);
     if(!pt.length)return;
-    // 사업 타이틀 행
     h+=`<div class="gantt-row" style="margin-top:10px;margin-bottom:2px">
       <div class="gantt-label" style="font-size:11px;font-weight:600;color:${p.color};width:200px">${p.name}</div>
       <div class="gantt-bar-area" style="border-top:.5px solid var(--border)"></div>
@@ -748,6 +726,12 @@ function renderMembersPage(){
   vm2.forEach(m2=>{
     const bg=lighten(m2.color);
     const mAssigns=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj));
+
+    const projNames = mAssigns.map(a => {
+      const p = pj(a.projectId);
+      return p ? `${p.name} (${a.role || '팀원'})` : '';
+    }).filter(Boolean).join(', ');
+
     const projRows=mAssigns.map(a=>{
       const p=pj(a.projectId);if(!p)return '';
       const mTasks=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id);
@@ -756,17 +740,20 @@ function renderMembersPage(){
         return `<span class="mini-task ${cls}" onclick="showTask('${t.id}')" title="${t.start}~${t.end}">${t.title}</span>`;
       }).join('');
       return `<div class="proj-row">
-        <div class="proj-row-name"><div class="dot" style="background:${p.color}"></div>${p.name}${a.role?` <span style="font-size:11px;color:var(--text3)">(${a.role})</span>`:''}</div>
-        <div class="proj-tasks">${miniTasks||'<span style="font-size:12px;color:var(--text3)">업무 없음</span>'}</div>
+        <div class="proj-row-name"><div class="dot" style="background:${p.color}"></div>${p.name}</div>
+        <div class="proj-tasks">${miniTasks||'<span style="font-size:12px;color:var(--text3)">배정된 세부 업무 없음</span>'}</div>
       </div>`;
     }).join('');
+
     const evCount=events.filter(e=>e.public&&e.who===m2.id).length;
+
     h+=`<div class="member-card">
       <div class="member-card-header">
         <div class="av" style="width:36px;height:36px;font-size:13px;background:${bg};color:${m2.color}">${ini(m2.name)}</div>
         <div class="member-card-info">
           <div class="member-card-name">${m2.name}${m2.id===selfId?' <span style="font-size:11px;font-weight:400;color:var(--text3)">(나)</span>':''}</div>
-          <div class="member-card-role">${m2.role||'역할 없음'} · 담당 사업 ${mAssigns.length}개 · 일정 ${evCount}건</div>
+          <div class="member-card-role" style="margin-bottom:4px">${m2.role||'역할 없음'} · 일정 ${evCount}건</div>
+          ${projNames ? `<div style="font-size:12px; font-weight:600; color:var(--text2)">담당 사업: <span style="font-weight:400; color:var(--text)">${projNames}</span></div>` : `<div style="font-size:12px; color:var(--text3);">배정된 사업이 없습니다.</div>`}
         </div>
       </div>
       ${mAssigns.length?`<div class="member-card-body">${projRows}</div>`:''}
@@ -823,17 +810,14 @@ async function submitEvent(){
     try{
       const r=await apiPost({action:'addEvent',...newEv,public:pub});
       if(r.error)throw new Error(r.error);
-      // API 저장 성공 후 서버에서 최신 데이터 다시 불러오기
       await loadAll();
     }catch(e){showToast('저장 실패: '+e.message);return;}
   } else {
-    // 데모 모드: 로컬에만 추가
     events.push(newEv);
     renderCal();
     renderPersonalList();
   }
 
-  // 폼 초기화
   ['ev-title','ev-start','ev-end'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ev-type').value='vacation';
   document.getElementById('ev-sub').value='';
@@ -904,6 +888,86 @@ async function saveApiUrl(){
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
 }
+
+// ── 사업 멤버(역할) 관리 기능 ──────────────────────────────────
+function openManageProjectMembers(projectId){
+  const p = pj(projectId);
+  if(!p) return;
+
+  let h = `<div id="pm-list" style="margin-bottom:15px; max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">`;
+
+  const pAssigns = assigns.filter(a => a.projectId === projectId);
+  if(pAssigns.length === 0){
+    h += `<div class="empty" style="padding:1rem; border:.5px solid var(--border); border-radius:var(--r-sm)">배정된 멤버가 없습니다.</div>`;
+  } else {
+    pAssigns.forEach(a => {
+      const m2 = mb(a.memberId);
+      if(!m2) return;
+      h += `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:.5px solid var(--border2); border-radius:var(--r-sm); background:var(--bg2);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="av" style="background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
+          <div style="font-size:13px;"><b>${m2.name}</b> <span style="color:var(--text3); font-size:12px; margin-left:4px;">| ${a.role || '역할없음'}</span></div>
+        </div>
+        <button class="btn-danger-sm" onclick="removeProjectMember('${a.id}', '${projectId}')">해제</button>
+      </div>`;
+    });
+  }
+  h += `</div>`;
+
+  const unassigned = members.filter(m => !pAssigns.find(a => a.memberId === m.id));
+  const options = unassigned.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+  h += `
+  <div style="border-top:1px solid var(--border); padding-top:14px;">
+    <div style="font-size:13px; font-weight:600; margin-bottom:10px;">새 멤버 배정</div>
+    ${unassigned.length > 0 ? `
+    <div class="form-row">
+      <div>
+        <div class="fl">팀원 선택</div>
+        <select id="pm-member-sel">${options}</select>
+      </div>
+      <div>
+        <div class="fl">담당 역할 (예: 사업관리, 연구보조)</div>
+        <input type="text" id="pm-role-input" placeholder="역할 입력">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="addProjectMember('${projectId}')">배정하기</button>
+    ` : `<div style="font-size:12px; color:var(--text3); text-align:center; padding:10px 0;">모든 팀원이 배정되어 있습니다.</div>`}
+  </div>`;
+
+  document.getElementById('modal-body').innerHTML = h;
+  openModal(`[${p.name}] 참여 멤버 관리`);
+}
+
+function addProjectMember(projectId){
+  const memberId = document.getElementById('pm-member-sel').value;
+  const role = document.getElementById('pm-role-input').value.trim();
+  if(!memberId) return;
+
+  const id = 'asgn_' + Date.now();
+  const newAssign = { id, memberId, projectId, role };
+
+  apiSave({ action: 'addAssign', ...newAssign }, () => {
+    assigns.push(newAssign);
+    showToast('멤버가 사업에 배정되었습니다.');
+    openManageProjectMembers(projectId);
+    refreshAll();
+  });
+}
+
+function removeProjectMember(assignId, projectId){
+  if(!confirm('해당 팀원을 이 사업에서 해제하시겠습니까?')) return;
+
+  apiSave({ action: 'deleteAssign', id: assignId }, () => {
+    assigns = assigns.filter(a => a.id !== assignId);
+    showToast('배정이 해제되었습니다.');
+    openManageProjectMembers(projectId);
+    refreshAll();
+  });
+}
+
+
 // ── 멤버 관리 ─────────────────────────────────────────────────
 const PALETTE=[
   {color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},
@@ -948,7 +1012,6 @@ function getSelectedPalette(){
     if(swatches[i].style.borderColor==='var(--text)'||swatches[i].style.borderColor===getComputedStyle(document.documentElement).getPropertyValue('--text').trim())
       return PALETTE[i];
   }
-  // fallback: 첫 번째
   return PALETTE[0];
 }
 
@@ -974,7 +1037,6 @@ function openAddMember(){
 function openEditMember(id){
   const m2=mb(id);if(!m2)return;
   document.getElementById('modal-body').innerHTML=memberFormHTML(m2);
-  // 현재 색상 swatch 선택 표시
   const idx=PALETTE.findIndex(p=>p.color===m2.color);
   if(idx>=0) setTimeout(()=>selectSwatch(idx),0);
   openModal('팀원 수정');
@@ -1034,6 +1096,7 @@ function renderProjectManageList(){
         <div style="font-size:11px;color:var(--text2)">멤버 ${memberCount}명 · 업무 ${taskCount}건${p.status?' · '+p.status:''}</div>
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">멤버 배정</button>
         <button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>
         <button class="btn-danger-sm" onclick="deleteProject('${p.id}')">삭제</button>
       </div>
@@ -1131,11 +1194,9 @@ function hideStatus(){document.getElementById('status-bar').style.display='none'
 // ── 초기화 ───────────────────────────────────────────────────
 if(apiUrl)document.getElementById('api-url-input').value=apiUrl;
 
-// month-title은 renderCal() 안에서도 세팅하지만 초기 렌더 전에 미리 세팅
 const _mt = document.getElementById('month-title');
 if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
 
-// DOM 완전히 로드된 후 실행 보장
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded', ()=>loadAll());
 } else {
