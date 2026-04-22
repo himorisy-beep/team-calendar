@@ -816,12 +816,23 @@ async function submitEvent(){
   if(type==='work'){const sv=document.getElementById('ev-sub').value;subtype=sv==='custom'?document.getElementById('ev-sub-txt').value.trim():sv;}
   if(!title||!start){showToast('제목과 시작일을 입력해주세요');return;}
   if(!selfId){showToast('먼저 내 계정을 설정해주세요');return;}
-  const body={action:'addEvent',id:'ev_'+Date.now(),title,type,subtype,start,end:end||start,who:selfId,project,public:pub};
+
+  const newEv={id:'ev_'+Date.now(),title,type,subtype,start,end:end||start,who:selfId,project,public:pub};
+
   if(apiUrl){
-    try{const r=await apiPost(body);if(r.error)throw new Error(r.error);}
-    catch(e){showToast('저장 실패: '+e.message);return;}
+    try{
+      const r=await apiPost({action:'addEvent',...newEv,public:pub});
+      if(r.error)throw new Error(r.error);
+      // API 저장 성공 후 서버에서 최신 데이터 다시 불러오기
+      await loadAll();
+    }catch(e){showToast('저장 실패: '+e.message);return;}
+  } else {
+    // 데모 모드: 로컬에만 추가
+    events.push(newEv);
+    renderCal();
+    renderPersonalList();
   }
-  events.push({...body});
+
   // 폼 초기화
   ['ev-title','ev-start','ev-end'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ev-type').value='vacation';
@@ -829,7 +840,6 @@ async function submitEvent(){
   document.getElementById('sub-custom').style.display='none';
   document.getElementById('sub-row').classList.remove('show');
   document.getElementById('pub-toggle').classList.remove('on');
-  renderPersonalList();renderCal();
   showToast('추가됐어요');
 }
 async function deleteEv(id){
@@ -886,20 +896,14 @@ function openChangeSelf(){
 }
 function changeSelf(){selfId=document.getElementById('self-sel').value;ls('selfId',selfId);closeModal();buildSidebar();renderPersonalList();showToast('계정 변경됐어요');}
 async function saveApiUrl(){
-  const url = document.getElementById('api-url-input').value.trim();
-  if(!url){
-    showToast('URL을 입력해주세요');
-    return;
-  }
-
-  apiUrl = url || DEFAULT_API_URL;
-  ls('apiUrl', url);
-
+  const url=document.getElementById('api-url-input').value.trim();
+  if(!url){showToast('URL을 입력해주세요');return;}
+  apiUrl=url;
+  ls('apiUrl',url);
   document.getElementById('api-status').textContent='저장됐어요. 연결 확인 중...';
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
 }
-
 // ── 멤버 관리 ─────────────────────────────────────────────────
 const PALETTE=[
   {color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},
