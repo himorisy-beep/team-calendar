@@ -27,6 +27,12 @@
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
 .layout{display:flex;min-height:100vh}
 
+/* 모바일 헤더 및 오버레이 */
+.mobile-header { display: none; padding: 14px 20px; background: var(--bg); border-bottom: .5px solid var(--border); align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+.menu-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text); padding: 0; line-height: 1; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); z-index: 150; }
+.sidebar-overlay.show { display: block; }
+
 /* ── 사이드바 ── */
 .sidebar{width:220px;background:var(--bg);border-right:.5px solid var(--border);padding:20px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{font-size:15px;font-weight:700;padding:0 6px}
@@ -190,11 +196,21 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 @keyframes spin{to{transform:rotate(360deg)}}
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)}
-@media(max-width:680px){.sidebar{display:none}.main{padding:14px}}
+
+/* 모바일 반응형 */
+@media(max-width:680px){
+  .sidebar { position: fixed; left: -260px; z-index: 200; width: 240px; transition: left .25s ease; box-shadow: 2px 0 10px rgba(0,0,0,.1); }
+  .sidebar.show { left: 0; }
+  .main { padding: 0; }
+  .page { padding: 16px; }
+  .mobile-header { display: flex; }
+}
 </style>
 </head>
 <body>
 <div class="layout">
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
 <div class="sidebar">
   <div>
@@ -232,6 +248,12 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 </div>
 
 <div class="main">
+
+<div class="mobile-header">
+  <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+  <div style="font-weight:700;font-size:16px">팀 캘린더</div>
+</div>
+
 <div id="status-bar" style="display:none"></div>
 
 <div id="page-cal" class="page active">
@@ -582,7 +604,7 @@ function renderCalGrid(){
     h+=`<div class="dn">${d}</div>`;
     show.forEach(e=>{
       const m2=mb(e.who);
-      const nm=e.who==='all'?'전체':(m2?m2.name.slice(0,2):'');
+      const nm=e.who==='all'?'전체':(m2?m2.name:'');
       h+=`<div class="ep ${TC[e.type]||''}" onclick="event.stopPropagation();showEv('${e.id}')" title="${e.title}">${nm} ${e.title}</div>`;
     });
     if(more>0)h+=`<div class="more-p">+${more}</div>`;
@@ -866,6 +888,11 @@ function dayClick(d){
 }
 
 // ── 유틸리티 ─────────────────────────────────────────────────
+function toggleSidebar(){
+  document.querySelector('.sidebar').classList.toggle('show');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+
 function toggleProj(id){selProj=selProj===id?'all':id;buildSidebar();renderCal();renderOverview();renderMembersPage();}
 function changeMonth(dir){curM+=dir;if(curM>11){curM=0;curY++;}if(curM<0){curM=11;curY--;}renderCal();}
 function setVM(m){vm=m;document.getElementById('vm-cal').classList.toggle('active',m==='cal');document.getElementById('vm-list').classList.toggle('active',m==='list');renderCal();}
@@ -887,6 +914,24 @@ async function saveApiUrl(){
   document.getElementById('api-status').textContent='저장됐어요. 연결 확인 중...';
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
+}
+
+// ── 사이드바 닫기 연동 포함 goPage ───────────────────────────
+function goPage(p){
+  ['cal','overview','members','personal','setup'].forEach(id=>{
+    document.getElementById('page-'+id).classList.toggle('active',id===p);
+    document.getElementById('nav-'+id).classList.toggle('active',id===p);
+  });
+  
+  if(window.innerWidth <= 680){
+    document.querySelector('.sidebar').classList.remove('show');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  }
+
+  if(p==='personal'){refreshProjSelect();renderPersonalList();}
+  if(p==='overview')renderOverview();
+  if(p==='members')renderMembersPage();
+  if(p==='setup'){renderMemberManageList();renderProjectManageList();}
 }
 
 // ── 사업 멤버(역할) 관리 기능 ──────────────────────────────────
@@ -1173,16 +1218,6 @@ function deleteProject(id){
   });
 }
 
-function goPage(p){
-  ['cal','overview','members','personal','setup'].forEach(id=>{
-    document.getElementById('page-'+id).classList.toggle('active',id===p);
-    document.getElementById('nav-'+id).classList.toggle('active',id===p);
-  });
-  if(p==='personal'){refreshProjSelect();renderPersonalList();}
-  if(p==='overview')renderOverview();
-  if(p==='members')renderMembersPage();
-  if(p==='setup'){renderMemberManageList();renderProjectManageList();}
-}
 function openModal(t){document.getElementById('modal-title').textContent=t;document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
 document.getElementById('modal').onclick=function(e){if(e.target===this)closeModal();};
