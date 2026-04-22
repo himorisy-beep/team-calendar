@@ -339,6 +339,14 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
     <div id="member-manage-list"></div>
   </div>
 
+  <div class="card" style="max-width:580px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
+      <button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button>
+    </div>
+    <div id="project-manage-list"></div>
+  </div>
+
   <div class="card" style="max-width:580px">
     <div class="card-title">Google Sheets 연동</div>
     <div class="setup-step">
@@ -970,6 +978,91 @@ function deleteMember(id){
   showToast(`${m2.name} 님이 삭제됐어요`);
 }
 
+// ── 사업 관리 ─────────────────────────────────────────────────
+function renderProjectManageList(){
+  document.getElementById('proj-count').textContent=`(${projects.length}개)`;
+  if(!projects.length){document.getElementById('project-manage-list').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
+  let h='';
+  projects.forEach(p=>{
+    const memberCount=assigns.filter(a=>a.projectId===p.id).length;
+    const taskCount=tasks.filter(t=>t.project===p.id).length;
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
+      <div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div class="dot" style="background:${p.color};width:10px;height:10px"></div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${p.name}</div>
+        <div style="font-size:11px;color:var(--text2)">멤버 ${memberCount}명 · 업무 ${taskCount}건${p.status?' · '+p.status:''}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>
+        <button class="btn-danger-sm" onclick="deleteProject('${p.id}')">삭제</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('project-manage-list').innerHTML=h;
+}
+
+function projectFormHTML(p){
+  const selColor=p?p.color:PALETTE[0].color;
+  const statusOpts=['진행중','완료','보류'].map(s=>`<option value="${s}"${p&&p.status===s?' selected':''}>${s}</option>`).join('');
+  return `
+    <div style="margin-bottom:8px"><div class="fl">사업명</div><input type="text" id="pf-name" value="${p?p.name:''}" placeholder="알파 프로젝트"></div>
+    <div style="margin-bottom:8px"><div class="fl">상태</div>
+      <select id="pf-status">${statusOpts}</select>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="fl" style="margin-bottom:6px">색상</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">${swatchHTML(selColor)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="${p?`saveProject('${p.id}')`:'createProject()'}">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`;
+}
+
+function openAddProject(){
+  document.getElementById('modal-body').innerHTML=projectFormHTML(null);
+  openModal('사업 추가');
+}
+function openEditProject(id){
+  const p=pj(id);if(!p)return;
+  document.getElementById('modal-body').innerHTML=projectFormHTML(p);
+  const idx=PALETTE.findIndex(pl=>pl.color===p.color);
+  if(idx>=0) setTimeout(()=>selectSwatch(idx),0);
+  openModal('사업 수정');
+}
+function createProject(){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){showToast('사업명을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const status=document.getElementById('pf-status').value;
+  const id='proj_'+Date.now();
+  projects.push({id,name,color:pal.color,status});
+  closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();
+  showToast(`${name} 추가됐어요`);
+}
+function saveProject(id){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){showToast('사업명을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const p=pj(id);if(!p)return;
+  p.name=name;p.color=pal.color;p.status=document.getElementById('pf-status').value;
+  closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
+  showToast('수정됐어요');
+}
+function deleteProject(id){
+  const p=pj(id);if(!p)return;
+  if(!confirm(`"${p.name}"을 삭제할까요?\n관련 업무 및 멤버 배정도 함께 제거됩니다.`))return;
+  projects=projects.filter(pr=>pr.id!==id);
+  tasks=tasks.filter(t=>t.project!==id);
+  assigns=assigns.filter(a=>a.projectId!==id);
+  events.forEach(e=>{if(e.project===id)e.project='';});
+  if(selProj===id)selProj='all';
+  buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal();
+  showToast(`${p.name} 삭제됐어요`);
+}
+
 function goPage(p){
   ['cal','overview','members','personal','setup'].forEach(id=>{
     document.getElementById('page-'+id).classList.toggle('active',id===p);
@@ -978,7 +1071,7 @@ function goPage(p){
   if(p==='personal'){refreshProjSelect();renderPersonalList();}
   if(p==='overview')renderOverview();
   if(p==='members')renderMembersPage();
-  if(p==='setup')renderMemberManageList();
+  if(p==='setup'){renderMemberManageList();renderProjectManageList();}
 }
 function openModal(t){document.getElementById('modal-title').textContent=t;document.getElementById('modal').classList.add('show');}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
