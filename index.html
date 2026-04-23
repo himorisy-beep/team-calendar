@@ -137,6 +137,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .mini-task{font-size:11px;padding:2px 8px;border-radius:10px;border:.5px solid var(--border2);background:var(--bg2);color:var(--text2);white-space:nowrap}
 .mini-task.doing{background:#E6F1FB;color:#185FA5;border-color:#B5D4F4}
 .mini-task.done{background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB}
+.mini-task.overdue{background:#FAECE7;color:#D85A30;border-color:#F09595}
 .gantt-wrap{overflow-x:auto}
 .gantt{min-width:700px}
 .gantt-header{display:flex;margin-bottom:2px}
@@ -412,12 +413,24 @@ function lighten(hex){
 }
 function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return `${dt.getMonth()+1}/${dt.getDate()}`;}
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+
+const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
 function isPast(dateStr){
   if(!dateStr) return false;
-  const y = today.getFullYear();
-  const m = String(today.getMonth()+1).padStart(2,'0');
-  const d = String(today.getDate()).padStart(2,'0');
+  // 7일 유예 기간 적용
+  const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+  const y = target.getFullYear();
+  const m = String(target.getMonth()+1).padStart(2,'0');
+  const d = String(target.getDate()).padStart(2,'0');
   return dateStr < `${y}-${m}-${d}`;
+}
+
+function isOverdue(t){
+  // 완료된 업무거나 기한이 없으면 지연이 아님
+  if(!t.end || t.status === '완료') return false;
+  // 종료일이 오늘보다 과거면 지연
+  return t.end < todayStr;
 }
 
 async function apiFetch(p){
@@ -603,7 +616,8 @@ function renderBoard(){
   vp.forEach(p=>{
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId));
     
-    const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast||!isPast(t.end)));
+    // 지연 업무는 hidePast와 상관없이 무조건 표시
+    const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast || !isPast(t.end) || t.status !== '완료'));
     const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
 
     const memberTags=projAssigns.map(a=>{
@@ -616,11 +630,14 @@ function renderBoard(){
       const a=mb(t.assignee);
       const bg=a?lighten(a.color):'#eee';
       const sc=STATUS_TAG[t.status]||'tag-sub';
+      const isOd = isOverdue(t);
+      const titleStyle = isOd ? 'color:#D85A30; font-weight:600;' : '';
+      const odBadge = isOd ? '<span style="color:#D85A30; font-size:10px; margin-right:4px;">[지연]</span>' : '';
       return `<div class="task-row">
         <div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${bg};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${a.name}</span>`:'<span style="font-size:12px;color:var(--text3)">미배정</span>'}</div>
-        <div class="task-title" title="${t.title}" style="cursor:pointer;" onclick="showTask('${t.id}')">${t.title}</div>
+        <div class="task-title" title="${t.title}" style="cursor:pointer; ${titleStyle}" onclick="showTask('${t.id}')">${odBadge}${t.title}</div>
         <span class="tag ${sc}" style="font-size:10px">${t.status}</span>
-        <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
+        <div class="task-dates" style="${isOd?'color:#D85A30;font-weight:600;':''}">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
       </div>`;
     }).join('');
 
@@ -675,7 +692,13 @@ function renderGantt(){
   const allTasks=combined.filter(t=>{
     if(t.assignee !== 'all' && hiddenMb.has(t.assignee))return false;
     if(selProj!=='all'&&t.project!==selProj)return false;
-    if(hidePast && isPast(t.end))return false;
+    if(hidePast) {
+      if(t.isEvent) {
+        if(isPast(t.end)) return false;
+      } else {
+        if(isPast(t.end) && t.status === '완료') return false;
+      }
+    }
     return t.start&&t.end;
   });
   
@@ -722,15 +745,18 @@ function renderGantt(){
         ? `<div class="av" style="width:16px;height:16px;font-size:8px;background:${bg};color:${a.color};flex-shrink:0">${ini(a.name)}</div>`
         : (t.assignee === 'all' ? `<div class="av" style="width:16px;height:16px;font-size:8px;background:#eee;color:#888;flex-shrink:0">전체</div>` : '');
 
+      const isOd = !t.isEvent && isOverdue(t);
+      const barBg = isOd ? '#D85A30' : p.color;
+
       h+=`<div class="gantt-row">
         <div class="gantt-label" style="width:200px">
           ${avHtml}
-          <span class="gantt-label-name">${t.title}</span>
+          <span class="gantt-label-name" style="${isOd?'color:#D85A30;font-weight:600;':''}">${isOd?'[지연] ':''}${t.title}</span>
         </div>
         <div class="gantt-bar-area">
           ${dayArr.map((_,i)=>`<div class="gantt-bg-day" style="left:${(i/totalDays*100).toFixed(2)}%;width:${(1/totalDays*100).toFixed(2)}%"></div>`).join('')}
           <div class="gantt-today-line" style="left:${todayPct.toFixed(2)}%"></div>
-          <div class="gantt-bar" style="left:${left};width:${width};background:${p.color}; opacity:${t.isEvent ? '0.7' : '1'};" onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}" title="${t.title}">${t.title}</div>
+          <div class="gantt-bar" style="left:${left};width:${width};background:${barBg}; opacity:${t.isEvent ? '0.7' : '1'};" onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}" title="${t.title}">${isOd?'[지연] ':''}${t.title}</div>
         </div>
       </div>`;
     });
@@ -755,12 +781,14 @@ function renderMembersPage(){
     const projRows=mAssigns.map(a=>{
       const p=pj(a.projectId);if(!p)return '';
       
-      const mTasks=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)));
+      const mTasks=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast || !isPast(t.end) || t.status !== '완료'));
       const mWorkEvents=events.filter(e=>e.who===m2.id && e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && (!hidePast||!isPast(e.end)));
       
       const taskHtml = mTasks.map(t=>{
-        const cls=t.status==='진행중'?'doing':t.status==='완료'?'done':'';
-        return `<span class="mini-task ${cls}" onclick="showTask('${t.id}')" title="${t.start}~${t.end}">${t.title}</span>`;
+        const isOd = isOverdue(t);
+        let cls = t.status==='진행중'?'doing':(t.status==='완료'?'done':'');
+        if(isOd) cls = 'overdue';
+        return `<span class="mini-task ${cls}" onclick="showTask('${t.id}')" title="${t.start}~${t.end}">${isOd?'[지연] ':''}${t.title}</span>`;
       });
       
       const eventHtml = mWorkEvents.map(e=>{
