@@ -13,6 +13,15 @@
 }
 @media(prefers-color-scheme:dark){
   :root{--bg:#1c1c1c;--bg2:#242424;--bg3:#2a2a28;--text:#f0efe9;--text2:#9a9a94;--text3:#606060;--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16)}
+  .ev-vacation{background:#085041!important;color:#9FE1CB!important}
+  .ev-work{background:#0C447C!important;color:#B5D4F4!important}
+  .ev-trip{background:#633806!important;color:#FAC775!important}
+  .ev-meeting{background:#3C3489!important;color:#CECBF6!important}
+  .ev-personal{background:#444!important;color:#ccc!important}
+  .tag-vacation{background:#085041!important;color:#9FE1CB!important}
+  .tag-work{background:#0C447C!important;color:#B5D4F4!important}
+  .tag-trip{background:#633806!important;color:#FAC775!important}
+  .tag-meeting{background:#3C3489!important;color:#CECBF6!important}
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
@@ -52,6 +61,14 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);transition:all .12s}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .tag{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
+
+/* 이벤트 색상 강제 지정 (글자만 뜨는 문제 해결) */
+.ev-vacation{background:#E1F5EE;color:#0F6E56}
+.ev-work{background:#E6F1FB;color:#185FA5}
+.ev-trip{background:#FAEEDA;color:#854F0B}
+.ev-meeting{background:#EEEDFE;color:#3C3489}
+.ev-personal{background:#F1EFE8;color:#5F5E5A}
+
 .tag-vacation{background:#E1F5EE;color:#0F6E56}
 .tag-work{background:#E6F1FB;color:#185FA5}
 .tag-trip{background:#FAEEDA;color:#854F0B}
@@ -59,12 +76,11 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .tag-personal{background:#F1EFE8;color:#5F5E5A}
 .tag-project{background:#EAF3DE;color:#2E5A0E}
 .tag-sub{background:#F1EFE8;color:#5F5E5A}
-.tag-todo{background:#F1EFE8;color:#5F5E5A}
 .tag-doing{background:#E6F1FB;color:#185FA5}
 .tag-done{background:#E1F5EE;color:#0F6E56}
+
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .form-row.full{grid-template-columns:1fr}
-.form-row.three{grid-template-columns:1fr 1fr 1fr}
 .fl{font-size:11px;color:var(--text2);margin-bottom:4px}
 input,select,textarea{width:100%;padding:7px 10px;border:.5px solid var(--border2);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;transition:border-color .12s}
 input:focus,select:focus{outline:none;border-color:#378ADD}
@@ -75,7 +91,6 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .toggle.on::after{left:18px}
 .sub-row{display:none}.sub-row.show{display:block}
 .filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.divider{border:none;border-top:.5px solid var(--border);margin:16px 0}
 .empty{padding:2rem;text-align:center;color:var(--text3);font-size:13px}
 
 .cal-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:1px;background:var(--border);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden; width:100%;}
@@ -95,6 +110,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .li-title{font-size:14px;font-weight:500;margin-bottom:3px}
 .li-meta{font-size:12px;color:var(--text2)}
 .tag-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+
 .overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:900px){.overview-grid{grid-template-columns:1fr}}
 .proj-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden}
@@ -109,6 +125,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .task-assignee{display:flex;align-items:center;gap:5px;flex-shrink:0;min-width:72px}
 .task-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-dates{font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap}
+
 .member-overview{display:flex;flex-direction:column;gap:10px}
 .member-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden}
 .member-card-header{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:.5px solid var(--border)}
@@ -387,10 +404,10 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 <div class="toast" id="toast"></div>
 
 <script>
+// 1. 공통 상수 및 유틸리티 설정
 const TL = {vacation:'휴가',work:'업무',trip:'출장',meeting:'회의',personal:'개인'};
 const TC = {vacation:'ev-vacation',work:'ev-work',trip:'ev-trip',meeting:'ev-meeting',personal:'ev-personal'};
 const TT = {vacation:'tag-vacation',work:'tag-work',trip:'tag-trip',meeting:'tag-meeting',personal:'tag-personal'};
-const TV = {vacation:'#1D9E75',work:'#378ADD',trip:'#EF9F27',meeting:'#533AB7',personal:'#888'};
 const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','완료':'tag-done'};
 
 const SK = 'tc2_';
@@ -428,8 +445,7 @@ function lighten(hex){
 
 function parseDateSafely(dStr) {
   if (!dStr) return new Date(0);
-  let str = String(dStr).trim();
-  str = str.replace(/\(.*\)/g, '').trim();
+  let str = String(dStr).trim().replace(/\(.*\)/g, '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T00:00:00');
   const dt = new Date(str);
   if (!isNaN(dt.getTime())) return dt;
@@ -455,10 +471,8 @@ function fmtDateFull(d) {
 const todayStr = fmtDateFull(today);
 
 function inDay(e,y,m,d){
-  const s = parseDateSafely(e.start);
-  s.setHours(0,0,0,0);
-  const en = parseDateSafely(e.end || e.start);
-  en.setHours(23,59,59,999);
+  const s = parseDateSafely(e.start); s.setHours(0,0,0,0);
+  const en = parseDateSafely(e.end || e.start); en.setHours(23,59,59,999);
   const day = new Date(y,m,d);
   return day >= s && day <= en;
 }
@@ -472,11 +486,11 @@ function isPast(dateStr){
 
 function isOverdue(t){
   if(!t.end || t.status === '완료') return false;
-  const en = parseDateSafely(t.end);
-  en.setHours(23,59,59,999);
+  const en = parseDateSafely(t.end); en.setHours(23,59,59,999);
   return en < today;
 }
 
+// 2. 백엔드 통신(API) 로직
 async function apiFetch(p){
   if(!apiUrl)throw new Error('no_api');
   const r=await fetch(apiUrl+'?'+new URLSearchParams(p));
@@ -489,7 +503,6 @@ async function apiPost(b){
   if(!r.ok)throw new Error('HTTP '+r.status);
   return r.json();
 }
-
 async function apiSave(body, onSuccess){
   if(!apiUrl){ if(onSuccess) onSuccess(); return true; }
   showToast('저장 중...');
@@ -551,47 +564,11 @@ function refreshAll(){
   renderMembersPage();
   renderPersonalList();
   renderTodos();
-  renderMemberManageList(); // 설정 탭 렌더링 호출 복구
-  renderProjectManageList(); // 설정 탭 렌더링 호출 복구
+  renderMemberManageList(); // 필수 복원 함수
+  renderProjectManageList(); // 필수 복원 함수
 }
 
-window.addTodo = function(type, text) {
-  if(!text.trim()) return;
-  const newTodo = { action: 'addTodo', who: selfId, type, text: text.trim(), date: todayStr };
-  apiSave(newTodo, () => { document.getElementById('todo-'+type+'-in').value = ''; });
-};
-window.toggleTodo = function(id) {
-  const t = todos.find(x => String(x.id) === String(id));
-  if(!t) return;
-  const nextDone = t.done === "TRUE" ? "FALSE" : "TRUE";
-  apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: nextDone, date: t.date });
-};
-window.deleteTodo = function(id) {
-  if(!confirm('할 일을 삭제할까요?')) return;
-  apiSave({ action: 'deleteTodo', id });
-};
-function renderTodos() {
-  const mustList = document.getElementById('todo-must-list');
-  const shouldList = document.getElementById('todo-should-list');
-  if(!mustList || !shouldList) return;
-
-  let mh='', sh='';
-  const myTodos = todos.filter(t => String(t.who) === String(selfId));
-  myTodos.forEach(t => {
-    const isDone = t.done === "TRUE";
-    const isOld = (!isDone && t.date < todayStr);
-    const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;">[이월]</span> ` : '';
-    const html = `<div class="todo-item ${isDone?'done':''}">
-      <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> 
-      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${t.text}">${warn}${t.text}</span>
-      <button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button>
-    </div>`;
-    if(t.type === 'must') mh += html; else sh += html;
-  });
-  mustList.innerHTML = mh || '<div class="empty" style="padding:10px; font-size:11px;">핵심 할일이 없습니다</div>';
-  shouldList.innerHTML = sh || '<div class="empty" style="padding:10px; font-size:11px;">서브 할일이 없습니다</div>';
-}
-
+// 3. UI 렌더링 로직
 function buildSidebar(){
   const mc=document.getElementById('sb-members'); mc.innerHTML='';
   members.forEach(m=>{
@@ -635,6 +612,7 @@ function renderCal(){
   const mt=document.getElementById('month-title');
   if(mt) mt.textContent=`${curY}년 ${curM+1}월`;
 }
+
 function renderCalGrid(){
   const fd=new Date(curY,curM,1).getDay(),ld=new Date(curY,curM+1,0).getDate();
   const vis=getVisEv();
@@ -650,22 +628,26 @@ function renderCalGrid(){
     h+=`<div class="dn">${d}</div>`;
     show.forEach(e=>{
       const m2=mb(e.who); const nm=e.who==='all'?'전체':(m2?m2.name:'');
-      const bgCol = TV[e.type] || '#ccc'; 
-      h+=`<div class="ep" style="background:${bgCol}; color:#fff;" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
+      // 원래 디자인 복구: TC[e.type] CSS 클래스를 이용해 색상 렌더링
+      const cls = TC[e.type] || ''; 
+      h+=`<div class="ep ${cls}" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
     });
     if(more>0)h+=`<div class="more-p">+${more}</div>`;
     h+='</div>';
   }
   document.getElementById('cal-container').innerHTML=h+'</div>';
 }
+
 function renderCalList(){
   const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start) - parseDateSafely(b.start));
   if(!vis.length){document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>';return;}
   let h='<div class="list-wrap">';
   vis.forEach(e=>{
     const m2=mb(e.who),p=pj(e.project||'');
+    // 원래 점(dot) 색상을 위한 안전 처리
+    const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
     h+=`<div class="li" onclick="showEv('${e.id}')">
-      <div class="li-dot" style="background:${TV[e.type]||'#888'}"></div>
+      <div class="li-dot" style="background:${bgCol}"></div>
       <div class="li-info">
         <div class="li-title">${e.title}</div>
         <div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2?m2.name:e.who)}</div>
@@ -787,7 +769,7 @@ function renderMembersPage(){
       const mProjEvents=allMemberEvents.filter(e => e.project === p.id);
       const tHtml = mTasks.map(t=>{ const isOd = isOverdue(t); return `<span class="mini-task ${isOd?'overdue':(t.status==='진행중'?'doing':(t.status==='완료'?'done':''))}" onclick="showTask('${t.id}')">${isOd?'[지연] ':''}${t.title}</span>`; }).join('');
       const eHtml = mProjEvents.map(e=> `<span class="mini-task doing" onclick="showEv('${e.id}')">${e.title}</span>`).join('');
-      return `<div class="proj-row" style="flex-wrap:wrap"><div class="proj-row-name" style="flex:1 1 100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><div class="dot" style="background:${p.color}"></div>${p.name}</div><div class="proj-tasks" style="width:100%">${tHtml+eHtml || '<span style="font-size:12px;color:var(--text3)">내역 없음</span>'}</div></div>`;
+      return `<div class="proj-row" style="flex-wrap:wrap"><div class="proj-row-name" style="flex:1 1 100%; margin-bottom: 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><div class="dot" style="background:${p.color}"></div>${p.name}</div><div class="proj-tasks" style="width:100%">${tHtml+eHtml || '<span style="font-size:12px;color:var(--text3)">내역 없음</span>'}</div></div>`;
     }).join('');
 
     const otherEvents = allMemberEvents.filter(e => !e.project).map(e => `<span class="mini-task" style="background:var(--bg2)" onclick="showEv('${e.id}')">${e.title}</span>`).join('');
@@ -806,7 +788,8 @@ function renderPersonalList(){
   let h='';
   mine.forEach(e=>{
     const p=pj(e.project||'');
-    h+=`<div class="li" style="cursor:default"><div class="li-dot" style="background:${TV[e.type]||'#888'}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${p?`<span class="tag tag-project">${p.name}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex; gap:4px; flex-shrink:0;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="deleteEv('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`;
+    const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
+    h+=`<div class="li" style="cursor:default"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${p?`<span class="tag tag-project">${p.name}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex; gap:4px; flex-shrink:0;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="deleteEv('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`;
   });
   document.getElementById('personal-list').innerHTML=h;
 }
@@ -860,9 +843,13 @@ function showTask(id){
 function dayClick(d){
   const vis=getVisEv().filter(e=>inDay(e,curY,curM,d)); if(!vis.length)return;
   let h='<div class="list-wrap">';
-  vis.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${TV[e.type]}"></div><div class="li-info"><div class="li-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.title}</div></div></div>`; });
+  vis.forEach(e=>{ 
+    const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
+    h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.title}</div></div></div>`; 
+  });
   document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`);
 }
+
 function toggleHidePast(val){ hidePast=val; renderOverview(); renderMembersPage(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); }
 function toggleProj(id){ selProj=selProj===id?'all':id; buildSidebar(); renderCal(); renderOverview(); renderMembersPage(); }
@@ -873,6 +860,7 @@ function filterP(f){ pFilter=f; ['all','public','private'].forEach(k=>document.g
 function openChangeSelf(){ const opts=members.map(m=>`<option value="${m.id}"${m.id===selfId?' selected':''}>${m.name}</option>`).join(''); document.getElementById('modal-body').innerHTML=`<select id="self-sel" style="margin-bottom:14px">${opts}</select><button class="btn btn-primary" style="width:100%" onclick="changeSelf()">확인</button>`; openModal('계정 변경'); }
 function changeSelf(){ selfId=document.getElementById('self-sel').value; ls('selfId',selfId); closeModal(); buildSidebar(); renderPersonalList(); renderTodos(); }
 async function saveApiUrl(){ apiUrl=document.getElementById('api-url-input').value.trim(); ls('apiUrl',apiUrl); await loadAll(); }
+
 function goPage(p){
   if(p!=='personal') resetEventForm();
   ['cal','overview','members','personal','todo','setup'].forEach(id=>{
@@ -880,9 +868,120 @@ function goPage(p){
     const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p);
   });
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); }
-  if(p==='personal') renderPersonalList(); if(p==='overview') renderOverview(); if(p==='members') renderMembersPage(); if(p==='todo') renderTodos();
+  if(p==='personal') renderPersonalList(); 
+  if(p==='overview') renderOverview(); 
+  if(p==='members') renderMembersPage(); 
+  if(p==='todo') renderTodos();
   if(p==='setup') { renderMemberManageList(); renderProjectManageList(); }
 }
+
+window.addTodo = function(type, text) {
+  if(!text.trim()) return;
+  const newTodo = { action: 'addTodo', who: selfId, type, text: text.trim(), date: todayStr };
+  apiSave(newTodo, () => { document.getElementById('todo-'+type+'-in').value = ''; });
+};
+window.toggleTodo = function(id) {
+  const t = todos.find(x => String(x.id) === String(id));
+  if(!t) return;
+  const nextDone = t.done === "TRUE" ? "FALSE" : "TRUE";
+  apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: nextDone, date: t.date });
+};
+window.deleteTodo = function(id) {
+  if(!confirm('할 일을 삭제할까요?')) return;
+  apiSave({ action: 'deleteTodo', id });
+};
+
+// 4. 설정 탭 관리 (팀원, 사업) - 필수 복원 영역
+function renderMemberManageList(){
+  document.getElementById('mb-count').textContent=`(${members.length}명)`;
+  if(!members.length){document.getElementById('member-manage-list').innerHTML='<div class="empty">팀원이 없습니다</div>';return;}
+  let h='';
+  members.forEach(m2=>{
+    const bg=lighten(m2.color);
+    const isSelf=m2.id===selfId;
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)"><div class="av" style="width:30px;height:30px;font-size:11px;background:${bg};color:${m2.color};flex-shrink:0">${ini(m2.name)}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${m2.name}${isSelf?` <span style="font-size:10px;color:var(--text3);font-weight:400">(나)</span>`:''}</div><div style="font-size:11px;color:var(--text2)">${m2.role||'역할 없음'}</div></div><div style="display:flex;gap:5px;flex-shrink:0"><button class="btn btn-secondary btn-sm" onclick="openEditMember('${m2.id}')">수정</button>${!isSelf?`<button class="btn-danger-sm" onclick="deleteMember('${m2.id}')">삭제</button>`:''}</div></div>`;
+  });
+  document.getElementById('member-manage-list').innerHTML=h;
+}
+
+function swatchHTML(selectedColor){ return PALETTE.map((p,i)=>`<div onclick="selectSwatch(${i})" data-sw="${i}" style="width:22px;height:22px;border-radius:50%;background:${p.color};cursor:pointer;border:2px solid ${p.color===selectedColor?'var(--text)':'transparent'};transition:border-color .12s;flex-shrink:0"></div>`).join(''); }
+function selectSwatch(i){ document.querySelectorAll('[data-sw]').forEach((el,idx)=>{ el.style.borderColor=idx===i?'var(--text)':PALETTE[idx].color; }); }
+function getSelectedPalette(){ const swatches=document.querySelectorAll('[data-sw]'); for(let i=0;i<swatches.length;i++){ if(swatches[i].style.borderColor==='var(--text)'||swatches[i].style.borderColor===getComputedStyle(document.documentElement).getPropertyValue('--text').trim()) return PALETTE[i]; } return PALETTE[0]; }
+
+function memberFormHTML(m2){
+  const selColor=m2?m2.color:PALETTE[0].color;
+  return `<div style="margin-bottom:8px"><div class="fl">이름</div><input type="text" id="mf-name" value="${m2?m2.name:''}" placeholder="홍길동"></div><div style="margin-bottom:8px"><div class="fl">역할</div><input type="text" id="mf-role" value="${m2?m2.role||'':''}" placeholder="개발자 등"></div><div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">아바타 색상</div><div style="display:flex;gap:7px;flex-wrap:wrap">${swatchHTML(selColor)}</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="${m2?`saveMember('${m2.id}')`:'createMember()'}">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
+}
+function openAddMember(){ document.getElementById('modal-body').innerHTML=memberFormHTML(null); openModal('팀원 추가'); }
+function openEditMember(id){ const m2=mb(id);if(!m2)return; document.getElementById('modal-body').innerHTML=memberFormHTML(m2); const idx=PALETTE.findIndex(p=>p.color===m2.color); if(idx>=0) setTimeout(()=>selectSwatch(idx),0); openModal('팀원 수정'); }
+function createMember(){
+  const name=document.getElementById('mf-name').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const id='mb_'+Date.now();
+  const newMb={id,name,color:pal.color,bg:pal.bg,role:document.getElementById('mf-role').value.trim()};
+  apiSave({action:'addMember',...newMb}, ()=>{ members.push(newMb); closeModal();buildSidebar();renderMemberManageList();refreshProjSelect(); showToast(`${name} 님이 추가됐어요`); });
+}
+function saveMember(id){
+  const name=document.getElementById('mf-name').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const m2=mb(id);if(!m2)return;
+  const updated={...m2,name,color:pal.color,bg:pal.bg||lighten(pal.color),role:document.getElementById('mf-role').value.trim()};
+  apiSave({action:'updateMember',...updated}, ()=>{ Object.assign(m2,updated); closeModal();buildSidebar();renderMemberManageList();renderMembersPage();renderCal(); showToast('수정됐어요'); });
+}
+function deleteMember(id){
+  const m2=mb(id);if(!m2)return;
+  if(!confirm(`${m2.name} 님을 삭제할까요?`))return;
+  apiSave({action:'deleteMember',id}, ()=>{ members=members.filter(m=>m.id!==id); events=events.filter(e=>e.who!==id); tasks=tasks.filter(t=>t.assignee!==id); assigns=assigns.filter(a=>a.memberId!==id); buildSidebar();renderMemberManageList();renderMembersPage();renderCal();renderOverview(); showToast(`${m2.name} 님이 삭제됐어요`); });
+}
+
+function renderProjectManageList(){
+  document.getElementById('proj-count').textContent=`(${projects.length}개)`;
+  if(!projects.length){document.getElementById('project-manage-list').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
+  let h='';
+  projects.forEach(p=>{
+    const memberCount=assigns.filter(a=>a.projectId===p.id).length;
+    const taskCount=tasks.filter(t=>t.project===p.id).length;
+    const durationStr = (p.start && p.end) ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정';
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;flex-shrink:0"><div class="dot" style="background:${p.color};width:10px;height:10px"></div></div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">${durationStr} · 멤버 ${memberCount}명 · 업무 ${taskCount}건${p.status?' · '+p.status:''}</div></div><div style="display:flex;gap:5px;flex-shrink:0"><button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">멤버 배정</button><button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button><button class="btn-danger-sm" onclick="deleteProject('${p.id}')">삭제</button></div></div>`;
+  });
+  document.getElementById('project-manage-list').innerHTML=h;
+}
+function projectFormHTML(p){
+  const selColor=p?p.color:PALETTE[0].color;
+  const statusOpts=['진행중','완료','보류'].map(s=>`<option value="${s}"${p&&p.status===s?' selected':''}>${s}</option>`).join('');
+  return `<div style="margin-bottom:8px"><div class="fl">사업명</div><input type="text" id="pf-name" value="${p?p.name:''}" placeholder="사업명 입력"></div><div class="form-row" style="margin-bottom:8px"><div><div class="fl">시작일</div><input type="date" id="pf-start" value="${p?fmtDateFull(p.start)||'':''}"></div><div><div class="fl">종료일</div><input type="date" id="pf-end" value="${p?fmtDateFull(p.end)||'':''}"></div></div><div style="margin-bottom:8px"><div class="fl">상태</div><select id="pf-status">${statusOpts}</select></div><div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">색상</div><div style="display:flex;gap:7px;flex-wrap:wrap">${swatchHTML(selColor)}</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="${p?`saveProject('${p.id}')`:'createProject()'}">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
+}
+function openAddProject(){ document.getElementById('modal-body').innerHTML=projectFormHTML(null); openModal('사업 추가'); }
+function openEditProject(id){ const p=pj(id);if(!p)return; document.getElementById('modal-body').innerHTML=projectFormHTML(p); const idx=PALETTE.findIndex(pl=>pl.color===p.color); if(idx>=0) setTimeout(()=>selectSwatch(idx),0); openModal('사업 수정'); }
+function createProject(){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){showToast('사업명을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const status=document.getElementById('pf-status').value;
+  const start=document.getElementById('pf-start').value;
+  const end=document.getElementById('pf-end').value;
+  const id='proj_'+Date.now();
+  const newP={id,name,color:pal.color,status,start,end};
+  apiSave({action:'addProject',...newP}, ()=>{ projects.push(newP); closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview(); showToast(`${name} 추가됐어요`); });
+}
+function saveProject(id){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){showToast('사업명을 입력해주세요');return;}
+  const pal=getSelectedPalette();
+  const p=pj(id);if(!p)return;
+  const start=document.getElementById('pf-start').value;
+  const end=document.getElementById('pf-end').value;
+  const updated={...p,name,color:pal.color,status:document.getElementById('pf-status').value,start,end};
+  apiSave({action:'updateProject',...updated}, ()=>{ Object.assign(p,updated); closeModal();buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal(); showToast('수정됐어요'); });
+}
+function deleteProject(id){
+  const p=pj(id);if(!p)return;
+  if(!confirm(`"${p.name}"을 삭제할까요?`))return;
+  apiSave({action:'deleteProject',id}, ()=>{ projects=projects.filter(pr=>pr.id!==id); tasks=tasks.filter(t=>t.project!==id); assigns=assigns.filter(a=>a.projectId!==id); events.forEach(e=>{if(e.project===id)e.project='';}); buildSidebar();renderProjectManageList();refreshProjSelect();renderOverview();renderMembersPage();renderCal(); showToast(`${p.name} 삭제됐어요`); });
+}
+
 function openModal(t){ document.getElementById('modal-title').textContent=t; document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
 document.getElementById('modal').onclick=function(e){if(e.target===this)closeModal();};
