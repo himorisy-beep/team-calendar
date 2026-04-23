@@ -13,15 +13,6 @@
 }
 @media(prefers-color-scheme:dark){
   :root{--bg:#1c1c1c;--bg2:#242424;--bg3:#2a2a28;--text:#f0efe9;--text2:#9a9a94;--text3:#606060;--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16)}
-  .ev-vacation{background:#085041!important;color:#9FE1CB!important}
-  .ev-work{background:#0C447C!important;color:#B5D4F4!important}
-  .ev-trip{background:#633806!important;color:#FAC775!important}
-  .ev-meeting{background:#3C3489!important;color:#CECBF6!important}
-  .ev-personal{background:#444!important;color:#ccc!important}
-  .tag-vacation{background:#085041!important;color:#9FE1CB!important}
-  .tag-work{background:#0C447C!important;color:#B5D4F4!important}
-  .tag-trip{background:#633806!important;color:#FAC775!important}
-  .tag-meeting{background:#3C3489!important;color:#CECBF6!important}
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
@@ -62,7 +53,6 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .tag{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
 
-/* 이벤트 색상 강제 지정 (글자만 뜨는 문제 해결) */
 .ev-vacation{background:#E1F5EE;color:#0F6E56}
 .ev-work{background:#E6F1FB;color:#185FA5}
 .ev-trip{background:#FAEEDA;color:#854F0B}
@@ -76,6 +66,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .tag-personal{background:#F1EFE8;color:#5F5E5A}
 .tag-project{background:#EAF3DE;color:#2E5A0E}
 .tag-sub{background:#F1EFE8;color:#5F5E5A}
+.tag-todo{background:#F1EFE8;color:#5F5E5A}
 .tag-doing{background:#E6F1FB;color:#185FA5}
 .tag-done{background:#E1F5EE;color:#0F6E56}
 
@@ -404,10 +395,10 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 <div class="toast" id="toast"></div>
 
 <script>
-// 1. 공통 상수 및 유틸리티 설정
 const TL = {vacation:'휴가',work:'업무',trip:'출장',meeting:'회의',personal:'개인'};
 const TC = {vacation:'ev-vacation',work:'ev-work',trip:'ev-trip',meeting:'ev-meeting',personal:'ev-personal'};
 const TT = {vacation:'tag-vacation',work:'tag-work',trip:'tag-trip',meeting:'tag-meeting',personal:'tag-personal'};
+const TV = {vacation:'#1D9E75',work:'#378ADD',trip:'#EF9F27',meeting:'#533AB7',personal:'#888'};
 const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','완료':'tag-done'};
 
 const SK = 'tc2_';
@@ -490,7 +481,6 @@ function isOverdue(t){
   return en < today;
 }
 
-// 2. 백엔드 통신(API) 로직
 async function apiFetch(p){
   if(!apiUrl)throw new Error('no_api');
   const r=await fetch(apiUrl+'?'+new URLSearchParams(p));
@@ -568,7 +558,47 @@ function refreshAll(){
   renderProjectManageList(); // 필수 복원 함수
 }
 
-// 3. UI 렌더링 로직
+window.addTodo = function(type, text) {
+  if(!text.trim()) return;
+  const newTodo = { action: 'addTodo', who: selfId, type, text: text.trim(), date: todayStr };
+  apiSave(newTodo, () => { document.getElementById('todo-'+type+'-in').value = ''; });
+};
+window.toggleTodo = function(id) {
+  const t = todos.find(x => String(x.id) === String(id));
+  if(!t) return;
+  const nextDone = t.done === "TRUE" ? "FALSE" : "TRUE";
+  apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: nextDone, date: t.date });
+};
+window.deleteTodo = function(id) {
+  if(!confirm('할 일을 삭제할까요?')) return;
+  apiSave({ action: 'deleteTodo', id });
+};
+
+// 🔥 누락되었던 핵심 함수 복원 (할 일 렌더링 로직)
+function renderTodos() {
+  const mustList = document.getElementById('todo-must-list');
+  const shouldList = document.getElementById('todo-should-list');
+  if(!mustList || !shouldList) return;
+
+  let mh='', sh='';
+  const myTodos = todos.filter(t => String(t.who) === String(selfId));
+  
+  myTodos.forEach(t => {
+    const isDone = t.done === "TRUE";
+    const isOld = (!isDone && t.date < todayStr);
+    const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
+    const html = `<div class="todo-item ${isDone?'done':''}">
+      <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> 
+      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${t.text}">${warn}${t.text}</span>
+      <button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button>
+    </div>`;
+    if(t.type === 'must') mh += html; else sh += html;
+  });
+  
+  mustList.innerHTML = mh || '<div class="empty" style="padding:10px; font-size:11px;">핵심 할일이 없습니다</div>';
+  shouldList.innerHTML = sh || '<div class="empty" style="padding:10px; font-size:11px;">서브 할일이 없습니다</div>';
+}
+
 function buildSidebar(){
   const mc=document.getElementById('sb-members'); mc.innerHTML='';
   members.forEach(m=>{
@@ -628,7 +658,6 @@ function renderCalGrid(){
     h+=`<div class="dn">${d}</div>`;
     show.forEach(e=>{
       const m2=mb(e.who); const nm=e.who==='all'?'전체':(m2?m2.name:'');
-      // 원래 디자인 복구: TC[e.type] CSS 클래스를 이용해 색상 렌더링
       const cls = TC[e.type] || ''; 
       h+=`<div class="ep ${cls}" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
     });
@@ -644,7 +673,6 @@ function renderCalList(){
   let h='<div class="list-wrap">';
   vis.forEach(e=>{
     const m2=mb(e.who),p=pj(e.project||'');
-    // 원래 점(dot) 색상을 위한 안전 처리
     const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
     h+=`<div class="li" onclick="showEv('${e.id}')">
       <div class="li-dot" style="background:${bgCol}"></div>
@@ -875,23 +903,6 @@ function goPage(p){
   if(p==='setup') { renderMemberManageList(); renderProjectManageList(); }
 }
 
-window.addTodo = function(type, text) {
-  if(!text.trim()) return;
-  const newTodo = { action: 'addTodo', who: selfId, type, text: text.trim(), date: todayStr };
-  apiSave(newTodo, () => { document.getElementById('todo-'+type+'-in').value = ''; });
-};
-window.toggleTodo = function(id) {
-  const t = todos.find(x => String(x.id) === String(id));
-  if(!t) return;
-  const nextDone = t.done === "TRUE" ? "FALSE" : "TRUE";
-  apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: nextDone, date: t.date });
-};
-window.deleteTodo = function(id) {
-  if(!confirm('할 일을 삭제할까요?')) return;
-  apiSave({ action: 'deleteTodo', id });
-};
-
-// 4. 설정 탭 관리 (팀원, 사업) - 필수 복원 영역
 function renderMemberManageList(){
   document.getElementById('mb-count').textContent=`(${members.length}명)`;
   if(!members.length){document.getElementById('member-manage-list').innerHTML='<div class="empty">팀원이 없습니다</div>';return;}
@@ -907,7 +918,6 @@ function renderMemberManageList(){
 function swatchHTML(selectedColor){ return PALETTE.map((p,i)=>`<div onclick="selectSwatch(${i})" data-sw="${i}" style="width:22px;height:22px;border-radius:50%;background:${p.color};cursor:pointer;border:2px solid ${p.color===selectedColor?'var(--text)':'transparent'};transition:border-color .12s;flex-shrink:0"></div>`).join(''); }
 function selectSwatch(i){ document.querySelectorAll('[data-sw]').forEach((el,idx)=>{ el.style.borderColor=idx===i?'var(--text)':PALETTE[idx].color; }); }
 function getSelectedPalette(){ const swatches=document.querySelectorAll('[data-sw]'); for(let i=0;i<swatches.length;i++){ if(swatches[i].style.borderColor==='var(--text)'||swatches[i].style.borderColor===getComputedStyle(document.documentElement).getPropertyValue('--text').trim()) return PALETTE[i]; } return PALETTE[0]; }
-
 function memberFormHTML(m2){
   const selColor=m2?m2.color:PALETTE[0].color;
   return `<div style="margin-bottom:8px"><div class="fl">이름</div><input type="text" id="mf-name" value="${m2?m2.name:''}" placeholder="홍길동"></div><div style="margin-bottom:8px"><div class="fl">역할</div><input type="text" id="mf-role" value="${m2?m2.role||'':''}" placeholder="개발자 등"></div><div style="margin-bottom:14px"><div class="fl" style="margin-bottom:6px">아바타 색상</div><div style="display:flex;gap:7px;flex-wrap:wrap">${swatchHTML(selColor)}</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="${m2?`saveMember('${m2.id}')`:'createMember()'}">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
@@ -988,7 +998,55 @@ document.getElementById('modal').onclick=function(e){if(e.target===this)closeMod
 function showToast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
 function showStatus(m,t){ const el=document.getElementById('status-bar'); el.style.display='flex'; el.className='status-bar sb-'+t; el.innerHTML=(t==='loading'?'<div class="spinner"></div>':'')+m; }
 function hideStatus(){ document.getElementById('status-bar').style.display='none'; }
+
+function openManageProjectMembers(projectId){
+  const p = pj(projectId);
+  if(!p) return;
+  let h = `<div id="pm-list" style="margin-bottom:15px; max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">`;
+  const pAssigns = assigns.filter(a => a.projectId === projectId);
+  if(pAssigns.length === 0){ h += `<div class="empty" style="padding:1rem; border:.5px solid var(--border); border-radius:var(--r-sm)">배정된 멤버가 없습니다.</div>`; } 
+  else {
+    pAssigns.forEach(a => {
+      const m2 = mb(a.memberId);
+      if(!m2) return;
+      h += `<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border:.5px solid var(--border2); border-radius:var(--r-sm); background:var(--bg2);"><div style="display:flex; align-items:center; gap:8px;"><div class="av" style="background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div><div style="font-size:13px;"><b>${m2.name}</b> <span style="color:var(--text3); font-size:12px; margin-left:4px;">| ${a.role || '역할없음'}</span></div></div><button class="btn-danger-sm" onclick="removeProjectMember('${a.id}', '${projectId}')">해제</button></div>`;
+    });
+  }
+  h += `</div>`;
+  const unassigned = members.filter(m => !pAssigns.find(a => a.memberId === m.id));
+  const options = unassigned.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  h += `<div style="border-top:1px solid var(--border); padding-top:14px;"><div style="font-size:13px; font-weight:600; margin-bottom:10px;">새 멤버 배정</div>${unassigned.length > 0 ? `<div class="form-row"><div><div class="fl">팀원 선택</div><select id="pm-member-sel">${options}</select></div><div><div class="fl">담당 역할</div><input type="text" id="pm-role-input" placeholder="역할 입력"></div></div><button class="btn btn-primary" style="width:100%; margin-top:12px;" onclick="addProjectMember('${projectId}')">배정하기</button>` : `<div style="font-size:12px; color:var(--text3); text-align:center; padding:10px 0;">모든 팀원이 배정되어 있습니다.</div>`}</div>`;
+  document.getElementById('modal-body').innerHTML = h;
+  openModal(`[${p.name}] 참여 멤버 관리`);
+}
+
+function addProjectMember(projectId){
+  const memberId = document.getElementById('pm-member-sel').value;
+  const role = document.getElementById('pm-role-input').value.trim();
+  if(!memberId) return;
+  const id = 'asgn_' + Date.now();
+  const newAssign = { id, memberId, projectId, role };
+  apiSave({ action: 'addAssign', ...newAssign }, () => {
+    assigns.push(newAssign);
+    showToast('멤버가 사업에 배정되었습니다.');
+    openManageProjectMembers(projectId);
+    refreshAll();
+  });
+}
+
+function removeProjectMember(assignId, projectId){
+  if(!confirm('해당 팀원을 이 사업에서 해제하시겠습니까?')) return;
+  apiSave({ action: 'deleteAssign', id: assignId }, () => {
+    assigns = assigns.filter(a => a.id !== assignId);
+    showToast('배정이 해제되었습니다.');
+    openManageProjectMembers(projectId);
+    refreshAll();
+  });
+}
+
 if(apiUrl) document.getElementById('api-url-input').value=apiUrl;
+const _mt = document.getElementById('month-title');
+if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ()=>loadAll()); else loadAll();
 </script>
 </body>
