@@ -319,7 +319,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 </div>
 
 <div id="page-todo" class="page">
-  <div class="page-header"><span class="page-title">할일</span></div>
+  <div class="page-header"><span class="page-title">할일 (DB 연동)</span></div>
   <div class="overview-grid">
     <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; max-height:80vh;">
       <div class="card-title" style="color:#D85A30">🔥 Must Do (핵심 업무)</div>
@@ -426,21 +426,15 @@ function lighten(hex){
   return m[hex]||'#F1EFE8';
 }
 
-// 🔥 문자열로 깨진 날짜 데이터를 찰떡같이 파싱하는 안전장치
 function parseDateSafely(dStr) {
   if (!dStr) return new Date(0);
   let str = String(dStr).trim();
-  str = str.replace(/\(.*\)/g, '').trim(); // 한국 표준시 등 괄호 텍스트 제거
-  
+  str = str.replace(/\(.*\)/g, '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T00:00:00');
-  
   const dt = new Date(str);
   if (!isNaN(dt.getTime())) return dt;
-  
-  // 최후의 수단: 숫자 정규식 추출
   const match = str.match(/(20\d{2})[-/년 .]*(\d{1,2})[-/월 .]*(\d{1,2})/);
   if(match) return new Date(match[1], match[2]-1, match[3]);
-  
   return new Date(0);
 }
 
@@ -471,7 +465,7 @@ function inDay(e,y,m,d){
 
 function isPast(dateStr){
   if(!dateStr) return false;
-  const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)); // 7일 유예
+  const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
   const en = parseDateSafely(dateStr);
   return en < target;
 }
@@ -557,6 +551,8 @@ function refreshAll(){
   renderMembersPage();
   renderPersonalList();
   renderTodos();
+  renderMemberManageList(); // 설정 탭 렌더링 호출 복구
+  renderProjectManageList(); // 설정 탭 렌더링 호출 복구
 }
 
 window.addTodo = function(type, text) {
@@ -654,7 +650,7 @@ function renderCalGrid(){
     h+=`<div class="dn">${d}</div>`;
     show.forEach(e=>{
       const m2=mb(e.who); const nm=e.who==='all'?'전체':(m2?m2.name:'');
-      const bgCol = TV[e.type] || '#ccc'; // 강제 색상 지정으로 컬러 복구
+      const bgCol = TV[e.type] || '#ccc'; 
       h+=`<div class="ep" style="background:${bgCol}; color:#fff;" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
     });
     if(more>0)h+=`<div class="more-p">+${more}</div>`;
@@ -721,7 +717,6 @@ function renderBoard(){
       </div>`;
     }).join('');
 
-    // 날짜 깨짐 방지 적용 완료
     const durationStr = (p.start && p.end) ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정';
     const totalCount = projTasks.length + projEvents.length;
 
@@ -886,6 +881,7 @@ function goPage(p){
   });
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); }
   if(p==='personal') renderPersonalList(); if(p==='overview') renderOverview(); if(p==='members') renderMembersPage(); if(p==='todo') renderTodos();
+  if(p==='setup') { renderMemberManageList(); renderProjectManageList(); }
 }
 function openModal(t){ document.getElementById('modal-title').textContent=t; document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
