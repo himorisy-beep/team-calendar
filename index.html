@@ -32,7 +32,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .sidebar-overlay.show { display: block; }
 .sidebar{width:220px;background:var(--bg);border-right:.5px solid var(--border);padding:20px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{font-size:15px;font-weight:700;padding:0 6px}
-.logo-sub{font-size:12px;color:var(--text3);font-weight:400;margin-top:2px}
+.logo-sub{font-size:12px;color:var(--text3);font-weight:400;margin-top:2px;padding:0 6px}
 .sb-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;padding:0 6px;margin-bottom:6px}
 .sb-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px;border:none;background:none;color:var(--text2);font-size:13px;border-radius:var(--r-sm);cursor:pointer;text-align:left;transition:all .12s}
 .sb-btn:hover{background:var(--bg2);color:var(--text)}
@@ -603,10 +603,7 @@ function renderBoard(){
   vp.forEach(p=>{
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId));
     
-    // 업무 필터링
     const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast||!isPast(t.end)));
-    
-    // 일정 필터링 (work, meeting, trip)
     const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
 
     const memberTags=projAssigns.map(a=>{
