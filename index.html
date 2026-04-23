@@ -290,21 +290,16 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
       </select></div>
     </div>
     <div class="sub-row" id="sub-row" style="margin-bottom:8px">
-      <div class="fl">업무 세부 유형</div>
+      <div class="fl">세부 유형</div>
     <select id="ev-sub" onchange="onSubChange()">
-      <option value="">— 없음</option>
-      <option value="외근">외근</option>
-      <option value="연수">연수</option>
-      <option value="교육/세미나">교육/세미나</option>
-      <option value="custom">직접 입력</option>
-    </select>
+      </select>
       <div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="직접 입력"></div>
     </div>
     <div class="form-row full" style="margin-bottom:8px">
       <div><div class="fl">사업 (선택)</div><select id="ev-proj"></select></div>
     </div>
     <div class="toggle-row">
-      <div class="toggle" id="pub-toggle" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div>
       <span style="font-size:13px;color:var(--text2)">팀 캘린더에 공유</span>
     </div>
     
@@ -801,16 +796,44 @@ function resetEventForm(){
     if(el) el.value = '';
   });
   document.getElementById('ev-type').value = 'vacation';
-  document.getElementById('ev-sub').value = '';
   document.getElementById('ev-proj').value = '';
   document.getElementById('sub-custom').style.display = 'none';
-  document.getElementById('sub-row').classList.remove('show');
-  document.getElementById('pub-toggle').classList.remove('on');
+  
+  // 공유 토글 디폴트 ON 설정
+  document.getElementById('pub-toggle').classList.add('on');
+
+  // 유형 변경에 따른 세부 유형 초기화
+  onTypeChange();
 
   const submitBtn = document.getElementById('ev-submit-btn');
   const cancelBtn = document.getElementById('ev-cancel-btn');
   if(submitBtn) submitBtn.textContent = '추가';
   if(cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function onTypeChange(){
+  const t = document.getElementById('ev-type').value;
+  const subRow = document.getElementById('sub-row');
+  const subSel = document.getElementById('ev-sub');
+  const subCustom = document.getElementById('sub-custom');
+  
+  if(t === 'work' || t === 'vacation') {
+    subRow.classList.add('show');
+    if(t === 'work') {
+      subSel.innerHTML = '<option value="">— 없음</option><option value="외근">외근</option><option value="연수">연수</option><option value="교육/세미나">교육/세미나</option><option value="custom">직접 입력</option>';
+    } else {
+      // 휴가 세부 유형 추가 (연차, 오전반차, 오후반차)
+      subSel.innerHTML = '<option value="연차">연차</option><option value="오전반차">오전반차</option><option value="오후반차">오후반차</option><option value="custom">직접 입력</option>';
+    }
+  } else {
+    subRow.classList.remove('show');
+    subSel.innerHTML = '';
+    subCustom.style.display = 'none';
+  }
+}
+
+function onSubChange(){
+  document.getElementById('sub-custom').style.display = document.getElementById('ev-sub').value === 'custom' ? 'block' : 'none';
 }
 
 function openEditEvent(id){
@@ -826,27 +849,21 @@ function openEditEvent(id){
   document.getElementById('ev-proj').value = e.project || '';
   document.getElementById('pub-toggle').classList.toggle('on', !!e.public);
 
-  if(e.type === 'work'){
-    document.getElementById('sub-row').classList.add('show');
-    const preset = ['외근','연수','교육/세미나'];
-    if(preset.includes(e.subtype)){
-      document.getElementById('ev-sub').value = e.subtype;
+  // 유형에 따른 세부 유형 드롭다운 먼저 로드
+  onTypeChange();
+
+  if(e.type === 'work' || e.type === 'vacation'){
+    const subSel = document.getElementById('ev-sub');
+    const options = Array.from(subSel.options).map(o => o.value);
+    
+    if(options.includes(e.subtype)){
+      subSel.value = e.subtype;
       document.getElementById('sub-custom').style.display = 'none';
-      document.getElementById('ev-sub-txt').value = '';
-    }else if(e.subtype){
-      document.getElementById('ev-sub').value = 'custom';
+    } else if(e.subtype){
+      subSel.value = 'custom';
       document.getElementById('sub-custom').style.display = 'block';
       document.getElementById('ev-sub-txt').value = e.subtype;
-    }else{
-      document.getElementById('ev-sub').value = '';
-      document.getElementById('sub-custom').style.display = 'none';
-      document.getElementById('ev-sub-txt').value = '';
     }
-  }else{
-    document.getElementById('sub-row').classList.remove('show');
-    document.getElementById('ev-sub').value = '';
-    document.getElementById('sub-custom').style.display = 'none';
-    document.getElementById('ev-sub-txt').value = '';
   }
 
   const submitBtn = document.getElementById('ev-submit-btn');
@@ -867,7 +884,7 @@ async function submitEvent(){
   const project = document.getElementById('ev-proj').value || '';
   let subtype = '';
 
-  if(type === 'work'){
+  if(type === 'work' || type === 'vacation'){
     const sv = document.getElementById('ev-sub').value;
     subtype = sv === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : sv;
   }
@@ -915,9 +932,8 @@ async function submitEvent(){
     renderPersonalList();
   }
 
-  const wasEditing = !!editingEventId;
   resetEventForm();
-  showToast(wasEditing ? '수정됐어요' : '추가됐어요');
+  showToast(editingEventId ? '수정됐어요' : '추가됐어요');
 }
 
 async function deleteEv(id){
@@ -1000,8 +1016,7 @@ function changeMonth(dir){curM+=dir;if(curM>11){curM=0;curY++;}if(curM<0){curM=1
 function setVM(m){vm=m;document.getElementById('vm-cal').classList.toggle('active',m==='cal');document.getElementById('vm-list').classList.toggle('active',m==='list');renderCal();}
 function setOV(m){ovMode=m;document.getElementById('ov-board').classList.toggle('active',m==='board');document.getElementById('ov-gantt').classList.toggle('active',m==='gantt');renderOverview();}
 function filterP(f){pFilter=f;['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f));renderPersonalList();}
-function onTypeChange(){const t=document.getElementById('ev-type').value;document.getElementById('sub-row').classList.toggle('show',t==='work');if(t!=='work'){document.getElementById('ev-sub').value='';document.getElementById('sub-custom').style.display='none';}}
-function onSubChange(){document.getElementById('sub-custom').style.display=document.getElementById('ev-sub').value==='custom'?'block':'none';}
+
 function openChangeSelf(){
   const opts=members.map(m=>`<option value="${m.id}"${m.id===selfId?' selected':''}>${m.name}${m.role?' ('+m.role+')':''}</option>`).join('');
   document.getElementById('modal-body').innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:8px">나를 선택해주세요</div><select id="self-sel" style="margin-bottom:14px">${opts}</select><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="changeSelf()">확인</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
@@ -1347,9 +1362,13 @@ const _mt = document.getElementById('month-title');
 if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
 
 if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', ()=>loadAll());
+  document.addEventListener('DOMContentLoaded', ()=>{
+    loadAll();
+    onTypeChange(); // 초기 실행 시 휴가 옵션 로드
+  });
 } else {
   loadAll();
+  onTypeChange();
 }
 </script>
 </body>
