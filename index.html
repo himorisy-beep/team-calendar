@@ -434,16 +434,19 @@ async function apiPost(b){
 
 async function apiSave(body, onSuccess){
   if(!apiUrl){
-    onSuccess();
-    return;
+    if(onSuccess) onSuccess();
+    return true;
   }
   showToast('저장 중...');
   try{
-    const r=await apiPost(body);
-    if(r.error)throw new Error(r.error);
-    onSuccess();
+    const r = await apiPost(body);
+    if(r.error) throw new Error(r.error);
+    await loadAll();
+    if(onSuccess) onSuccess();
+    return true;
   }catch(e){
-    showToast('저장 실패: '+e.message);
+    showToast('저장 실패: ' + e.message);
+    return false;
   }
 }
 
@@ -818,8 +821,21 @@ async function submitEvent(){
 }
 
 async function deleteEv(id){
-  if(apiUrl){try{const r=await apiPost({action:'deleteEvent',id});if(r.error)throw new Error(r.error);}catch(e){showToast('삭제 실패: '+e.message);return;}}
-  events=events.filter(e=>e.id!==id);renderPersonalList();renderCal();showToast('삭제됐어요');
+  if(apiUrl){
+    try{
+      const r = await apiPost({ action:'deleteEvent', id });
+      if(r.error) throw new Error(r.error);
+      await loadAll();
+    }catch(e){
+      showToast('삭제 실패: ' + e.message);
+      return;
+    }
+  }else{
+    events = events.filter(e => e.id !== id);
+    renderPersonalList();
+    renderCal();
+  }
+  showToast('삭제됐어요');
 }
 
 function showEv(id){
