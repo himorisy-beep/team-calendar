@@ -13,15 +13,6 @@
 }
 @media(prefers-color-scheme:dark){
   :root{--bg:#1c1c1c;--bg2:#242424;--bg3:#2a2a28;--text:#f0efe9;--text2:#9a9a94;--text3:#606060;--border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16)}
-  .ev-vacation{background:#085041!important;color:#9FE1CB!important}
-  .ev-work{background:#0C447C!important;color:#B5D4F4!important}
-  .ev-trip{background:#633806!important;color:#FAC775!important}
-  .ev-meeting{background:#3C3489!important;color:#CECBF6!important}
-  .ev-personal{background:#444!important;color:#ccc!important}
-  .tag-vacation{background:#085041!important;color:#9FE1CB!important}
-  .tag-work{background:#0C447C!important;color:#B5D4F4!important}
-  .tag-trip{background:#633806!important;color:#FAC775!important}
-  .tag-meeting{background:#3C3489!important;color:#CECBF6!important}
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
@@ -94,12 +85,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .cal-day.today .dn{background:var(--text);color:var(--bg);border-radius:50%}
 .dn{font-size:12px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;margin-bottom:3px}
 .cal-day.sun .dn{color:#D85A30}.cal-day.sat .dn{color:#378ADD}
-.ep{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer; max-width: 100%;}
-.ev-vacation{background:#E1F5EE;color:#0F6E56}
-.ev-work{background:#E6F1FB;color:#185FA5}
-.ev-trip{background:#FAEEDA;color:#854F0B}
-.ev-meeting{background:#EEEDFE;color:#3C3489}
-.ev-personal{background:#F1EFE8;color:#5F5E5A}
+.ep{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer; max-width: 100%; font-weight: 500;}
 
 .list-wrap{display:flex;flex-direction:column;gap:7px}
 .li{display:flex;gap:11px;padding:11px 14px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);align-items:flex-start;cursor:pointer;transition:border-color .12s}
@@ -440,30 +426,35 @@ function lighten(hex){
   return m[hex]||'#F1EFE8';
 }
 
-// 🔥 가장 중요한 날짜 파싱 튼튼하게 보강
+// 🔥 문자열로 깨진 날짜 데이터를 찰떡같이 파싱하는 안전장치
 function parseDateSafely(dStr) {
   if (!dStr) return new Date(0);
-  if (typeof dStr === 'string') {
-    // YYYY-MM-DD 형식 (로컬 시간으로 인식)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return new Date(dStr + 'T00:00:00');
-    // 백엔드에서 넘어온 Sun Jul 26 2026... 같은 긴 영어 날짜
-    const dt = new Date(dStr);
-    if (!isNaN(dt)) return dt;
-  }
-  return new Date(dStr);
+  let str = String(dStr).trim();
+  str = str.replace(/\(.*\)/g, '').trim(); // 한국 표준시 등 괄호 텍스트 제거
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T00:00:00');
+  
+  const dt = new Date(str);
+  if (!isNaN(dt.getTime())) return dt;
+  
+  // 최후의 수단: 숫자 정규식 추출
+  const match = str.match(/(20\d{2})[-/년 .]*(\d{1,2})[-/월 .]*(\d{1,2})/);
+  if(match) return new Date(match[1], match[2]-1, match[3]);
+  
+  return new Date(0);
 }
 
 function fmtDate(d){
   if(!d) return '';
   const dt = parseDateSafely(d);
-  if(isNaN(dt)) return d;
+  if(isNaN(dt.getTime())) return d;
   return `${dt.getMonth()+1}/${dt.getDate()}`;
 }
 
 function fmtDateFull(d) {
   if(!d) return '';
   const dt = parseDateSafely(d);
-  if(isNaN(dt)) return d;
+  if(isNaN(dt.getTime())) return d;
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 }
 
@@ -480,7 +471,7 @@ function inDay(e,y,m,d){
 
 function isPast(dateStr){
   if(!dateStr) return false;
-  const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+  const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)); // 7일 유예
   const en = parseDateSafely(dateStr);
   return en < target;
 }
@@ -568,13 +559,10 @@ function refreshAll(){
   renderTodos();
 }
 
-// ── 할일 DB 연동 로직 ──
 window.addTodo = function(type, text) {
   if(!text.trim()) return;
   const newTodo = { action: 'addTodo', who: selfId, type, text: text.trim(), date: todayStr };
-  apiSave(newTodo, () => {
-    document.getElementById('todo-'+type+'-in').value = '';
-  });
+  apiSave(newTodo, () => { document.getElementById('todo-'+type+'-in').value = ''; });
 };
 window.toggleTodo = function(id) {
   const t = todos.find(x => String(x.id) === String(id));
@@ -666,8 +654,8 @@ function renderCalGrid(){
     h+=`<div class="dn">${d}</div>`;
     show.forEach(e=>{
       const m2=mb(e.who); const nm=e.who==='all'?'전체':(m2?m2.name:'');
-      // 원래 파스텔 톤 CSS 클래스 복구
-      h+=`<div class="ep ${TC[e.type]||''}" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
+      const bgCol = TV[e.type] || '#ccc'; // 강제 색상 지정으로 컬러 복구
+      h+=`<div class="ep" style="background:${bgCol}; color:#fff;" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`;
     });
     if(more>0)h+=`<div class="more-p">+${more}</div>`;
     h+='</div>';
@@ -733,7 +721,7 @@ function renderBoard(){
       </div>`;
     }).join('');
 
-    // 날짜 깨짐 방지 롤백
+    // 날짜 깨짐 방지 적용 완료
     const durationStr = (p.start && p.end) ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정';
     const totalCount = projTasks.length + projEvents.length;
 
@@ -865,7 +853,8 @@ async function deleteEv(id){ if(apiUrl){ try{ await apiPost({ action:'deleteEven
 
 function showEv(id){
   const e=events.find(ev=>ev.id===id); if(!e)return; const m2=mb(e.who); const isMine = e.who === selfId;
-  document.getElementById('modal-body').innerHTML=`<div class="dr"><span class="dl">기간</span><span>${fmtDateFull(e.start)} ~ ${fmtDateFull(e.end)}</span></div><div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type]}</span></div><div class="dr"><span class="dl">공개</span><span>${e.public?'공유됨':'비공개'}</span></div>${isMine?`<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="closeModal(); openEditEvent('${e.id}')">수정하기</button></div>`:''}`;
+  let editBtnHtml = isMine ? `<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="closeModal(); openEditEvent('${e.id}')">내 일정 수정하기</button></div>` : '';
+  document.getElementById('modal-body').innerHTML=`<div class="dr"><span class="dl">기간</span><span>${fmtDateFull(e.start)} ~ ${fmtDateFull(e.end)}</span></div><div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type]}</span></div><div class="dr"><span class="dl">공개</span><span>${e.public?'공유됨':'비공개'}</span></div>${editBtnHtml}`;
   openModal(e.title);
 }
 function showTask(id){
