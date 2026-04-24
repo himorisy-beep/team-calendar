@@ -149,45 +149,6 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .gantt-bar:hover{opacity:.82}
 .gantt-today-line{position:absolute;top:0;bottom:0;width:1.5px;background:#D85A30;z-index:2}
 
-/* ===== HYBRID GANTT ===== */
-.gantt-row.project {  background:#fafafa;
-  font-weight:600;
-  border-top:1px solid var(--border);}
-.gantt-row.assignee {  background:#fff;}
-.gantt-label {  display:flex;
-  align-items:center;
-  gap:6px;}
-.gantt-label small {  font-size:10px;
-  color:var(--text3);}
-.gantt-bar {  height:18px;
-  border-radius:6px;
-  position:absolute;
-  display:flex;
-  align-items:center;
-  padding:0 6px;
-  font-size:10px;
-  color:#fff;
-  white-space:nowrap;
-  overflow:hidden;}
-.gantt-bar.done {  background:#aaa !important;
-  opacity:0.7;}
-.gantt-bar.delay {  background:#D85A30 !important;}
-.gantt-bar.event {  opacity:0.6;
-  border:1px dashed rgba(0,0,0,0.2);}
-.gantt-progress {  position:absolute;
-  top:0;
-  left:0;
-  height:100%;
-  background:rgba(255,255,255,0.3);
-  border-radius:6px;}
-.gantt-today-line {  width:2px;
-  background:#D85A30;
-  position:absolute;
-  top:0;
-  bottom:0;}
-
-  
-  
 /* 투두리스트 스타일 */
 .todo-item { display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; color:var(--text); border-bottom:.5px solid var(--border2); }
 .todo-item:last-child { border-bottom:none; }
@@ -789,71 +750,50 @@ document.getElementById('overview-container').innerHTML=h+'</div>';
 }
 
 function renderGantt(){
-  const container = document.getElementById('overview-container');
-  const mappedEvents = events
-    .filter(e=>e.project)
-    .map(e=>({
-      id:e.id,
-      title:e.title,
-      project:e.project,
-      assignee:e.who,
-      start:e.start,
-      end:e.end || e.start,
-      isEvent:true,
-      status:'진행중'
-    }));
-  const allTasks=[...tasks,...mappedEvents];
-  if(!allTasks.length){    container.innerHTML='<div class="empty">데이터 없음</div>';
-    return;  }
+const mappedEvents = events.filter(e => e.project && ['work', 'meeting', 'trip'].includes(e.type))
+.map(e => ({ id: e.id, title: e.title + (e.subtype ? ` [${e.subtype}]` : ''), project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
 
-  // 날짜 범위
-  const times = allTasks.flatMap(t=>{
-    const s=parseDateSafely(t.start).getTime();
-    const e=parseDateSafely(t.end).getTime();
-    if(isNaN(s)||isNaN(e)) return [];
-    return [s,e];
-  });
-  const minT=Math.min(...times);
-  const maxT=Math.max(...times);
-  const totalDays=Math.ceil((maxT-minT)/86400000)+5;
-  const base=new Date(minT-2*86400000);
-  const pct=(time)=>((time-base.getTime())/86400000/totalDays*100);
-  let html='<div class="gantt">';
-  projects.forEach(p=>{
-    html+=`
-      <div class="gantt-row project">
-        <div class="gantt-label">${p.name}</div>
-        <div class="gantt-bar-area"></div>
-      </div>
-    `;
+const allTasks=[...tasks, ...mappedEvents].filter(t=>{
+if(t.assignee !== 'all' && hiddenMb.has(t.assignee))return false;
+if(selProj!=='all'&&t.project!==selProj)return false;
+if(hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent))return false;
+return t.start&&t.end;
+});
 
-    const pt=allTasks.filter(t=>t.project===p.id);
-    pt.forEach(t=>{
-      const s=parseDateSafely(t.start).getTime();
-      const e=parseDateSafely(t.end).getTime();
-      const left=pct(s);
-      const width=pct(e)-pct(s)+1;
-      let cls='gantt-bar';
-      if(t.isEvent) cls+=' event';
-      else if(isOverdue(t)) cls+=' delay';
-      else if(t.status==='완료') cls+=' done';
-      html+=`
-        <div class="gantt-row">
-          <div class="gantt-label">
-            ${t.title}
-          </div>
-          <div class="gantt-bar-area">
-            <div class="${cls}"
-              style="left:${left}%;width:${width}%;background:${p.color}">
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  });
+if(!allTasks.length){document.getElementById('overview-container').innerHTML='<div class="empty">업무나 일정이 없습니다</div>';return;}
 
-  html+='</div>';  
-  container.innerHTML=html;}
+const dates = allTasks.flatMap(t => {
+  const s = parseDateSafely(t.start).getTime();
+  const e = parseDateSafely(t.end).getTime();
+  if (isNaN(s) || isNaN(e)) return [];
+  return [s, e];
+});
+let minD=new Date(Math.min(...dates));let maxD=new Date(Math.max(...dates));
+minD=new Date(minD.getTime()-2*864e5);maxD=new Date(maxD.getTime()+3*864e5);
+const totalDays=daysBetween(minD.toISOString().slice(0,10),maxD.toISOString().slice(0,10))+1;
+
+const pct=(d)=>{const diff=daysBetween(minD.toISOString().slice(0,10),parseDateSafely(d).toISOString().slice(0,10));return Math.max(0,Math.min(100,(diff/totalDays)*100));};
+
+let h='<div class="gantt-wrap"><div class="gantt">';
+h+='<div class="gantt-header"><div class="gantt-label-col"></div><div class="gantt-timeline">';
+for(let i=0; i<totalDays; i++){
+const dt = new Date(minD.getTime()+i*864e5);
+const show = dt.getDate()===1 || i===0 || i%7===0;
+h+=`<div class="gantt-day-hdr" style="width:${100/totalDays}%">${show?`${dt.getMonth()+1}/${dt.getDate()}`:''}</div>`;
+}
+h+='</div></div>';
+
+projects.filter(p=>selProj==='all'||p.id===selProj).forEach(p=>{
+const pt=allTasks.filter(t=>t.project===p.id); if(!pt.length)return;
+h+=`<div class="gantt-row"><div class="gantt-label" style="font-weight:600;color:${p.color}">${p.name}</div><div class="gantt-bar-area" style="border-top:.5px solid var(--border)"></div></div>`;
+pt.forEach(t=>{
+const a=mb(t.assignee); const isOd = !t.isEvent && isOverdue(t);
+const left=pct(t.start).toFixed(2)+'%'; const width=(pct(t.end)-pct(t.start)+100/totalDays).toFixed(2)+'%';
+h+=`<div class="gantt-row"><div class="gantt-label">${a?`<div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:''}<span class="gantt-label-name" style="${isOd?'color:#D85A30;font-weight:600;':''}">${isOd?'[지연] ':''}${t.title}</span></div><div class="gantt-bar-area"><div class="gantt-bar" style="left:${left};width:${width};background:${isOd?'#D85A30':p.color}; opacity:${t.isEvent?0.7:1};" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}" title="${t.title}">${t.title}</div></div></div>`;
+});
+});
+h+='</div></div>'; document.getElementById('overview-container').innerHTML=h;
+}
 
 function renderMembersPage(){
 const vm2=members.filter(m=>!hiddenMb.has(m.id));
