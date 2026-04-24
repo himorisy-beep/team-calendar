@@ -460,6 +460,14 @@ if(isNaN(dt.getTime())) return d;
 return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 }
 
+function daysBetween(a, b){
+  const d1 = parseDateSafely(a);
+  const d2 = parseDateSafely(b);
+  d1.setHours(0,0,0,0);
+  d2.setHours(0,0,0,0);
+  return Math.round((d2 - d1) / 86400000);
+}
+    
 const todayStr = fmtDateFull(today);
 
 function inDay(e,y,m,d){
@@ -754,7 +762,12 @@ return t.start&&t.end;
 
 if(!allTasks.length){document.getElementById('overview-container').innerHTML='<div class="empty">업무나 일정이 없습니다</div>';return;}
 
-const dates=allTasks.flatMap(t=>[parseDateSafely(t.start),parseDateSafely(t.end)]);
+const dates = allTasks.flatMap(t => {
+  const s = parseDateSafely(t.start).getTime();
+  const e = parseDateSafely(t.end).getTime();
+  if (isNaN(s) || isNaN(e)) return [];
+  return [s, e];
+});
 let minD=new Date(Math.min(...dates));let maxD=new Date(Math.max(...dates));
 minD=new Date(minD.getTime()-2*864e5);maxD=new Date(maxD.getTime()+3*864e5);
 const totalDays=daysBetween(minD.toISOString().slice(0,10),maxD.toISOString().slice(0,10))+1;
