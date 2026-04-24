@@ -141,12 +141,17 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   align-items: center;  gap: 10px;  background: var(--bg2);}
 .gantt-body-wrap {  display: flex;  overflow-x: auto;  position: relative;}
 
-/* 좌측 데이터 테이블 너비 및 내부 컬럼 공간 최적화 */
-.gantt-left-pane {  width: 310px; /* 기존 420px에서 대폭 축소 (비율 약 3:7 타겟) */  flex-shrink: 0;  border-right: .5px solid var(--border2);  background: var(--bg);  position: sticky;  left: 0;  z-index: 10;}
-.gc-title {   flex: 1;   padding: 0 8px 0 12px; /* 좌우 여백 축소 */  overflow: hidden;   text-overflow: ellipsis;   white-space: nowrap; }
-.gc-worker {   width: 45px; /* 기존 60px에서 축소 */  display: flex;   justify-content: center; }
-.gc-date {   width: 45px; /* 기존 80px에서 축소 (예: 7/26 표시에 충분함) */  text-align: center;   color: var(--text2); }
-.gc-days {   width: 40px; /* 기존 50px에서 축소 */  text-align: center; }
+/* 좌측 데이터 테이블 통합 CSS */
+.gantt-left-pane {  width: 310px; /* 3:7 비율을 위한 축소된 너비 */  flex-shrink: 0;  border-right: .5px solid var(--border2);  background: var(--bg);  position: sticky;  left: 0;  z-index: 10;}
+.gantt-row {  display: flex; /* 글자들을 가로로 한 줄에 배치하는 핵심 속성 */  border-bottom: .5px solid var(--border);  height: 44px;  align-items: center;  font-size: 12px;  width: 100%;}
+.gantt-row:last-child {   border-bottom: none; }
+.gantt-header-row {  height: 48px;  color: var(--text2);  font-weight: 600;  text-transform: uppercase;  font-size: 11px;  letter-spacing: 0.05em;  background: var(--bg);}
+.gc-title {   flex: 1;   padding: 0 8px 0 12px;   overflow: hidden;   text-overflow: ellipsis;   white-space: nowrap; }
+
+/* 너비가 좁아져도 데이터가 찌그러지지 않도록 flex-shrink: 0 추가 */
+.gc-worker {   width: 45px;   display: flex;   justify-content: center;   flex-shrink: 0; }
+.gc-date {   width: 45px;   text-align: center;   color: var(--text2);   flex-shrink: 0; }
+.gc-days {   width: 40px;   text-align: center;   flex-shrink: 0; }
 
 /* 우측 타임라인 */
 .gantt-right-pane {  display: flex;  flex-direction: column;  background: var(--bg);}
