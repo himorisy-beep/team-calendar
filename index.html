@@ -78,7 +78,7 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .toggle{width:34px;height:18px;background:var(--border2);border-radius:9px;cursor:pointer;position:relative;transition:background .18s;flex-shrink:0}
 .toggle.on{background:#1D9E75}
-.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .18s}
+.toggle::after{content:'absolute';width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .18s}
 .toggle.on::after{left:18px}
 .sub-row{display:none}.sub-row.show{display:block}
 .filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
@@ -134,38 +134,26 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 .mini-task.done{background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB; text-decoration:line-through; opacity:0.7;}
 .mini-task.overdue{background:#FAECE7;color:#D85A30;border-color:#F09595; font-weight:600;}
 
-/* 개편된 간트 차트 스타일 */
-.gantt-project-block {  background: var(--bg);  border: .5px solid var(--border);  border-radius: var(--r);  margin-bottom: 24px;
-  overflow: hidden;  box-shadow: 0 1px 3px rgba(0,0,0,0.02);}
-.gantt-project-header {  padding: 14px 18px;  border-bottom: .5px solid var(--border);  font-size: 15px;  font-weight: 700;  display: flex;
-  align-items: center;  gap: 10px;  background: var(--bg2);}
-.gantt-body-wrap {  display: flex;  overflow-x: auto;  position: relative;}
-
-/* 좌측 데이터 테이블 통합 CSS */
-.gantt-left-pane {  width: 310px; /* 3:7 비율을 위한 축소된 너비 */  flex-shrink: 0;  border-right: .5px solid var(--border2);  background: var(--bg);  position: sticky;  left: 0;  z-index: 10;}
-.gantt-row {  display: flex; /* 글자들을 가로로 한 줄에 배치하는 핵심 속성 */  border-bottom: .5px solid var(--border);  height: 44px;  align-items: center;  font-size: 12px;  width: 100%;}
-.gantt-row:last-child {   border-bottom: none; }
-.gantt-header-row {  height: 48px;  color: var(--text2);  font-weight: 600;  text-transform: uppercase;  font-size: 11px;  letter-spacing: 0.05em;  background: var(--bg);}
-.gc-title {   flex: 1;   padding: 0 8px 0 12px;   overflow: hidden;   text-overflow: ellipsis;   white-space: nowrap; }
-
-/* 너비가 좁아져도 데이터가 찌그러지지 않도록 flex-shrink: 0 추가 */
-.gc-worker {   width: 45px;   display: flex;   justify-content: center;   flex-shrink: 0; }
-.gc-date {   width: 45px;   text-align: center;   color: var(--text2);   flex-shrink: 0; }
-.gc-days {   width: 40px;   text-align: center;   flex-shrink: 0; }
-
-/* 우측 타임라인 */
-.gantt-right-pane {  display: flex;  flex-direction: column;  background: var(--bg);}
-.gantt-time-header {  display: flex;  height: 48px;  border-bottom: .5px solid var(--border);}
-.gantt-day-col {  flex: 1;  min-width: 36px;  border-right: .5px dashed var(--border);  display: flex;  flex-direction: column;
-  align-items: center;  justify-content: center;  color: var(--text2);}
-.gantt-timeline-row {  position: relative;  height: 44px;  border-bottom: .5px solid var(--border);  display: flex;}
-.gantt-timeline-row:last-child { border-bottom: none; }
-.gantt-grid-bg {  position: absolute;  inset: 0;  display: flex;  pointer-events: none;}
-.gantt-grid-line {  flex: 1;  min-width: 36px;  border-right: .5px dashed var(--border);}
-.gantt-bar-wrapper {  position: absolute;  top: 8px;  height: 28px;  display: flex;  align-items: center;  z-index: 2;}
-.gantt-bar {  width: 100%;  height: 100%;  border-radius: 4px;  display: flex;  align-items: center;  padding: 0 10px;  font-size: 11px;
-  font-weight: 500;  white-space: nowrap;  overflow: hidden;  text-overflow: ellipsis;  cursor: pointer;  transition: opacity 0.15s;}
-.gantt-bar:hover { opacity: 0.8; }
+/* 개편된 간트 차트 CSS */
+.gantt-project-block { background: var(--bg); border: .5px solid var(--border); border-radius: var(--r); margin-bottom: 24px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.gantt-project-header { padding: 14px 18px; border-bottom: .5px solid var(--border); font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; background: var(--bg2); }
+.gantt-body-wrap { display: flex; overflow-x: auto; position: relative; }
+.gantt-left-pane { width: 310px; flex-shrink: 0; border-right: .5px solid var(--border2); background: var(--bg); position: sticky; left: 0; z-index: 10; }
+.gantt-row { display: flex; border-bottom: .5px solid var(--border); height: 44px; align-items: center; font-size: 12px; width: 100%; }
+.gantt-row:last-child { border-bottom: none; }
+.gantt-header-row { height: 48px; color: var(--text2); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; background: var(--bg); }
+.gc-title { flex: 1; padding: 0 8px 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc-worker { width: 45px; display: flex; justify-content: center; flex-shrink: 0; }
+.gc-date { width: 45px; text-align: center; color: var(--text2); flex-shrink: 0; }
+.gc-days { width: 40px; text-align: center; flex-shrink: 0; }
+.gantt-right-pane { display: flex; flex-direction: column; background: var(--bg); }
+.gantt-time-header { display: flex; height: 48px; border-bottom: .5px solid var(--border); }
+.gantt-day-col { flex: 1; min-width: 36px; border-right: .5px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); }
+.gantt-timeline-row { position: relative; height: 44px; border-bottom: .5px solid var(--border); display: flex; }
+.gantt-grid-bg { position: absolute; inset: 0; display: flex; pointer-events: none; }
+.gantt-grid-line { flex: 1; min-width: 36px; border-right: .5px dashed var(--border); }
+.gantt-bar-wrapper { position: absolute; top: 8px; height: 28px; display: flex; align-items: center; z-index: 2; }
+.gantt-bar { width: 100%; height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: opacity 0.15s; }
 
 /* 투두리스트 스타일 */
 .todo-item { display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; color:var(--text); border-bottom:.5px solid var(--border2); }
@@ -751,7 +739,6 @@ function renderGantt() {
     return;
   }
 
-  // 전체 기간 산출 (모든 프로젝트를 하나의 동일한 타임라인 스케일로 맞추기 위함)
   const dates = allTasks.flatMap(t => {
     const s = parseDateSafely(t.start).getTime();
     const e = parseDateSafely(t.end).getTime();
@@ -761,17 +748,18 @@ function renderGantt() {
   
   let minD = new Date(Math.min(...dates));
   let maxD = new Date(Math.max(...dates));
-  minD = new Date(minD.getTime() - 2 * 864e5); // 여백 2일
-  maxD = new Date(maxD.getTime() + 3 * 864e5); // 여백 3일
+  minD = new Date(minD.getTime() - 2 * 864e5); 
+  maxD = new Date(maxD.getTime() + 3 * 864e5); 
   const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1;
 
   const pct = (d) => {
     const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10));
-    return Math.max(0, Math.min(100, (diff / totalDays) * 100));  };
+    return Math.max(0, Math.min(100, (diff / totalDays) * 100));
+  };
 
-  const daysOfWeek = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];  let h = '';
+  const daysOfWeek = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  let h = '';
 
-  // 렌더링 대상 프로젝트 필터링 및 루프
   projects.filter(p => selProj === 'all' || p.id === selProj).forEach(p => {
     const pt = allTasks.filter(t => t.project === p.id);
     if (!pt.length) return;
@@ -791,33 +779,57 @@ function renderGantt() {
                   <div class="gc-days">Days</div>
                 </div>`;
 
-    // 좌측 목록
-    pt.forEach(t => {      const a = mb(t.assignee);      const isOd = !t.isEvent && isOverdue(t);      const days = daysBetween(t.start, t.end) + 1;
+    pt.forEach(t => {
+      const a = mb(t.assignee);
+      const isOd = !t.isEvent && isOverdue(t);
+      const days = daysBetween(t.start, t.end) + 1;
 
       h += `<div class="gantt-row">
               <div class="gc-title" style="${isOd ? 'color:#D85A30;font-weight:600;' : ''} cursor:pointer;" onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}">${isOd ? '[지연] ' : ''}${t.title}</div>
-              <div class="gc-worker">${a ? `<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>` : '-'}</div>              <div class="gc-date">${fmtDate(t.start)}</div>              <div class="gc-date">${fmtDate(t.end)}</div>              <div class="gc-days">${days}</div>            </div>`;
+              <div class="gc-worker">${a ? `<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>` : '-'}</div>
+              <div class="gc-date">${fmtDate(t.start)}</div>
+              <div class="gc-date">${fmtDate(t.end)}</div>
+              <div class="gc-days">${days}</div>
+            </div>`;
     });
 
     h += `</div>
           <div class="gantt-right-pane" style="width: ${totalDays * 36}px;">
             <div class="gantt-time-header">`;
 
-    // 타임라인 헤더 (요일 및 날짜)
-    for (let i = 0; i < totalDays; i++) {      const dt = new Date(minD.getTime() + i * 864e5);      const dow = daysOfWeek[dt.getDay()];      h += `<div class="gantt-day-col">              <span style="font-size:9px; font-weight:700;">${dow}</span>              <span style="font-size:11px; margin-top:2px;">${dt.getDate()}</span>            </div>`;    }
+    for (let i = 0; i < totalDays; i++) {
+      const dt = new Date(minD.getTime() + i * 864e5);
+      const dow = daysOfWeek[dt.getDay()];
+      h += `<div class="gantt-day-col">
+              <span style="font-size:9px; font-weight:700;">${dow}</span>
+              <span style="font-size:11px; margin-top:2px;">${dt.getDate()}</span>
+            </div>`;
+    }
     h += `</div>`;
 
-    // 타임라인 바
-    pt.forEach(t => {      const left = pct(t.start).toFixed(2) + '%';      const width = Math.max(1, (pct(t.end) - pct(t.start) + 100 / totalDays)).toFixed(2) + '%';      const isOd = !t.isEvent && isOverdue(t);
+    pt.forEach(t => {
+      const left = pct(t.start).toFixed(2) + '%';
+      const width = Math.max(1, (pct(t.end) - pct(t.start) + 100 / totalDays)).toFixed(2) + '%';
+      const isOd = !t.isEvent && isOverdue(t);
       
-      // 파스텔 톤 배경 및 원색 텍스트 처리
-      const barBg = isOd ? '#FCEBEB' : lighten(p.color);      const barText = isOd ? '#A32D2D' : p.color;
-      h += `<div class="gantt-timeline-row">              <div class="gantt-grid-bg">`;      for (let i = 0; i < totalDays; i++) h += `<div class="gantt-grid-line"></div>`;      h += `  </div>
-              <div class="gantt-bar-wrapper" style="left:${left}; width:${width};">                <div class="gantt-bar" style="background:${barBg}; color:${barText};" onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}">${t.title}</div>              </div>            </div>`;    });
+      const barBg = isOd ? '#FCEBEB' : lighten(p.color);
+      const barText = isOd ? '#A32D2D' : p.color;
 
-    h += `</div></div></div>`;  });
+      h += `<div class="gantt-timeline-row">
+              <div class="gantt-grid-bg">`;
+      for (let i = 0; i < totalDays; i++) h += `<div class="gantt-grid-line"></div>`;
+      h += `  </div>
+              <div class="gantt-bar-wrapper" style="left:${left}; width:${width};">
+                <div class="gantt-bar" style="background:${barBg}; color:${barText};" onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}">${t.title}</div>
+              </div>
+            </div>`;
+    });
 
-  document.getElementById('overview-container').innerHTML = h;}
+    h += `</div></div></div>`;
+  });
+
+  document.getElementById('overview-container').innerHTML = h;
+}
 
 function renderMembersPage(){
 const vm2=members.filter(m=>!hiddenMb.has(m.id));
@@ -921,21 +933,50 @@ function openEditEvent(id) {
   document.getElementById('ev-proj').value = e.project || "";
 }
 
-function onTypeChange(){  const t = document.getElementById('ev-type').value;   const subRow = document.getElementById('sub-row');   const subSel = document.getElementById('ev-sub');  if(t === 'work' || t === 'vacation') {    subRow.classList.add('show');    subSel.innerHTML = (t === 'work') ? '<option value="">— 없음</option><option value="외근">외근</option><option value="연수">연수</option><option value="교육/세미나">교육/세미나</option><option value="custom">직접 입력</option>' : '<option value="연차">연차</option><option value="오전반차">오전반차</option><option value="오후반차">오후반차</option><option value="custom">직접 입력</option>';  } else {     subRow.classList.remove('show');     subSel.innerHTML = '';   }}
+function onTypeChange(){
+  const t = document.getElementById('ev-type').value; 
+  const subRow = document.getElementById('sub-row'); 
+  const subSel = document.getElementById('ev-sub');
+  if(t === 'work' || t === 'vacation') {
+    subRow.classList.add('show');
+    subSel.innerHTML = (t === 'work') ? '<option value="">— 없음</option><option value="외근">외근</option><option value="연수">연수</option><option value="교육/세미나">교육/세미나</option><option value="custom">직접 입력</option>' : '<option value="연차">연차</option><option value="오전반차">오전반차</option><option value="오후반차">오후반차</option><option value="custom">직접 입력</option>';
+  } else { 
+    subRow.classList.remove('show'); 
+    subSel.innerHTML = ''; 
+  }
+}
 
-function onSubChange(){   document.getElementById('sub-custom').style.display = document.getElementById('ev-sub').value === 'custom' ? 'block' : 'none'; }
+function onSubChange(){ 
+  document.getElementById('sub-custom').style.display = document.getElementById('ev-sub').value === 'custom' ? 'block' : 'none'; 
+}
 
-async function submitEvent(){  const title = document.getElementById('ev-title').value.trim();   const start = document.getElementById('ev-start').value; 
-  const type = document.getElementById('ev-type').value;  if(!title || !start){ showToast('제목과 시작일을 입력해주세요'); return; }
+async function submitEvent(){
+  const title = document.getElementById('ev-title').value.trim(); 
+  const start = document.getElementById('ev-start').value; 
+  const type = document.getElementById('ev-type').value;
+  if(!title || !start){ showToast('제목과 시작일을 입력해주세요'); return; }
   
-  let subtype = '';   if(type === 'work' || type === 'vacation') {    
- const sv = document.getElementById('ev-sub').value;     subtype = sv === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : sv;   }
+  let subtype = ''; 
+  if(type === 'work' || type === 'vacation') { 
+    const sv = document.getElementById('ev-sub').value; 
+    subtype = sv === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : sv; 
+  }
   
-  const payload = {     action: editingEventId ? 'updateEvent' : 'addEvent',     id: editingEventId || ('ev_' + Date.now()), 
-    title, type, subtype, start,     end: document.getElementById('ev-end').value || start,     
-who: selfId,     project: document.getElementById('ev-proj').value,     public: document.getElementById('pub-toggle').classList.contains('on')   };
+  const payload = { 
+    action: editingEventId ? 'updateEvent' : 'addEvent', 
+    id: editingEventId || ('ev_' + Date.now()), 
+    title, type, subtype, start, 
+    end: document.getElementById('ev-end').value || start, 
+    who: selfId, 
+    project: document.getElementById('ev-proj').value, 
+    public: document.getElementById('pub-toggle').classList.contains('on') 
+  };
   
-  apiSave(payload, () => {     closeModal(); // 저장 완료 후 모달 닫기    showToast(editingEventId ? '수정됐어요' : '추가됐어요');   });}
+  apiSave(payload, () => { 
+    closeModal(); 
+    showToast(editingEventId ? '수정됐어요' : '추가됐어요'); 
+  });
+}
 
 async function deleteEv(id){ if(apiUrl){ try{ await apiPost({ action:'deleteEvent', id }); await loadAll(); }catch(e){ showToast('실패: ' + e.message); return; } } showToast('삭제됐어요'); }
 
@@ -943,20 +984,22 @@ function showEv(id){
 const e=events.find(ev=>ev.id===id); if(!e)return; const m2=mb(e.who); const isMine = e.who === selfId;
 let editBtnHtml = isMine ? `<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="closeModal(); openEditEvent('${e.id}')">내 일정 수정하기</button></div>` : '';
 document.getElementById('modal-body').innerHTML=`<div class="dr"><span class="dl">기간</span><span>${fmtDateFull(e.start)} ~ ${fmtDateFull(e.end)}</span></div><div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type]}</span></div><div class="dr"><span class="dl">공개</span><span>${e.public?'공유됨':'비공개'}</span></div>${editBtnHtml}`;
-openModal(e.title);}
-
+openModal(e.title);
+}
 function showTask(id){
 const t=tasks.find(tk=>tk.id===id); if(!t)return; const a=mb(t.assignee);
 document.getElementById('modal-body').innerHTML=`<div class="dr"><span class="dl">담당</span><span>${a?a.name:'미배정'}</span></div><div class="dr"><span class="dl">기간</span><span>${fmtDateFull(t.start)} ~ ${fmtDateFull(t.end)}</span></div><div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[t.status]}">${t.status}</span></div><div class="dr"><span class="dl">메모</span><span>${t.note||'-'}</span></div>`;
-openModal(t.title);}
-
+openModal(t.title);
+}
 function dayClick(d){
 const vis=getVisEv().filter(e=>inDay(e,curY,curM,d)); if(!vis.length)return;
 let h='<div class="list-wrap">';
-vis.forEach(e=>{ const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
-h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.title}</div></div></div>`; });
-
-document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`);}
+vis.forEach(e=>{ 
+const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
+h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.title}</div></div></div>`; 
+});
+document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`);
+}
 
 function toggleHidePast(val){ hidePast=val; renderOverview(); renderMembersPage(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); }
@@ -970,7 +1013,6 @@ function changeSelf(){ selfId=document.getElementById('self-sel').value; ls('sel
 async function saveApiUrl(){ apiUrl=document.getElementById('api-url-input').value.trim(); ls('apiUrl',apiUrl); await loadAll(); }
 
 function goPage(p){
-if(p!=='personal') resetEventForm();
 ['cal','overview','members','personal','todo','setup'].forEach(id=>{
 const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p);
 const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p);
