@@ -468,7 +468,16 @@ function inDay(e,y,m,d){
   const day = new Date(y,m,d);
   return day >= s && day <= en;
 }
-
+<script>
+function daysBetween(a, b){
+  const d1 = parseDateSafely(a);
+  const d2 = parseDateSafely(b);
+  d1.setHours(0,0,0,0);
+  d2.setHours(0,0,0,0);
+  return Math.round((d2 - d1) / 86400000);
+}
+</script>
+  
 function isPast(dateStr){
   if(!dateStr) return false;
   const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
@@ -741,46 +750,110 @@ function renderBoard(){
   document.getElementById('overview-container').innerHTML=h+'</div>';
 }
 
+<script>
 function renderGantt(){
-  const mappedEvents = events.filter(e => e.project && ['work', 'meeting', 'trip'].includes(e.type))
-    .map(e => ({ id: e.id, title: e.title + (e.subtype ? ` [${e.subtype}]` : ''), project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
-    
-  const allTasks=[...tasks, ...mappedEvents].filter(t=>{
-    if(t.assignee !== 'all' && hiddenMb.has(t.assignee))return false;
-    if(selProj!=='all'&&t.project!==selProj)return false;
-    if(hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent))return false;
-    return t.start&&t.end;
+  const mappedEvents = events
+    .filter(e => e.project && ['work','meeting','trip'].includes(e.type))
+    .map(e => ({
+      id: e.id,
+      title: e.title + (e.subtype ? ` [${e.subtype}]` : ''),
+      project: e.project,
+      assignee: e.who,
+      start: e.start,
+      end: e.end || e.start,
+      isEvent: true
+    }));
+
+  const allTasks = [...tasks, ...mappedEvents].filter(t => {
+    if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false;
+    if (selProj !== 'all' && t.project !== selProj) return false;
+    if (!t.start || !t.end) return false;
+
+    if (hidePast) {
+      if (t.isEvent) {
+        if (isPast(t.end)) return false;
+      } else {
+        if (isPast(t.end) && t.status === '완료') return false;
+      }
+    }
+    return true;
   });
-  
-  if(!allTasks.length){document.getElementById('overview-container').innerHTML='<div class="empty">업무나 일정이 없습니다</div>';return;}
 
-  const dates=allTasks.flatMap(t=>[parseDateSafely(t.start),parseDateSafely(t.end)]);
-  let minD=new Date(Math.min(...dates));let maxD=new Date(Math.max(...dates));
-  minD=new Date(minD.getTime()-2*864e5);maxD=new Date(maxD.getTime()+3*864e5);
-  const totalDays=daysBetween(minD.toISOString().slice(0,10),maxD.toISOString().slice(0,10))+1;
-
-  const pct=(d)=>{const diff=daysBetween(minD.toISOString().slice(0,10),parseDateSafely(d).toISOString().slice(0,10));return Math.max(0,Math.min(100,(diff/totalDays)*100));};
-
-  let h='<div class="gantt-wrap"><div class="gantt">';
-  h+='<div class="gantt-header"><div class="gantt-label-col"></div><div class="gantt-timeline">';
-  for(let i=0; i<totalDays; i++){
-    const dt = new Date(minD.getTime()+i*864e5);
-    const show = dt.getDate()===1 || i===0 || i%7===0;
-    h+=`<div class="gantt-day-hdr" style="width:${100/totalDays}%">${show?`${dt.getMonth()+1}/${dt.getDate()}`:''}</div>`;
+  if (!allTasks.length) {
+    document.getElementById('overview-container').innerHTML =
+      '<div class="empty">업무나 일정이 없습니다</div>';
+    return;
   }
-  h+='</div></div>';
 
-  projects.filter(p=>selProj==='all'||p.id===selProj).forEach(p=>{
-    const pt=allTasks.filter(t=>t.project===p.id); if(!pt.length)return;
-    h+=`<div class="gantt-row"><div class="gantt-label" style="font-weight:600;color:${p.color}">${p.name}</div><div class="gantt-bar-area" style="border-top:.5px solid var(--border)"></div></div>`;
-    pt.forEach(t=>{
-      const a=mb(t.assignee); const isOd = !t.isEvent && isOverdue(t);
-      const left=pct(t.start).toFixed(2)+'%'; const width=(pct(t.end)-pct(t.start)+100/totalDays).toFixed(2)+'%';
-      h+=`<div class="gantt-row"><div class="gantt-label">${a?`<div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:''}<span class="gantt-label-name" style="${isOd?'color:#D85A30;font-weight:600;':''}">${isOd?'[지연] ':''}${t.title}</span></div><div class="gantt-bar-area"><div class="gantt-bar" style="left:${left};width:${width};background:${isOd?'#D85A30':p.color}; opacity:${t.isEvent?0.7:1};" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}" title="${t.title}">${t.title}</div></div></div>`;
+  const timestamps = allTasks.flatMap(t => [
+    parseDateSafely(t.start).getTime(),
+    parseDateSafely(t.end).getTime()
+  ]);
+
+  let minD = new Date(Math.min(...timestamps));
+  let maxD = new Date(Math.max(...timestamps));
+  minD = new Date(minD.getTime() - 2 * 86400000);
+  maxD = new Date(maxD.getTime() + 3 * 86400000);
+
+  const minStr = fmtDateFull(minD);
+  const maxStr = fmtDateFull(maxD);
+  const totalDays = daysBetween(minStr, maxStr) + 1;
+
+  const pct = (dateStr) => {
+    const diff = daysBetween(minStr, fmtDateFull(parseDateSafely(dateStr)));
+    return Math.max(0, Math.min(100, (diff / totalDays) * 100));
+  };
+
+  let h = '<div class="gantt-wrap"><div class="gantt">';
+  h += '<div class="gantt-header"><div class="gantt-label-col"></div><div class="gantt-timeline">';
+
+  for (let i = 0; i < totalDays; i++) {
+    const dt = new Date(minD.getTime() + i * 86400000);
+    const show = dt.getDate() === 1 || i === 0 || i % 7 === 0;
+    h += `<div class="gantt-day-hdr" style="width:${100 / totalDays}%">${show ? `${dt.getMonth()+1}/${dt.getDate()}` : ''}</div>`;
+  }
+  h += '</div></div>';
+
+  projects
+    .filter(p => selProj === 'all' || p.id === selProj)
+    .forEach(p => {
+      const pt = allTasks.filter(t => t.project === p.id);
+      if (!pt.length) return;
+
+      h += `<div class="gantt-row">
+        <div class="gantt-label" style="font-weight:600;color:${p.color}">${p.name}</div>
+        <div class="gantt-bar-area" style="border-top:.5px solid var(--border)"></div>
+      </div>`;
+
+      pt.forEach(t => {
+        const a = mb(t.assignee);
+        const isOd = !t.isEvent && isOverdue(t);
+        const left = pct(t.start).toFixed(2) + '%';
+        const width = (pct(t.end) - pct(t.start) + (100 / totalDays)).toFixed(2) + '%';
+
+        h += `<div class="gantt-row">
+          <div class="gantt-label">
+            ${a ? `<div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>` : ''}
+            <span class="gantt-label-name" style="${isOd ? 'color:#D85A30;font-weight:600;' : ''}">
+              ${isOd ? '[지연] ' : ''}${t.title}
+            </span>
+          </div>
+          <div class="gantt-bar-area">
+            <div
+              class="gantt-bar"
+              style="left:${left};width:${width};background:${isOd ? '#D85A30' : p.color};opacity:${t.isEvent ? 0.7 : 1};"
+              onclick="${t.isEvent ? `showEv('${t.id}')` : `showTask('${t.id}')`}"
+              title="${t.title}"
+            >${t.title}</div>
+          </div>
+        </div>`;
+      });
     });
-  });
-  h+='</div></div>'; document.getElementById('overview-container').innerHTML=h;
+
+  h += '</div></div>';
+  document.getElementById('overview-container').innerHTML = h;
 }
+</script>
 
 function renderMembersPage(){
   const vm2=members.filter(m=>!hiddenMb.has(m.id));
@@ -853,7 +926,11 @@ async function submitEvent(){
   if(!title || !start){ showToast('제목과 시작일을 입력해주세요'); return; }
   let subtype = ''; if(type === 'work' || type === 'vacation') { const sv = document.getElementById('ev-sub').value; subtype = sv === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : sv; }
   const payload = { action: editingEventId ? 'updateEvent' : 'addEvent', id: editingEventId || ('ev_' + Date.now()), title, type, subtype, start, end: document.getElementById('ev-end').value || start, who: selfId, project: document.getElementById('ev-proj').value, public: document.getElementById('pub-toggle').classList.contains('on') };
-  apiSave(payload, () => { resetEventForm(); showToast(editingEventId ? '수정됐어요' : '추가됐어요'); });
+  const isEdit = !!editingEventId;
+apiSave(payload, () => {
+  resetEventForm();
+  showToast(isEdit ? '수정됐어요' : '추가됐어요');
+});
 }
 async function deleteEv(id){ if(apiUrl){ try{ await apiPost({ action:'deleteEvent', id }); await loadAll(); }catch(e){ showToast('실패: ' + e.message); return; } } showToast('삭제됐어요'); }
 
