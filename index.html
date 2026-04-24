@@ -399,17 +399,26 @@ function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?loc
 function lsJ(k,v){if(v===undefined){const s=ls(k);return s?JSON.parse(s):null;}ls(k,JSON.stringify(v));}
 
 // 초기 테마 로드 및 설정
-let currentTheme = ls('theme') || 'sys';
 function applyTheme(theme) {
   if (theme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
   } else if (theme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else {
-    document.documentElement.removeAttribute('data-theme');  }
-    ['sys', 'light', 'dark'].forEach(k => {   
-    const btn = document.getElementById('btn-theme-' + k);    if(btn) btn.className = `btn ${k === theme ? 'btn-primary' : 'btn-secondary'}`;  });}
-function setTheme(theme) {  currentTheme = theme;  ls('theme', theme);  applyTheme(theme);}
+    document.documentElement.removeAttribute('data-theme');
+  }
+  
+  ['sys', 'light', 'dark'].forEach(k => {
+    const btn = document.getElementById('btn-theme-' + k);
+    if(btn) btn.className = `btn ${k === theme ? 'btn-primary' : 'btn-secondary'}`;
+  });
+}
+
+function setTheme(theme) {
+  currentTheme = theme;
+  ls('theme', theme);
+  applyTheme(theme);
+}
 
 // 스크립트 실행 시 즉시 적용
 applyTheme(currentTheme);
@@ -1046,17 +1055,18 @@ function openChangeSelf(){ const opts=members.map(m=>`<option value="${m.id}"${m
 function changeSelf(){ selfId=document.getElementById('self-sel').value; ls('selfId',selfId); closeModal(); buildSidebar(); renderPersonalList(); renderTodos(); }
 async function saveApiUrl(){ apiUrl=document.getElementById('api-url-input').value.trim(); ls('apiUrl',apiUrl); await loadAll(); }
 
-function goPage(p){
+function goPage(p){  
+if(p!=='personal') resetEventForm();
 ['cal','overview','members','personal','todo','setup'].forEach(id=>{
 const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p);
 const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p);
 });
-if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); }
+if(window.innerWidth<=680){     document.querySelector('.sidebar').classList.remove('show');     document.getElementById('sidebar-overlay').classList.remove('show');   }
 if(p==='personal') renderPersonalList(); 
-if(p==='overview') renderOverview(); 
-if(p==='members') renderMembersPage(); 
-if(p==='todo') renderTodos();
-if(p==='setup') {   renderMemberManageList();   renderProjectManageList();   applyTheme(currentTheme); // 설정 페이지 진입 시 버튼 UI 업데이트}
+  if(p==='overview') renderOverview(); 
+  if(p==='members') renderMembersPage(); 
+  if(p==='todo') renderTodos();
+  if(p==='setup') {     renderMemberManageList();     renderProjectManageList();     applyTheme(currentTheme);   }
 }
 
 const PALETTE=[
