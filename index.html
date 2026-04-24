@@ -945,18 +945,12 @@ function openChangeSelf(){
 function changeSelf(){selfId=document.getElementById('self-sel').value;ls('selfId',selfId);closeModal();buildSidebar();renderPersonalList();showToast('계정 변경됐어요');}
 async function saveApiUrl(){
   const url = document.getElementById('api-url-input').value.trim();
-  if(!url){
-    showToast('URL을 입력해주세요');
-    return;
-  }
-
+  if(!url){ showToast('URL을 입력해주세요'); return; }
   apiUrl = url || DEFAULT_API_URL;
   ls('apiUrl', url);
-
   document.getElementById('api-status').textContent='저장됐어요. 연결 확인 중...';
   await loadAll();
   document.getElementById('api-status').textContent='✅ 연결 성공!';
-}
 }
 // ── 멤버 관리 ─────────────────────────────────────────────────
 const PALETTE=[
