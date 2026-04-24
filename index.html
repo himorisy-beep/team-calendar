@@ -331,12 +331,12 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
   <div class="page-header"><span class="page-title">할일</span></div>
   <div class="overview-grid">
     <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; max-height:80vh;">
-      <div class="card-title" style="color:#D85A30">🔥 Must Do (핵심 업무)</div>
+      <div class="card-title" style="color:#D85A30">🔥 Must-Do (핵심 업무)</div>
       <input type="text" id="todo-must-in" placeholder="+ 핵심 추가 (Enter)" style="margin-bottom:12px; font-size:13px;" onkeypress="if(event.key==='Enter') addTodo('must', this.value)">
       <div id="todo-must-list" style="display:flex; flex-direction:column; gap:4px; overflow-y:auto; padding-right:4px;"></div>
     </div>
     <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; max-height:80vh;">
-      <div class="card-title" style="color:#185FA5">☕ Should Do (서브 업무)</div>
+      <div class="card-title" style="color:#185FA5">☕ Should-Do (서브 업무)</div>
       <input type="text" id="todo-should-in" placeholder="+ 서브 추가 (Enter)" style="margin-bottom:12px; font-size:13px;" onkeypress="if(event.key==='Enter') addTodo('should', this.value)">
       <div id="todo-should-list" style="display:flex; flex-direction:column; gap:4px; overflow-y:auto; padding-right:4px;"></div>
     </div>
