@@ -27,7 +27,11 @@ html[data-theme="dark"] {
     --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
   }
 }
+/* 지난 일정 스타일: 회색조 및 취소선 */
+.li.is-past { opacity: 0.5; filter: grayscale(0.8); }
+.li.is-past .li-title { text-decoration: line-through; color: var(--text3); }
 
+  
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
 .layout{display:flex;min-height:100vh}
@@ -303,6 +307,10 @@ input:focus,select:focus{outline:none;border-color:#378ADD}
 <div id="page-personal" class="page">
   <div class="page-header">
     <span class="page-title">내 일정</span>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+      <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <input type="checkbox" id="pf-hide-past" onchange="renderPersonalList()"> 지난 일정 숨기기
+      </label>
     <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openAddEvent()">+ 일정 추가</button>
   </div>
   <div class="card">
@@ -544,20 +552,63 @@ window.deleteTodo = function(id) {
   if(!confirm('할 일을 삭제할까요?')) return;
   apiSave({ action: 'deleteTodo', id });
 };
+window.openEditTodo = function(id) {
+  const t = todos.find(x => x.id === id);
+  if(!t) return;
+  
+  const html = `
+    <div style="margin-bottom:14px">
+      <div class="fl">할 일 내용</div>
+      <input type="text" id="edit-todo-text" value="${t.text}" onkeypress="if(event.key==='Enter') saveEditTodo('${t.id}')">
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditTodo('${t.id}')">수정 완료</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>
+  `;
+  document.getElementById('modal-body').innerHTML = html;
+  openModal('할 일 수정');
+  setTimeout(() => document.getElementById('edit-todo-text').focus(), 100);
+};
 
+window.saveEditTodo = function(id) {
+  const t = todos.find(x => x.id === id);
+  const newText = document.getElementById('edit-todo-text').value.trim();
+  
+  if(!newText) {
+    showToast('내용을 입력해주세요');
+    return;
+  }
+  
+  // 기존 데이터 객체를 복사하고 텍스트만 변경하여 업데이트
+  const updatedTodo = { ...t, action: 'updateTodo', text: newText };
+  apiSave(updatedTodo, () => {
+    closeModal();
+  });
+};
+  
 function renderTodos() {
   const mustList = document.getElementById('todo-must-list');
   const shouldList = document.getElementById('todo-should-list');
   if(!mustList || !shouldList) return;
   let mh='', sh='';
   const myTodos = todos.filter(t => String(t.who) === String(selfId));
+  
   myTodos.forEach(t => {
-    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr);
+    const isDone = t.done === "TRUE"; 
+    const isOld = (!isDone && t.date < todayStr);
     const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
+    
     const html = `<div class="todo-item ${isDone?'done':''}">
         <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> 
-        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${t.text}">${warn}${t.text}</span>
-        <button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button>
+        <span style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" 
+              title="클릭하여 수정" onclick="openEditTodo('${t.id}')">
+          ${warn}${t.text}
+        </span>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="todo-del" style="font-size:11px; color:var(--text2)" onclick="openEditTodo('${t.id}')">수정</button>
+          <button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button>
+        </div>
       </div>`;
     if(t.type === 'must') mh += html; else sh += html;
   });
@@ -795,15 +846,71 @@ function renderMembersPage(){
   document.getElementById('members-container').innerHTML=h+'</div>';
 }
 
-function renderPersonalList(){
-  const mine=events.filter(e=>e.who===selfId && (pFilter==='all' || (pFilter==='public'?e.public:!e.public))).sort((a,b)=>parseDateSafely(a.start) - parseDateSafely(b.start));
-  if(!mine.length){document.getElementById('personal-list').innerHTML='<div class="empty">일정이 없습니다</div>';return;}
-  let h='';
-  mine.forEach(e=>{
-    const p=pj(e.project||''); const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
-    h+=`<div class="li" style="cursor:default"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${p?`<span class="tag tag-project">${p.name}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex; gap:4px; flex-shrink:0;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="deleteEv('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`;
+function renderPersonalList() {
+  const container = document.getElementById('personal-list');
+  const hidePastPersonal = document.getElementById('pf-hide-past')?.checked;
+  
+  // 오늘 날짜 00:00:00 기준 생성
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  // 1. 내 일정 필터링 및 '지난 여부' 속성 계산
+  let mine = events.filter(e => {
+    const isOwner = e.who === selfId;
+    const matchesFilter = (pFilter === 'all' || (pFilter === 'public' ? e.public : !e.public));
+    return isOwner && matchesFilter;
+  }).map(e => {
+    const endDate = parseDateSafely(e.end || e.start);
+    endDate.setHours(23, 59, 59, 999);
+    return { ...e, _isPast: endDate < startOfToday };
   });
-  document.getElementById('personal-list').innerHTML=h;
+
+  // 2. 지난 일정 숨기기 설정 적용
+  if (hidePastPersonal) {
+    mine = mine.filter(e => !e._isPast);
+  }
+
+  // 3. 정렬 로직 (핵심)
+  // - 1순위: 진행 중/미래 일정을 위로, 지난 일정은 아래로
+  // - 2순위: 미래 일정은 '날짜순(오름차순)', 지난 일정은 '최신순(내림차순)'
+  mine.sort((a, b) => {
+    if (a._isPast !== b._isPast) return a._isPast ? 1 : -1;
+    const timeA = parseDateSafely(a.start).getTime();
+    const timeB = parseDateSafely(b.start).getTime();
+    return a._isPast ? timeB - timeA : timeA - timeB;
+  });
+
+  if (!mine.length) {
+    container.innerHTML = '<div class="empty">일정이 없습니다</div>';
+    return;
+  }
+
+  // 4. 렌더링
+  let h = '';
+  mine.forEach(e => {
+    const p = pj(e.project || '');
+    const bgCol = e.type === 'vacation' ? '#1D9E75' : e.type === 'work' ? '#378ADD' : e.type === 'trip' ? '#EF9F27' : e.type === 'meeting' ? '#533AB7' : '#888';
+    
+    h += `
+      <div class="li ${e._isPast ? 'is-past' : ''}" style="cursor:default">
+        <div class="li-dot" style="background:${bgCol}"></div>
+        <div class="li-info">
+          <div class="li-title">${e.title}</div>
+          <div class="li-meta">${fmtDateFull(e.start)}${e.end !== e.start ? ' ~ ' + fmtDateFull(e.end) : ''}</div>
+          <div class="tag-row">
+            <span class="tag ${TT[e.type]}">${TL[e.type]}</span>
+            ${e.subtype ? `<span class="tag tag-sub">${e.subtype}</span>` : ''}
+            ${p ? `<span class="tag tag-project" style="border-color:${p.color}; color:${p.color}">${p.name}</span>` : ''}
+            <span class="tag ${e.public ? 'tag-work' : 'tag-sub'}">${e.public ? '공유' : '비공개'}</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:4px; flex-shrink:0;">
+          <button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button>
+          <button onclick="deleteEv('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = h;
 }
 
 function getEventFormHTML(isEdit = false) {
