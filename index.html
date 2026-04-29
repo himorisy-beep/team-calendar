@@ -302,19 +302,31 @@ function renderCalGrid(){
 }
 
 function renderCalList(){
-  const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start)); if(!vis.length){document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>';return;}
-  let h='<div class="list-wrap">'; vis.forEach(e=>{
-    const m2=mb(e.who), p=pj(e.project||'');
+  const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start)); 
+  if(!vis.length){
+    document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>';
+    return;
+  }
+  
+  let h='<div class="list-wrap">'; 
+  vis.forEach(e=>{
+    // 변수 선언을 템플릿 리터럴 밖으로 분리
+    const m2=mb(e.who);
+    const p=pj(e.project||'');
     const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
-    h+=`<div class="li" onclick="showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2?m2.name:e.who)}</div><div class="tag-row"><span class="tag ${TT[e.type]||''}">${TL[e.type]||e.type}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${p?`<span class="tag tag-project">${p.name}</span>`:''}</div></div></div>`;
-  });
-  document.getElementById('cal-container').innerHTML=h+'</div>';
-}
-function renderCalList(){
-  const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start)); if(!vis.length){document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>';return;}
-  let h='<div class="list-wrap">'; vis.forEach(e=>{
-    const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
-    h+=`<div class="li" onclick="showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2=mb(e.who)?m2.name:e.who)}</div><div class="tag-row"><span class="tag ${TT[e.type]||''}">${TL[e.type]||e.type}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${pj(e.project||'')?`<span class="tag tag-project">${pj(e.project).name}</span>`:''}</div></div></div>`;
+    
+    h+=`<div class="li" onclick="showEv('${e.id}')">
+          <div class="li-dot" style="background:${bgCol}"></div>
+          <div class="li-info">
+            <div class="li-title">${e.title}</div>
+            <div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2?m2.name:e.who)}</div>
+            <div class="tag-row">
+              <span class="tag ${TT[e.type]||''}">${TL[e.type]||e.type}</span>
+              ${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}
+              ${p?`<span class="tag tag-project">${p.name}</span>`:''}
+            </div>
+          </div>
+        </div>`;
   });
   document.getElementById('cal-container').innerHTML=h+'</div>';
 }
