@@ -3,115 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>해외컨설팅 통합 관리 시스템</title>
+    <title>해외컨설팅</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         :root, html[data-theme="light"] { --bg:#fff; --bg2:#f7f7f5; --bg3:#f0efe9; --text:#1a1a1a; --text2:#6b6b6b; --text3:#a8a8a8; --border:rgba(0,0,0,0.09); --border2:rgba(0,0,0,0.16); --r:10px; --r-sm:6px; }
         html[data-theme="dark"] { --bg:#1c1c1c;--bg2:#242424;--bg3:#2a2a28; --text:#f0efe9;--text2:#9a9a94;--text3:#606060; --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16); }
         @media (prefers-color-scheme: dark) { html:not([data-theme="light"]) { --bg:#1c1c1c;--bg2:#242424;--bg3:#2a2a28; --text:#f0efe9;--text2:#9a9a94;--text3:#606060; --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16); } }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        
         .layout { display: flex; min-height: 100vh; }
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 150; }
         .sidebar { width: 230px; background: var(--bg); border-right: .5px solid var(--border); padding: 20px 14px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 200; transition: left 0.3s; }
+        
         .logo { font-size: 16px; font-weight: 700; }
-        .logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-        .sb-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin: 15px 0 5px 6px; }
+        .logo-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+        .sb-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin: 10px 0 6px 6px; }
+        
         .sb-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: none; background: none; color: var(--text2); font-size: 14px; border-radius: var(--r-sm); cursor: pointer; text-align: left; transition: 0.2s; }
+        .sb-btn:hover { background: var(--bg2); }
         .sb-btn.active { background: var(--bg3); color: var(--text); font-weight: 600; }
+        
         .main { flex: 1; padding: 24px; min-width: 0; }
         .mobile-header { display: none; padding: 14px 20px; background: var(--bg); border-bottom: .5px solid var(--border); align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+        
         .page { display: none; }
         .page.active { display: block; }
-        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 10px; flex-wrap: wrap; }
         .page-title { font-size: 20px; font-weight: 700; }
+        
         .card { background: var(--bg); border: .5px solid var(--border); border-radius: var(--r); padding: 18px; margin-bottom: 16px; }
-        .card-title { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; }
-        .btn { padding: 8px 16px; border-radius: var(--r-sm); font-size: 13px; cursor: pointer; border: none; }
+        .btn { padding: 8px 16px; border-radius: var(--r-sm); font-size: 13px; cursor: pointer; border: none; font-weight: 500; }
         .btn-primary { background: var(--text); color: var(--bg); }
         .btn-secondary { background: var(--bg2); color: var(--text2); border: .5px solid var(--border2); }
-        .btn-danger { color: #D85A30; background: none; border: 1px solid #F09595; }
-        .tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 500; }
-        .tag-vacation{background:#E1F5EE;color:#0F6E56} .tag-work{background:#E6F1FB;color:#185FA5} .tag-proposal{background:#FBEAF0;color:#993556}
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border-radius: var(--r); overflow: hidden; }
-        .cal-hdr { background: var(--bg2); padding: 8px; text-align: center; font-size: 11px; color: var(--text2); font-weight: 600; }
-        .cal-day { background: var(--bg); min-height: 100px; padding: 6px; cursor: pointer; }
-        .dn { font-size: 12px; margin-bottom: 4px; display: inline-block; width: 20px; height: 20px; text-align: center; line-height: 20px; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        /* 캘린더 그리드 */
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: .5px solid var(--border); border-radius: var(--r); overflow: hidden; }
+        .cal-hdr { background: var(--bg2); padding: 10px; text-align: center; font-size: 12px; color: var(--text2); font-weight: 600; }
+        .cal-day { background: var(--bg); min-height: 100px; padding: 6px; cursor: pointer; position: relative; }
+        .cal-day.today { background: #fffdf0; }
+        .dn { font-size: 13px; margin-bottom: 4px; display: inline-block; width: 22px; height: 22px; text-align: center; line-height: 22px; }
         .today .dn { background: var(--text); color: var(--bg); border-radius: 50%; }
-        .ep { font-size: 10px; padding: 2px 4px; border-radius: 3px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-        .li { display: flex; gap: 12px; padding: 14px; background: var(--bg); border: .5px solid var(--border); border-radius: var(--r); align-items: center; margin-bottom: 8px; }
-        .li.is-past { opacity: 0.4; filter: grayscale(1); }
-        .todo-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: .5px solid var(--border2); }
-        .todo-item.done span { text-decoration: line-through; color: var(--text3); }
+        .ep { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .legend { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+
+        /* 목록 스타일 */
+        .li { display: flex; gap: 12px; padding: 14px; background: var(--bg); border: .5px solid var(--border); border-radius: var(--r); align-items: center; margin-bottom: 8px; cursor: pointer; }
+        .li.is-past { opacity: 0.5; filter: grayscale(0.6); }
+        .li.is-past .li-title { text-decoration: line-through; }
+        
+        /* 할 일 */
+        .todo-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: .5px solid var(--border2); }
+        .todo-item.done { opacity: 0.5; text-decoration: line-through; }
+
+        /* 모달 */
         .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; }
         .modal-bg.show { display: flex; }
-        .modal { background: var(--bg); border-radius: var(--r); padding: 24px; width: 400px; max-width: 90vw; position: relative; border: 1px solid var(--border2); }
-        .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media(max-width: 768px) { .sidebar { position: fixed; left: -240px; } .sidebar.show { left: 0; } .mobile-header { display: flex; } .main { padding: 16px; } .overview-grid { grid-template-columns: 1fr; } .sidebar-overlay.show { display: block; } }
+        .modal { background: var(--bg); border-radius: var(--r); padding: 24px; width: 420px; max-width: 90vw; position: relative; }
+
+        @media(max-width: 768px) {
+            .sidebar { position: fixed; left: -240px; }
+            .sidebar.show { left: 0; }
+            .mobile-header { display: flex; }
+            .main { padding: 16px; }
+            .sidebar-overlay.show { display: block; }
+        }
     </style>
 </head>
 <body>
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="layout">
         <div class="sidebar" id="sidebar">
-            <div><div class="logo">캘린더</div><div class="logo-sub">해외컨설팅 프로젝트</div></div>
+            <div>
+                <div class="logo">캘린더</div>
+                <div class="logo-sub">해외컨설팅</div>
+            </div>
             <div class="sb-label">메뉴</div>
             <button class="sb-btn active" id="nav-cal" onclick="goPage('cal')">📅 캘린더</button>
             <button class="sb-btn" id="nav-overview" onclick="goPage('overview')">📊 사업 현황</button>
             <button class="sb-btn" id="nav-proposal" onclick="goPage('proposal')">📝 제안 현황</button>
+            <button class="sb-btn" id="nav-members" onclick="goPage('members')">👥 멤버 현황</button>
             <button class="sb-btn" id="nav-personal" onclick="goPage('personal')">👤 내 일정</button>
             <button class="sb-btn" id="nav-todo" onclick="goPage('todo')">✅ 할일</button>
             <button class="sb-btn" id="nav-setup" onclick="goPage('setup')">⚙️ 설정</button>
-            <div class="sb-label">멤버 필터</div><div id="sb-members"></div>
-            <div style="margin-top:auto; padding-top:15px; border-top:1px solid var(--border);">
+            
+            <div class="sb-label">멤버 필터</div>
+            <div id="sb-members"></div>
+            
+            <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border);">
                 <div class="sb-btn" onclick="openChangeSelf()">
                     <div id="self-av" style="width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;"></div>
-                    <span id="self-name">계정 선택</span>
+                    <span id="self-name">내 계정</span>
                 </div>
             </div>
         </div>
 
         <div class="main">
             <div class="mobile-header">
-                <button onclick="toggleSidebar()" style="background:none; border:none; font-size:20px;">☰</button>
+                <button onclick="toggleSidebar()" style="background:none; border:none; font-size:20px; cursor:pointer;">☰</button>
                 <div style="font-weight:700;">캘린더</div>
             </div>
 
             <div id="page-cal" class="page active">
                 <div class="page-header">
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
                         <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button>
                         <span id="month-title" class="page-title"></span>
                         <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button>
                     </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn btn-primary btn-sm" onclick="setVM('cal')">달력</button>
+                        <button class="btn btn-secondary btn-sm" onclick="setVM('list')">목록</button>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><span class="dot" style="background:#1D9E75"></span>휴가</div>
+                    <div class="legend-item"><span class="dot" style="background:#378ADD"></span>업무</div>
+                    <div class="legend-item"><span class="dot" style="background:#EF9F27"></span>출장</div>
+                    <div class="legend-item"><span class="dot" style="background:#533AB7"></span>회의</div>
+                    <div class="legend-item"><span class="dot" style="background:#993556"></span>제안</div>
                 </div>
                 <div id="cal-container"></div>
             </div>
 
             <div id="page-overview" class="page">
-                <div class="page-header"><span class="page-title">사업 현황</span><label style="font-size:12px;"><input type="checkbox" id="ov-hide-past" onchange="renderOverview()" checked> 과거 숨기기</label></div>
+                <div class="page-header">
+                    <span class="page-title">사업 현황</span>
+                    <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="ov-hide-past" onchange="renderOverview()" checked> 과거 사업 숨기기</label>
+                </div>
                 <div id="overview-container" class="overview-grid"></div>
             </div>
 
             <div id="page-proposal" class="page">
-                <div class="page-header"><span class="page-title">제안 현황</span><label style="font-size:12px;"><input type="checkbox" id="prop-hide-past" onchange="renderProposals()" checked> 완료 숨기기</label></div>
+                <div class="page-header">
+                    <span class="page-title">제안 현황</span>
+                    <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="prop-hide-past" onchange="renderProposals()" checked> 완료 제안 숨기기</label>
+                </div>
                 <div id="proposal-container" class="overview-grid"></div>
             </div>
 
             <div id="page-personal" class="page">
-                <div class="page-header"><span class="page-title">내 일정</span><button class="btn btn-primary" onclick="openAddEvent()">+ 일정 추가</button></div>
+                <div class="page-header">
+                    <span class="page-title">내 일정</span>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="pf-hide-past" onchange="renderPersonalList()"> 과거 일정 숨기기</label>
+                        <button class="btn btn-primary" onclick="openAddEvent()">+ 일정 추가</button>
+                    </div>
+                </div>
                 <div id="personal-list"></div>
             </div>
 
             <div id="page-todo" class="page">
-                <div class="page-header"><span class="page-title">할일</span><label style="font-size:12px;"><input type="checkbox" id="todo-hide-done" onchange="renderTodos()"> 완료 숨기기</label></div>
-                <div class="overview-grid">
-                    <div class="card"><div class="card-title" style="color:#D85A30">🔥 Must-Do</div><input type="text" placeholder="+ 추가 (Enter)" style="width:100%; padding:8px;" onkeypress="if(event.key==='Enter') addTodo('must', this.value)"><div id="todo-must-list" style="margin-top:10px"></div></div>
-                    <div class="card"><div class="card-title" style="color:#185FA5">☕ Should-Do</div><input type="text" placeholder="+ 추가 (Enter)" style="width:100%; padding:8px;" onkeypress="if(event.key==='Enter') addTodo('should', this.value)"><div id="todo-should-list" style="margin-top:10px"></div></div>
+                <div class="page-header">
+                    <span class="page-title">할일</span>
+                    <label style="font-size:12px; cursor:pointer;"><input type="checkbox" id="todo-hide-done" onchange="renderTodos()"> 완료된 일 숨기기</label>
+                </div>
+                <div class="overview-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="card">
+                        <div class="card-title" style="color:#D85A30;">🔥 Must-Do</div>
+                        <input type="text" placeholder="+ 핵심 할일 추가" style="width:100%; padding:8px; margin-bottom:12px;" onkeypress="if(event.key==='Enter') addTodo('must', this.value)">
+                        <div id="todo-must-list"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title" style="color:#185FA5;">☕ Should-Do</div>
+                        <input type="text" placeholder="+ 서브 할일 추가" style="width:100%; padding:8px; margin-bottom:12px;" onkeypress="if(event.key==='Enter') addTodo('should', this.value)">
+                        <div id="todo-should-list"></div>
+                    </div>
                 </div>
             </div>
 
+            <div id="page-members" class="page"><div class="page-title">멤버 현황</div><div id="members-container"></div></div>
             <div id="page-setup" class="page">
                 <div class="page-title">설정</div>
                 <div class="card" style="margin-top:20px;">
@@ -122,7 +189,7 @@
                 <div class="card">
                     <div class="card-title">사업/제안 관리</div>
                     <div id="project-manage-list"></div>
-                    <button class="btn btn-secondary btn-sm" onclick="openAddProject()" style="margin-top:10px;">+ 항목 추가</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openAddProject()" style="margin-top:10px;">+ 사업 추가</button>
                 </div>
             </div>
         </div>
@@ -130,50 +197,68 @@
 
     <div class="modal-bg" id="modal">
         <div class="modal">
-            <div id="modal-title" style="font-weight:700; margin-bottom:15px;"></div>
+            <div id="modal-title" style="font-weight:700; font-size:16px; margin-bottom:16px;"></div>
             <div id="modal-body"></div>
-            <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; cursor:pointer;">✕</button>
+            <button onclick="closeModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; cursor:pointer; font-size:18px;">✕</button>
         </div>
     </div>
+    <div class="toast" id="toast"></div>
 
     <script>
+        // --- [1] Firebase 초기화 ---
         const firebaseConfig = { apiKey: "AIzaSyCTAM7S7UhrjZBWnF1_-u9EazhRtZZorNQ", authDomain: "team-calendar-e30d3.firebaseapp.com", projectId: "team-calendar-e30d3", storageBucket: "team-calendar-e30d3.firebasestorage.app", messagingSenderId: "211860835628", appId: "1:211860835628:web:87e84b5cdbc4387bd1b089" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // --- [2] 전역 상태 ---
         let selfId = localStorage.getItem('tc2_selfId') || '';
-        let members=[], projects=[], events=[], todos=[], assigns=[];
+        let members=[], projects=[], events=[], todos=[], assigns=[], tasks=[];
         let curY = new Date().getFullYear(), curM = new Date().getMonth();
-        let hiddenMb = new Set();
+        let vm = 'cal'; let selProj = 'all'; let hiddenMb = new Set();
 
+        // --- [3] 핵심 유틸리티 ---
         const mb = id => members.find(m => m.id === id);
         const pj = id => projects.find(p => p.id === id);
         const ini = n => (n || '?').slice(0, 2);
-        const fmtDate = d => d ? new Date(d).toISOString().split('T')[0] : '';
+        function lighten(h) { return h + '20'; } // 단순 투명도 처리
+        function parseDate(d) { return d ? new Date(d + 'T00:00:00') : new Date(); }
+        function fmtDateFull(d) { if(!d) return ''; const dt = new Date(d); return dt.toISOString().split('T')[0]; }
 
+        // --- [4] 데이터 통신 ---
         async function apiSave(p, cb) {
             const {action, id, ...data} = p;
-            let col = action.includes('Event') ? 'events' : action.includes('Project') ? 'projects' : action.includes('Member') ? 'members' : action.includes('Todo') ? 'todos' : 'assigns';
-            if(action.startsWith('add') || action.startsWith('update')) await db.collection(col).doc(id).set(data, {merge:true});
-            else await db.collection(col).doc(id).delete();
-            if(cb) cb();
+            let col = action.includes('Event') ? 'events' : action.includes('Project') ? 'projects' : action.includes('Member') ? 'members' : action.includes('Todo') ? 'todos' : action.includes('Assign') ? 'assigns' : 'tasks';
+            try {
+                if(action.startsWith('add') || action.startsWith('update')) await db.collection(col).doc(id).set(data, {merge:true});
+                else await db.collection(col).doc(id).delete();
+                if(cb) cb();
+            } catch(e) { console.error(e); }
         }
 
+        // --- [5] 렌더링 함수 ---
         function refreshAll() {
-            renderSidebar(); renderCal(); renderOverview(); renderProposals(); renderPersonalList(); renderTodos(); renderMemberManage(); renderProjectManage();
+            renderSidebar();
+            renderCal();
+            renderOverview();
+            renderProposals();
+            renderPersonalList();
+            renderTodos();
+            renderMemberManage();
+            renderProjectManage();
         }
 
         function renderSidebar() {
             const mc = document.getElementById('sb-members'); mc.innerHTML = '';
             members.forEach(m => {
                 const d = document.createElement('div');
-                d.className = 'sb-btn'; d.style.opacity = hiddenMb.has(m.id) ? 0.3 : 1;
+                d.style.cssText = `display:flex; align-items:center; gap:8px; padding:6px; cursor:pointer; opacity:${hiddenMb.has(m.id)?0.4:1}`;
                 d.onclick = () => { hiddenMb.has(m.id) ? hiddenMb.delete(m.id) : hiddenMb.add(m.id); refreshAll(); };
-                d.innerHTML = `<div style="background:${m.color}; width:16px; height:16px; border-radius:50%;"></div><span>${m.name}</span>`;
+                d.innerHTML = `<div style="background:${m.color}; color:#white; width:20px; height:20px; border-radius:50%; font-size:9px; display:flex; align-items:center; justify-content:center;">${ini(m.name)}</div><span style="font-size:13px;">${m.name}</span>`;
                 mc.appendChild(d);
             });
             const s = mb(selfId) || {name:'-', color:'#888'};
-            const av = document.getElementById('self-av'); av.style.background = s.color; av.innerText = ini(s.name);
+            document.getElementById('self-av').style.background = s.color;
+            document.getElementById('self-av').innerText = ini(s.name);
             document.getElementById('self-name').innerText = s.name;
         }
 
@@ -184,163 +269,107 @@
             let h = '<div class="cal-grid">';
             ['일','월','화','수','목','금','토'].forEach(d => h += `<div class="cal-hdr">${d}</div>`);
             for(let i=0; i<fd; i++) h += '<div class="cal-day" style="background:var(--bg2)"></div>';
+            
+            const vis = events.filter(e => !hiddenMb.has(e.who));
             for(let d=1; d<=ld; d++) {
-                const isT = d === new Date().getDate() && curM === new Date().getMonth();
+                const isT = d === new Date().getDate() && curM === new Date().getMonth() && curY === new Date().getFullYear();
                 h += `<div class="cal-day ${isT?'today':''}" onclick="dayClick(${d})"><div class="dn">${d}</div>`;
-                events.filter(e => !hiddenMb.has(e.who)).forEach(e => {
-                    const sd = new Date(e.start), ed = new Date(e.end || e.start);
-                    const curr = new Date(curY, curM, d);
-                    if (e.type === 'proposal') {
-                        if (sd.getDate() === d && sd.getMonth() === curM) h += `<div class="ep" style="background:#FBEAF0; color:#993556;">[시작] ${e.title}</div>`;
-                        if (ed.getDate() === d && ed.getMonth() === curM) h += `<div class="ep" style="background:#993556; color:white;">[마감] ${e.title}</div>`;
-                    } else if (curr >= sd && curr <= ed) {
-                        const c = e.type === 'vacation' ? '#1D9E75' : '#378ADD';
-                        h += `<div class="ep" style="background:${c}; color:white;">${e.title}</div>`;
-                    }
+                vis.filter(e => {
+                    const s = new Date(e.start), en = new Date(e.end || e.start);
+                    const day = new Date(curY, curM, d);
+                    if(e.type === 'proposal') return s.getDate() === d && s.getMonth() === curM;
+                    return day >= s && day <= en;
+                }).forEach(e => {
+                    const c = e.type === 'proposal' ? '#993556' : (e.type==='vacation'?'#1D9E75':'#378ADD');
+                    h += `<div class="ep" style="background:${c}; color:white;">${e.type==='proposal'?'[제안] ':''}${e.title}</div>`;
                 });
                 h += '</div>';
             }
             document.getElementById('cal-container').innerHTML = h + '</div>';
         }
 
-        function renderOverview() {
-            const container = document.getElementById('overview-container'); container.innerHTML = '';
-            projects.filter(p => !p.isProposal).forEach(p => {
-                const d = document.createElement('div'); d.className = 'card';
+        // 제안 현황 렌더링 (보드형)
+        function renderProposals() {
+            const hide = document.getElementById('prop-hide-past').checked;
+            const container = document.getElementById('proposal-container');
+            container.innerHTML = '';
+            projects.filter(p => p.isProposal).forEach(p => {
+                const isPast = p.status === '완료' || (p.end && new Date(p.end) < new Date());
+                if(hide && isPast) return;
+                const d = document.createElement('div');
+                d.className = 'card';
+                d.style.opacity = isPast ? 0.5 : 1;
                 d.innerHTML = `<div style="font-weight:700; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:10px; display:flex; justify-content:space-between;">
                     <span>${p.name}</span>
-                    <select onchange="apiSave({action:'updateProject', id:'${p.id}', status:this.value})">
+                    <select onchange="apiSave({action:'updateProject', id:'${p.id}', status:this.value})" style="font-size:11px;">
+                        <option ${p.status==='제안중'?'selected':''}>제안중</option>
                         <option ${p.status==='진행중'?'selected':''}>진행중</option>
                         <option ${p.status==='완료'?'selected':''}>완료</option>
                     </select>
-                </div><div style="font-size:12px; color:var(--text2)">${p.start} ~ ${p.end}</div>`;
+                </div><div style="font-size:12px; color:var(--text2);">마감: ${p.end || '-'}</div>`;
                 container.appendChild(d);
             });
         }
 
-        function renderProposals() {
-            const container = document.getElementById('proposal-container'); container.innerHTML = '';
-            projects.filter(p => p.isProposal).forEach(p => {
-                const isPast = p.status === '완료' || (p.end && new Date(p.end) < new Date());
-                if(document.getElementById('prop-hide-past').checked && isPast) return;
-                const d = document.createElement('div'); d.className = 'card'; d.style.opacity = isPast ? 0.5 : 1;
-                d.innerHTML = `<div style="font-weight:700; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:10px; display:flex; justify-content:space-between;">
-                    <span style="${isPast?'text-decoration:line-through':''}">${p.name}</span>
-                    <select onchange="apiSave({action:'updateProject', id:'${p.id}', status:this.value})">
-                        <option ${p.status==='제안중'?'selected':''}>제안중</option>
-                        <option ${p.status==='완료'?'selected':''}>완료/드랍</option>
-                    </select>
-                </div><div style="font-size:12px; color:#993556; font-weight:600;">입찰마감: ${p.end}</div>`;
-                container.appendChild(d);
-            });
-        }
-
-        function renderPersonalList() {
-            const list = document.getElementById('personal-list'); list.innerHTML = '';
-            events.filter(e => e.who === selfId).sort((a,b) => new Date(b.start) - new Date(a.start)).forEach(e => {
-                const isPast = new Date(e.end || e.start) < new Date();
-                list.innerHTML += `<div class="li ${isPast?'is-past':''}">
-                    <div style="flex:1;"><b>${e.title}</b><div style="font-size:11px; color:var(--text2)">${e.start} ~ ${e.end}</div></div>
-                    <button class="btn btn-secondary btn-sm" onclick="apiSave({action:'deleteEvent', id:'${e.id}'})">✕</button>
-                </div>`;
-            });
-        }
-
+        // 할 일 렌더링
         function renderTodos() {
             const hide = document.getElementById('todo-hide-done').checked;
-            const draw = (id, type) => {
-                const el = document.getElementById(id); el.innerHTML = '';
-                let items = todos.filter(t => t.who === selfId && t.type === type);
-                if(hide) items = items.filter(t => t.done !== 'TRUE');
-                items.sort((a,b) => (a.done==='TRUE') - (b.done==='TRUE')).forEach(t => {
-                    el.innerHTML += `<div class="todo-item ${t.done==='TRUE'?'done':''}">
-                        <input type="checkbox" ${t.done==='TRUE'?'checked':''} onchange="apiSave({action:'updateTodo', id:'${t.id}', done:this.checked?'TRUE':'FALSE'})">
-                        <span style="flex:1">${t.text}</span>
-                        <button style="border:none; background:none; cursor:pointer;" onclick="apiSave({action:'deleteTodo', id:'${t.id}'})">✕</button>
+            const my = todos.filter(t => t.who === selfId);
+            const draw = (list, type) => {
+                list.innerHTML = '';
+                let filtered = my.filter(t => t.type === type);
+                if(hide) filtered = filtered.filter(t => t.done !== 'TRUE');
+                filtered.sort((a,b) => (a.done==='TRUE') - (b.done==='TRUE'));
+                filtered.forEach(t => {
+                    list.innerHTML += `<div class="todo-item ${t.done==='TRUE'?'done':''}">
+                        <input type="checkbox" ${t.done==='TRUE'?'checked':''} onchange="toggleTodo('${t.id}')">
+                        <span style="flex:1;">${t.text}</span>
+                        <button onclick="apiSave({action:'deleteTodo', id:'${t.id}'})" style="border:none; background:none; cursor:pointer;">✕</button>
                     </div>`;
                 });
             };
-            draw('todo-must-list', 'must'); draw('todo-should-list', 'should');
+            draw(document.getElementById('todo-must-list'), 'must');
+            draw(document.getElementById('todo-should-list'), 'should');
         }
 
-        function renderMemberManage() {
-            const el = document.getElementById('member-manage-list'); el.innerHTML = '';
-            members.forEach(m => {
-                el.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border2);">
-                    <span>${m.name} (${m.role || '-'})</span>
-                    <button class="btn btn-danger btn-sm" onclick="apiSave({action:'deleteMember', id:'${m.id}'})">삭제</button>
-                </div>`;
-            });
-        }
-
-        function renderProjectManage() {
-            const el = document.getElementById('project-manage-list'); el.innerHTML = '';
-            projects.forEach(p => {
-                el.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border2);">
-                    <span>[${p.isProposal?'제안':'사업'}] ${p.name}</span>
-                    <button class="btn btn-danger btn-sm" onclick="apiSave({action:'deleteProject', id:'${p.id}'})">삭제</button>
-                </div>`;
-            });
-        }
-
-        // --- 모달 폼 함수들 ---
-        window.openAddEvent = () => {
-            const opts = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            const body = `<input type="text" id="ef-title" placeholder="일정 제목" style="width:100%; margin-bottom:10px; padding:8px;">
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <input type="date" id="ef-start" style="flex:1; padding:8px;">
-                    <input type="date" id="ef-end" style="flex:1; padding:8px;">
-                </div>
-                <select id="ef-type" style="width:100%; padding:8px; margin-bottom:10px;"><option value="work">업무</option><option value="proposal">제안</option><option value="vacation">휴가</option></select>
-                <select id="ef-proj" style="width:100%; padding:8px; margin-bottom:15px;"><option value="">관련 사업 선택</option>${opts}</select>
-                <button class="btn btn-primary" style="width:100%" onclick="saveNewEvent()">추가하기</button>`;
-            openModal('새 일정 추가', body);
-        };
-        window.saveNewEvent = () => {
-            const p = {action:'addEvent', id:'ev_'+Date.now(), title:document.getElementById('ef-title').value, start:document.getElementById('ef-start').value, end:document.getElementById('ef-end').value, type:document.getElementById('ef-type').value, project:document.getElementById('ef-proj').value, who:selfId};
-            if(p.title && p.start) apiSave(p, closeModal);
+        // --- [6] 제어 함수 ---
+        window.goPage = function(p) {
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sb-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + p).classList.add('active');
+            document.getElementById('nav-' + p).classList.add('active');
+            if(window.innerWidth <= 768) toggleSidebar();
+            refreshAll(); // 페이지 이동 시 데이터 새로고침
         };
 
-        window.openAddMember = () => {
-            const body = `<input type="text" id="mf-name" placeholder="이름" style="width:100%; margin-bottom:10px; padding:8px;">
-                <input type="text" id="mf-role" placeholder="역할" style="width:100%; margin-bottom:10px; padding:8px;">
-                <input type="color" id="mf-color" value="#378ADD" style="width:100%; height:40px; margin-bottom:15px;">
-                <button class="btn btn-primary" style="width:100%" onclick="saveNewMember()">등록</button>`;
-            openModal('팀원 추가', body);
-        };
-        window.saveNewMember = () => {
-            apiSave({action:'addMember', id:'mb_'+Date.now(), name:document.getElementById('mf-name').value, role:document.getElementById('mf-role').value, color:document.getElementById('mf-color').value}, closeModal);
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('overlay').classList.toggle('show');
         };
 
-        window.openAddProject = () => {
-            const body = `<input type="text" id="pf-name" placeholder="명칭" style="width:100%; margin-bottom:10px; padding:8px;">
-                <div style="margin-bottom:10px;"><label style="font-size:12px;">분류: </label>
-                <select id="pf-isprop" style="padding:5px;"><option value="false">수주 사업</option><option value="true">제안 사업</option></select></div>
-                <input type="date" id="pf-end" style="width:100%; padding:8px; margin-bottom:15px;">
-                <button class="btn btn-primary" style="width:100%" onclick="saveNewProject()">저장</button>`;
-            openModal('사업/제안 추가', body);
+        window.changeMonth = (v) => { curM += v; if(curM>11){curM=0; curY++;} if(curM<0){curM=11; curY--;} renderCal(); };
+        
+        window.addTodo = (type, text) => {
+            if(!text.trim()) return;
+            apiSave({action:'addTodo', id:'td_'+Date.now(), text, type, who:selfId, done:'FALSE'});
         };
-        window.saveNewProject = () => {
-            apiSave({action:'addProject', id:'pj_'+Date.now(), name:document.getElementById('pf-name').value, isProposal:document.getElementById('pf-isprop').value==='true', end:document.getElementById('pf-end').value, status:'진행중', color:'#378ADD'}, closeModal);
+        window.toggleTodo = (id) => {
+            const t = todos.find(x => x.id === id);
+            apiSave({action:'updateTodo', id, done: t.done==='TRUE'?'FALSE':'TRUE'});
         };
 
-        window.addTodo = (type, text) => { if(text.trim()) apiSave({action:'addTodo', id:'td_'+Date.now(), text, type, who:selfId, done:'FALSE'}); };
-        window.goPage = p => { document.querySelectorAll('.page').forEach(el=>el.classList.remove('active')); document.querySelectorAll('.sb-btn').forEach(el=>el.classList.remove('active')); document.getElementById('page-'+p).classList.add('active'); if(document.getElementById('nav-'+p)) document.getElementById('nav-'+p).classList.add('active'); if(window.innerWidth<=768) toggleSidebar(); };
-        window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('overlay').classList.toggle('show'); };
-        window.changeMonth = v => { curM+=v; if(curM>11){curM=0; curY++;} if(curM<0){curM=11; curY--;} renderCal(); };
-        window.openModal = (t,b) => { document.getElementById('modal-title').innerText=t; document.getElementById('modal-body').innerHTML=b; document.getElementById('modal').classList.add('show'); };
+        window.openModal = (t, b) => { document.getElementById('modal-title').innerText=t; document.getElementById('modal-body').innerHTML=b; document.getElementById('modal').classList.add('show'); };
         window.closeModal = () => document.getElementById('modal').classList.remove('show');
-        window.openChangeSelf = () => { const opts = members.map(m=>`<option value="${m.id}">${m.name}</option>`).join(''); openModal('계정 변경', `<select id="self-sel" style="width:100%; padding:10px; margin-bottom:15px;">${opts}</select><button class="btn btn-primary" style="width:100%" onclick="selfId=document.getElementById('self-sel').value; localStorage.setItem('tc2_selfId',selfId); closeModal(); refreshAll();">변경하기</button>`); };
 
-        // --- 초기화 및 리스너 ---
-        const cols = ["events", "members", "projects", "todos"];
-        cols.forEach(col => {
-            db.collection(col).onSnapshot(s => {
-                window[col] = s.docs.map(d => ({id:d.id, ...d.data()}));
-                if(col==='members' && !selfId && window.members.length) selfId = window.members[0].id;
-                refreshAll();
-            });
-        });
+        // Firestore 실시간 리스너
+        function init() {
+            db.collection("events").onSnapshot(s => { events = s.docs.map(d => ({id:d.id, ...d.data()})); refreshAll(); });
+            db.collection("members").onSnapshot(s => { members = s.docs.map(d => ({id:d.id, ...d.data()})); refreshAll(); });
+            db.collection("projects").onSnapshot(s => { projects = s.docs.map(d => ({id:d.id, ...d.data()})); refreshAll(); });
+            db.collection("todos").onSnapshot(s => { todos = s.docs.map(d => ({id:d.id, ...d.data()})); refreshAll(); });
+        }
+        
+        init();
     </script>
 </body>
 </html>
