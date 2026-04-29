@@ -291,9 +291,23 @@ function renderCalGrid(){
   for(let d=1;d<=ld;d++){
     const dow=(fd+d-1)%7; const isT=d===today.getDate()&&curM===today.getMonth()&&curY===today.getFullYear(); const de=vis.filter(e=>inDay(e,curY,curM,d)); const show=de.slice(0,3),more=de.length-3;
     h+=`<div class="cal-day${isT?' today':''} ${dow===0?'sun':dow===6?'sat':''}" onclick="dayClick(${d})"><div class="dn">${d}</div>`;
-    show.forEach(e=>{ const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; h+=`<div class="ep" style="background:${lighten(bgCol)};color:${bgCol}" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm=e.who==='all'?'전체':(m2=mb(e.who)?m2.name:'')} ${e.title}">${nm} ${e.title}</div>`; });
+    show.forEach(e=>{ 
+      const m2=mb(e.who); const nm = e.who==='all'?'전체':(m2?m2.name:'');
+      const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; 
+      h+=`<div class="ep" style="background:${lighten(bgCol)};color:${bgCol}" onclick="event.stopPropagation();showEv('${e.id}')" title="${nm} ${e.title}">${nm} ${e.title}</div>`; 
+    });
     if(more>0)h+=`<div class="more-p">+${more}</div>`; h+='</div>';
   }
+  document.getElementById('cal-container').innerHTML=h+'</div>';
+}
+
+function renderCalList(){
+  const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start)); if(!vis.length){document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>';return;}
+  let h='<div class="list-wrap">'; vis.forEach(e=>{
+    const m2=mb(e.who), p=pj(e.project||'');
+    const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
+    h+=`<div class="li" onclick="showEv('${e.id}')"><div class="li-dot" style="background:${bgCol}"></div><div class="li-info"><div class="li-title">${e.title}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2?m2.name:e.who)}</div><div class="tag-row"><span class="tag ${TT[e.type]||''}">${TL[e.type]||e.type}</span>${e.subtype?`<span class="tag tag-sub">${e.subtype}</span>`:''}${p?`<span class="tag tag-project">${p.name}</span>`:''}</div></div></div>`;
+  });
   document.getElementById('cal-container').innerHTML=h+'</div>';
 }
 function renderCalList(){
