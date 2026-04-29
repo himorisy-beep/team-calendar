@@ -348,7 +348,7 @@ function renderTodos() {
   if (hideDone) myTodos = myTodos.filter(t => t.done !== "TRUE");
   myTodos.sort((a, b) => { if (a.done !== b.done) return a.done === "TRUE" ? 1 : -1; return String(b.date||'').localeCompare(String(a.date||'')); });
   myTodos.forEach(t => {
-    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr); const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
+    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr); const warn = (t.type === 'must' && isOld)  ? `<span style="color:#D85A30;font-weight:600;">[미완료]</span> `  : '';
     const html = `<div class="todo-item ${isDone?'done':''}"> <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> <span style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="클릭하여 수정" onclick="openEditTodo('${t.id}')">${warn}${escapeHtml(t.text || '')}</span> <div style="display:flex; gap:8px; align-items:center;"><button class="todo-del" style="font-size:11px; color:var(--text2)" onclick="openEditTodo('${t.id}')">수정</button><button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button></div></div>`;
     if(t.type === 'must') mh += html; else sh += html;
   });
