@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>캘린더</title>
@@ -136,6 +136,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .proposal-title{font-size:14px;font-weight:700;margin-bottom:5px}
 .proposal-meta{font-size:12px;color:var(--text2);line-height:1.6}
 .proposal-note{margin-top:6px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--r-sm);padding:7px 9px;line-height:1.5;white-space:pre-wrap}
+.proposal-files{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.proposal-file-link{font-size:12px;color:#2563EB;text-decoration:none;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proposal-file-link:hover{text-decoration:underline}
 .proposal-actions{display:flex;gap:5px;flex-shrink:0}
 .todo-item { display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; color:var(--text); border-bottom:.5px solid var(--border2); }
 .todo-item:last-child { border-bottom:none; }
@@ -184,7 +187,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 <div class="sb-label">메뉴</div>
 <button class="sb-btn active" id="nav-cal" onclick="goPage('cal')"><span class="icon">📅</span>캘린더</button>
 <button class="sb-btn" id="nav-overview" onclick="goPage('overview')"><span class="icon">📊</span>사업 현황</button>
-<button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안 현황</button>
+<button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안현황</button>
 <button class="sb-btn" id="nav-members" onclick="goPage('members')"><span class="icon">👥</span>멤버 현황</button>
 <button class="sb-btn" id="nav-personal" onclick="goPage('personal')"><span class="icon">👤</span>내 일정</button>
 <button class="sb-btn" id="nav-todo" onclick="goPage('todo')"><span class="icon">✅</span>할일</button>
@@ -199,13 +202,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 <div class="mobile-header"><button class="menu-btn" onclick="toggleSidebar()">☰</button><div style="font-weight:700;font-size:16px">캘린더</div></div>
 <div id="status-bar" style="display:none"></div>
 
-<div id="page-cal" class="page active"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#1D9E75"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#378ADD"></div>업무</div><div class="legend-item"><div class="dot" style="background:#EF9F27"></div>출장</div><div class="legend-item"><div class="dot" style="background:#533AB7"></div>회의</div><div class="legend-item"><div class="dot" style="background:#6366F1"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>입찰마감</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page active"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#1D9E75"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#378ADD"></div>업무</div><div class="legend-item"><div class="dot" style="background:#EF9F27"></div>출장</div><div class="legend-item"><div class="dot" style="background:#533AB7"></div>회의</div><div class="legend-item"><div class="dot" style="background:#6366F1"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>제출종료</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
-    <span class="page-title">제안 현황</span>
+    <span class="page-title">제안현황</span>
     <button class="btn btn-primary btn-sm" onclick="openAddProposal()">+ 제안 추가</button>
   </div>
   <div class="card">
@@ -348,7 +351,7 @@ function renderTodos() {
   if (hideDone) myTodos = myTodos.filter(t => t.done !== "TRUE");
   myTodos.sort((a, b) => { if (a.done !== b.done) return a.done === "TRUE" ? 1 : -1; return String(b.date||'').localeCompare(String(a.date||'')); });
   myTodos.forEach(t => {
-    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr); const warn = (t.type === 'must' && isOld)  ? `<span style="color:#D85A30;font-weight:600;">[미완료]</span> `  : '';
+    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr); const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
     const html = `<div class="todo-item ${isDone?'done':''}"> <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> <span style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="클릭하여 수정" onclick="openEditTodo('${t.id}')">${warn}${escapeHtml(t.text || '')}</span> <div style="display:flex; gap:8px; align-items:center;"><button class="todo-del" style="font-size:11px; color:var(--text2)" onclick="openEditTodo('${t.id}')">수정</button><button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button></div></div>`;
     if(t.type === 'must') mh += html; else sh += html;
   });
@@ -377,7 +380,7 @@ function proposalMarksOnDay(y,m,d){
     }
     if(p.deadline && fmtDateFull(p.deadline) === key){
       const timeText = fmtDateTimeShort(p.deadline).split(' ')[1] || '';
-      marks.push({ id:p.id, type:'deadline', label:`입찰마감 · ${p.name || '제안'}${timeText ? ' ' + timeText : ''}` });
+      marks.push({ id:p.id, type:'deadline', label:`제출종료 · ${p.name || '제안'}${timeText ? ' ' + timeText : ''}` });
     }
   });
   return marks;
@@ -481,12 +484,22 @@ function renderProposalPage(){
   sorted.forEach(p => {
     const color = p.color || '#7C3AED';
     const deadlineText = p.deadline ? fmtDateTimeShort(p.deadline) : '-';
+    const fileLinks = normalizeFileLinks(p.fileLinks);
+    const fileHtml = fileLinks.length
+      ? `<div class="proposal-files">${fileLinks.map(f=>`<a class="proposal-file-link" href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(f.name || '첨부파일 다운로드')}</a>`).join('')}</div>`
+      : '';
+
     h += `<div class="proposal-card">
         <div class="proposal-color" style="background:${color}"></div>
         <div class="proposal-info">
           <div class="proposal-title">${escapeHtml(p.name || '제안명 없음')}</div>
-          <div class="proposal-meta">제안시작일: ${p.start ? fmtDateFull(p.start) : '-'}<br>제안입찰 마감일시: ${deadlineText}</div>
+          <div class="proposal-meta">
+            제안시작일: ${p.start ? fmtDateFull(p.start) : '-'}<br>
+            제안서제출 종료일시: ${deadlineText}<br>
+            수요기관: ${escapeHtml(p.demandOrg || '-')}
+          </div>
           ${p.participants ? `<div class="proposal-note">${escapeHtml(p.participants)}</div>` : ''}
+          ${fileHtml}
         </div>
         <div class="proposal-actions">
           <button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button>
@@ -496,18 +509,27 @@ function renderProposalPage(){
   });
   container.innerHTML = h;
 }
+
 function getProposalFormHTML(isEdit){
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
-    <div class="form-row"><div><div class="fl">제안시작일</div><input type="date" id="proposal-start"></div><div><div class="fl">제안입찰 마감일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
+    <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
+    <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
     <div class="form-row full"><div><div class="fl">제안 컬러</div><input type="color" id="proposal-color" value="#7C3AED"></div></div>
-    <div class="form-row full"><div><div class="fl">참여자 / 내용</div><textarea id="proposal-participants" rows="5" placeholder="예: 참여자, 담당 역할, 준비 내용 등을 입력"></textarea></div></div>
+    <div class="form-row full"><div><div class="fl">참여자 / 내용</div><textarea id="proposal-participants" rows="4" placeholder="예: 참여자, 담당 역할, 준비 내용 등을 입력"></textarea></div></div>
+    <div class="form-row full"><div>
+      <div class="fl">첨부파일 다운로드 링크 후보</div>
+      <textarea id="proposal-filelinks" rows="4" placeholder="한 줄에 하나씩 입력하세요.&#10;예: 제안요청서.hwp | https://www.g2b.go.kr/...&#10;예: 입찰공고서.pdf | https://www.g2b.go.kr/..."></textarea>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">형식: 파일명 | URL. 나라장터 자동연계 전까지는 후보 링크를 수동으로 붙여둘 수 있습니다.</div>
+    </div></div>
     <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitProposal()">${isEdit ? '수정 저장' : '제안 추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
+
 function openAddProposal(){
   editingProposalId = null;
   document.getElementById('modal-body').innerHTML = getProposalFormHTML(false);
   openModal('제안 추가');
 }
+
 function openEditProposal(id){
   const p = proposals.find(x => x.id === id); if(!p) return;
   editingProposalId = id;
@@ -516,31 +538,77 @@ function openEditProposal(id){
   document.getElementById('proposal-name').value = p.name || '';
   document.getElementById('proposal-start').value = p.start || '';
   document.getElementById('proposal-deadline').value = toDateTimeLocalValue(p.deadline);
+  document.getElementById('proposal-demand-org').value = p.demandOrg || '';
   document.getElementById('proposal-color').value = p.color || '#7C3AED';
   document.getElementById('proposal-participants').value = p.participants || '';
+  document.getElementById('proposal-filelinks').value = fileLinksToTextarea(p.fileLinks);
 }
+
 function submitProposal(){
   const name = document.getElementById('proposal-name').value.trim();
   const start = document.getElementById('proposal-start').value;
   const deadline = document.getElementById('proposal-deadline').value;
+  const demandOrg = document.getElementById('proposal-demand-org').value.trim();
   const color = document.getElementById('proposal-color').value || '#7C3AED';
   const participants = document.getElementById('proposal-participants').value.trim();
+  const fileLinks = parseFileLinksTextarea(document.getElementById('proposal-filelinks').value);
+
   if(!name){ showToast('사업명을 입력해주세요'); return; }
   const id = editingProposalId || ('proposal_' + Date.now());
-  apiSave({ action: editingProposalId ? 'updateProposal' : 'addProposal', id, name, start, deadline, color, participants }, () => { editingProposalId = null; closeModal(); });
+
+  apiSave({
+    action: editingProposalId ? 'updateProposal' : 'addProposal',
+    id,
+    name,
+    start,
+    deadline,
+    demandOrg,
+    color,
+    participants,
+    fileLinks
+  }, () => { editingProposalId = null; closeModal(); });
 }
+
 function deleteProposal(id){
   if(!confirm('이 제안을 삭제할까요?')) return;
   apiSave({ action:'deleteProposal', id });
 }
+
 function showProposal(id){
   const p = proposals.find(x => x.id === id); if(!p) return;
+  const fileLinks = normalizeFileLinks(p.fileLinks);
+  const fileHtml = fileLinks.length
+    ? `<div style="margin-top:10px">${fileLinks.map(f=>`<a class="proposal-file-link" href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(f.name || '첨부파일 다운로드')}</a>`).join('')}</div>`
+    : '<span>-</span>';
+
   document.getElementById('modal-body').innerHTML = `<div class="dr"><span class="dl">사업명</span><span>${escapeHtml(p.name || '-')}</span></div>
     <div class="dr"><span class="dl">시작일</span><span>${p.start ? fmtDateFull(p.start) : '-'}</span></div>
-    <div class="dr"><span class="dl">마감</span><span>${p.deadline ? fmtDateTimeShort(p.deadline) : '-'}</span></div>
+    <div class="dr"><span class="dl">제출종료</span><span>${p.deadline ? fmtDateTimeShort(p.deadline) : '-'}</span></div>
+    <div class="dr"><span class="dl">수요기관</span><span>${escapeHtml(p.demandOrg || '-')}</span></div>
     <div class="dr"><span class="dl">내용</span><span>${escapeHtml(p.participants || '-')}</span></div>
+    <div class="dr"><span class="dl">첨부파일</span><span style="flex:1">${fileHtml}</span></div>
     <div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="closeModal();openEditProposal('${p.id}')">수정</button></div>`;
   openModal('제안 정보');
+}
+
+function normalizeFileLinks(value){
+  if(Array.isArray(value)) return value.filter(f => f && f.url).map(f => ({ name:f.name || '첨부파일 다운로드', url:f.url }));
+  if(typeof value === 'string') return parseFileLinksTextarea(value);
+  return [];
+}
+
+function parseFileLinksTextarea(text){
+  return String(text || '').split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+    const parts = line.split('|');
+    if(parts.length >= 2){
+      return { name: parts[0].trim() || '첨부파일 다운로드', url: parts.slice(1).join('|').trim() };
+    }
+    return { name: '첨부파일 다운로드', url: line };
+  }).filter(f => f.url);
+}
+
+function fileLinksToTextarea(value){
+  return normalizeFileLinks(value).map(f => `${f.name || '첨부파일 다운로드'} | ${f.url}`).join('\n');
 }
 
 function renderMembersPage(){
@@ -595,18 +663,256 @@ function goPage(p){
 
 const PALETTE=[{color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},{color:'#D85A30',bg:'#FAECE7'},{color:'#EF9F27',bg:'#FAEEDA'},{color:'#533AB7',bg:'#EEEDFE'},{color:'#993556',bg:'#FBEAF0'},{color:'#3B6D11',bg:'#EAF3DE'},{color:'#185FA5',bg:'#B5D4F4'},{color:'#E91E63',bg:'#FCE4EC'},{color:'#9C27B0',bg:'#F3E5F5'},{color:'#673AB7',bg:'#EDE7F6'},{color:'#3F51B5',bg:'#E8EAF6'},{color:'#03A9F4',bg:'#E1F5FE'},{color:'#00BCD4',bg:'#E0F7FA'},{color:'#009688',bg:'#E0F2F1'},{color:'#4CAF50',bg:'#E8F5E9'},{color:'#8BC34A',bg:'#F1F8E9'},{color:'#CDDC39',bg:'#F9FBE7'},{color:'#FFC107',bg:'#FFFDE7'},{color:'#FF9800',bg:'#FFF3E0'},{color:'#FF5722',bg:'#FBE9E7'},{color:'#795548',bg:'#EFEBE9'},{color:'#9E9E9E',bg:'#FAFAFA'},{color:'#607D8B',bg:'#ECEFF1'}];
 
-function renderMemberManageList(){ const el = document.getElementById('mb-count'); if(!el) return; el.textContent=`(${members.length})`; let h=''; members.forEach(m2=>{ h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)"><div class="av" style="width:30px;height:30px;font-size:11px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div><div style="flex:1;"><div style="font-size:13px;font-weight:500">${escapeHtml(m2.name || '')}</div></div><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-sm" onclick="openEditMember('${m2.id}')">수정</button></div></div>`; }); document.getElementById('member-manage-list').innerHTML=h || '<div class="empty">팀원이 없습니다</div>'; }
-function renderProjectManageList(){ const el = document.getElementById('proj-count'); if(!el) return; el.textContent=`(${projects.length})`; let h=''; projects.forEach(p=>{ h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div style="flex:1;"><div style="font-size:13px;font-weight:500">${escapeHtml(p.name || '')}</div></div><div style="display:flex;gap:5px;"><button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button></div></div>`; }); document.getElementById('project-manage-list').innerHTML=h || '<div class="empty">사업이 없습니다</div>'; }
+function renderMemberManageList(){ 
+  const el = document.getElementById('mb-count'); 
+  if(!el) return; 
+  el.textContent=`(${members.length})`; 
+  let h=''; 
 
-function openAddMember(){ document.getElementById('modal-body').innerHTML = getMemberFormHTML(false); openModal('팀원 추가'); }
-function openEditMember(id){ const m = mb(id); if(!m) return; document.getElementById('modal-body').innerHTML = getMemberFormHTML(true); openModal('팀원 수정'); document.getElementById('member-name').value=m.name||''; document.getElementById('member-role').value=m.role||''; document.getElementById('member-color').value=m.color||'#378ADD'; document.getElementById('member-id').value=m.id; }
-function getMemberFormHTML(isEdit){ return `<input type="hidden" id="member-id"><div class="form-row full"><div><div class="fl">이름</div><input id="member-name" type="text"></div></div><div class="form-row full"><div><div class="fl">역할</div><input id="member-role" type="text"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="member-color" type="color" value="#378ADD"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitMember()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
-function submitMember(){ const id=document.getElementById('member-id').value||'mb_'+Date.now(); const name=document.getElementById('member-name').value.trim(); if(!name){showToast('이름을 입력해주세요'); return;} apiSave({action:members.some(m=>m.id===id)?'updateMember':'addMember', id, name, role:document.getElementById('member-role').value.trim(), color:document.getElementById('member-color').value}, ()=>closeModal()); }
+  members.forEach(m2=>{ 
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500">${escapeHtml(m2.name || '')}</div>
+        <div style="font-size:11px;color:var(--text2)">${escapeHtml(m2.role || '-')}</div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        <button class="btn btn-secondary btn-sm" onclick="openEditMember('${m2.id}')">수정</button>
+        <button class="btn-danger-sm" onclick="deleteMember('${m2.id}')">삭제</button>
+      </div>
+    </div>`; 
+  }); 
 
-function openAddProject(){ document.getElementById('modal-body').innerHTML = getProjectFormHTML(false); openModal('사업 추가'); }
-function openEditProject(id){ const p = pj(id); if(!p) return; document.getElementById('modal-body').innerHTML = getProjectFormHTML(true); openModal('사업 수정'); document.getElementById('project-id').value=p.id; document.getElementById('project-name').value=p.name||''; document.getElementById('project-color').value=p.color||'#3B6D11'; document.getElementById('project-start').value=p.start||''; document.getElementById('project-end').value=p.end||''; }
-function getProjectFormHTML(isEdit){ return `<input type="hidden" id="project-id"><div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div><div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
-function submitProject(){ const id=document.getElementById('project-id').value||'pj_'+Date.now(); const name=document.getElementById('project-name').value.trim(); if(!name){showToast('사업명을 입력해주세요'); return;} apiSave({action:projects.some(p=>p.id===id)?'updateProject':'addProject', id, name, color:document.getElementById('project-color').value, start:document.getElementById('project-start').value, end:document.getElementById('project-end').value}, ()=>closeModal()); }
+  document.getElementById('member-manage-list').innerHTML=h || '<div class="empty">팀원이 없습니다</div>'; 
+}
+
+function renderProjectManageList(){ 
+  const el = document.getElementById('proj-count'); 
+  if(!el) return; 
+  el.textContent=`(${projects.length})`; 
+  let h=''; 
+
+  projects.forEach(p=>{ 
+    const memberCount = assigns.filter(a => a.projectId === p.id).length;
+
+    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
+      <div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;">
+        <div class="dot" style="background:${p.color}"></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500">${escapeHtml(p.name || '')}</div>
+        <div style="font-size:11px;color:var(--text2)">참여인력 ${memberCount}명</div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        <button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">참여인력</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>
+      </div>
+    </div>`; 
+  }); 
+
+  document.getElementById('project-manage-list').innerHTML=h || '<div class="empty">사업이 없습니다</div>'; 
+}
+
+function openAddMember(){ 
+  document.getElementById('modal-body').innerHTML = getMemberFormHTML(false); 
+  openModal('팀원 추가'); 
+}
+
+function openEditMember(id){ 
+  const m = mb(id); 
+  if(!m) return; 
+  document.getElementById('modal-body').innerHTML = getMemberFormHTML(true); 
+  openModal('팀원 수정'); 
+  document.getElementById('member-name').value=m.name||''; 
+  document.getElementById('member-role').value=m.role||''; 
+  document.getElementById('member-color').value=m.color||'#378ADD'; 
+  document.getElementById('member-id').value=m.id; 
+}
+
+function getMemberFormHTML(isEdit){ 
+  return `<input type="hidden" id="member-id">
+    <div class="form-row full"><div><div class="fl">이름</div><input id="member-name" type="text"></div></div>
+    <div class="form-row full"><div><div class="fl">역할</div><input id="member-role" type="text"></div></div>
+    <div class="form-row full"><div><div class="fl">색상</div><input id="member-color" type="color" value="#378ADD"></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitMember()">${isEdit?'저장':'추가'}</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`; 
+}
+
+function submitMember(){ 
+  const id=document.getElementById('member-id').value||'mb_'+Date.now(); 
+  const name=document.getElementById('member-name').value.trim(); 
+  if(!name){showToast('이름을 입력해주세요'); return;} 
+
+  apiSave({
+    action:members.some(m=>m.id===id)?'updateMember':'addMember', 
+    id, 
+    name, 
+    role:document.getElementById('member-role').value.trim(), 
+    color:document.getElementById('member-color').value
+  }, ()=>closeModal()); 
+}
+
+async function deleteMember(id){
+  const m = mb(id);
+  if(!m) return;
+
+  if(!confirm(`${m.name} 팀원을 삭제할까요? 해당 팀원의 사업 참여인력 배정도 같이 삭제됩니다.`)) return;
+
+  try{
+    await db.collection('members').doc(id).delete();
+
+    const snap = await db.collection('assigns').where('memberId', '==', id).get();
+    const batch = db.batch();
+    snap.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    if(selfId === id){
+      const next = members.find(x => x.id !== id);
+      selfId = next ? next.id : '';
+      ls('selfId', selfId);
+    }
+
+    showToast('팀원을 삭제했습니다');
+  }catch(e){
+    showToast('삭제 실패: ' + e.message);
+  }
+}
+
+function openAddProject(){ 
+  document.getElementById('modal-body').innerHTML = getProjectFormHTML(false); 
+  openModal('사업 추가'); 
+}
+
+function openEditProject(id){ 
+  const p = pj(id); 
+  if(!p) return; 
+  document.getElementById('modal-body').innerHTML = getProjectFormHTML(true); 
+  openModal('사업 수정'); 
+  document.getElementById('project-id').value=p.id; 
+  document.getElementById('project-name').value=p.name||''; 
+  document.getElementById('project-color').value=p.color||'#3B6D11'; 
+  document.getElementById('project-start').value=p.start||''; 
+  document.getElementById('project-end').value=p.end||''; 
+}
+
+function getProjectFormHTML(isEdit){ 
+  return `<input type="hidden" id="project-id">
+    <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
+    <div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div>
+    <div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`; 
+}
+
+function submitProject(){ 
+  const id=document.getElementById('project-id').value||'pj_'+Date.now(); 
+  const name=document.getElementById('project-name').value.trim(); 
+  if(!name){showToast('사업명을 입력해주세요'); return;} 
+
+  apiSave({
+    action:projects.some(p=>p.id===id)?'updateProject':'addProject', 
+    id, 
+    name, 
+    color:document.getElementById('project-color').value, 
+    start:document.getElementById('project-start').value, 
+    end:document.getElementById('project-end').value
+  }, ()=>closeModal()); 
+}
+
+function openManageProjectMembers(projectId){
+  const p = pj(projectId);
+  if(!p) return;
+
+  const projectAssigns = assigns.filter(a => a.projectId === projectId);
+  const assignedIds = new Set(projectAssigns.map(a => a.memberId));
+
+  const currentRows = projectAssigns.map(a => {
+    const m = mb(a.memberId);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border)">
+      ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
+        <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')}</div>
+      </div>
+      <button class="btn-danger-sm" onclick="deleteProjectMember('${a.id}', '${projectId}')">삭제</button>
+    </div>`;
+  }).join('');
+
+  const memberOptions = members
+    .filter(m => !assignedIds.has(m.id))
+    .map(m => `<option value="${m.id}">${escapeHtml(m.name || '')}</option>`)
+    .join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div style="margin-bottom:14px">
+      <div class="fl">현재 참여인력</div>
+      ${currentRows || '<div class="empty" style="padding:12px">등록된 참여인력이 없습니다</div>'}
+    </div>
+
+    <div class="form-row full">
+      <div>
+        <div class="fl">추가할 팀원</div>
+        <select id="pm-member-sel">
+          <option value="">— 팀원 선택</option>
+          ${memberOptions}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row full">
+      <div>
+        <div class="fl">역할</div>
+        <input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발, 보조 등">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="addProjectMember('${projectId}')">참여인력 추가</button>
+      <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+    </div>
+  `;
+
+  openModal(`${p.name} 참여인력 관리`);
+}
+
+function addProjectMember(projectId){
+  const memberId = document.getElementById('pm-member-sel').value;
+  const role = document.getElementById('pm-role-input').value.trim();
+
+  if(!memberId){
+    showToast('팀원을 선택해주세요');
+    return;
+  }
+
+  const id = 'as_' + Date.now();
+
+  apiSave({
+    action:'addAssign',
+    id,
+    memberId,
+    projectId,
+    role
+  }, () => {
+    showToast('참여인력을 추가했습니다');
+    openManageProjectMembers(projectId);
+  });
+}
+
+function deleteProjectMember(assignId, projectId){
+  if(!confirm('이 참여인력을 삭제할까요?')) return;
+
+  apiSave({
+    action:'deleteAssign',
+    id:assignId
+  }, () => {
+    showToast('참여인력을 삭제했습니다');
+    openManageProjectMembers(projectId);
+  });
+}
 
 function openModal(t){ document.getElementById('modal-title').textContent=t; document.getElementById('modal').classList.add('show'); } 
 function closeModal(){ document.getElementById('modal').classList.remove('show'); } 
@@ -614,6 +920,7 @@ function showToast(m){ const t=document.getElementById('toast'); t.textContent=m
 function showStatus(m,t){ const el=document.getElementById('status-bar'); el.style.display='flex'; el.className='status-bar sb-'+t; el.innerHTML=(t==='loading'?'<div class="spinner"></div>':'')+m; } 
 function hideStatus(){ document.getElementById('status-bar').style.display='none'; }
 function escapeHtml(str){ return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function escapeAttr(str){ return escapeHtml(str).replace(/`/g, '&#96;'); }
 
 document.getElementById('modal').onclick=function(e){if(e.target===this)closeModal();};
 const _mt = document.getElementById('month-title'); if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
