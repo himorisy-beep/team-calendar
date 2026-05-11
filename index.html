@@ -17,7 +17,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .menu-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text); padding: 0; line-height: 1; }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); z-index: 150; }
 .sidebar-overlay.show { display: block; }
-.sidebar{width:220px;background:var(--bg);border-right:.5px solid var(--border);padding:20px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar{width:220px;background:var(--bg);border-right:.5px solid var(--border);padding:20px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:20px;position:fixed;left:0;top:0;height:100vh;overflow-y:auto;z-index:120}
 .logo{font-size:15px;font-weight:700;padding:0 6px}
 .logo-sub{font-size:12px;color:var(--text3);font-weight:400;margin-top:2px;padding:0 6px}
 .sb-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;padding:0 6px;margin-bottom:6px}
@@ -38,7 +38,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .proj-chip:hover{background:var(--bg2)}
 .proj-chip.active{color:var(--text);font-weight:500}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.main{flex:1;padding:24px;overflow:auto;min-width:0}
+.main{flex:1;padding:24px;overflow:auto;min-width:0;margin-left:220px;width:calc(100% - 220px)}
 .page{display:none}.page.active{display:block}
 .page-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:nowrap;justify-content:space-between}
 .page-title{font-size:18px;font-weight:700;white-space:nowrap}
@@ -183,7 +183,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 @media(max-width:680px){
   .sidebar { position: fixed; left: -260px; z-index: 200; width: 240px; transition: left .25s ease; box-shadow: 2px 0 10px rgba(0,0,0,.1); }
   .sidebar.show { left: 0; }
-  .main { padding: 0; }
+  .main { padding: 0; margin-left:0; width:100%; }
   .page { padding: 16px; }
   .mobile-header { display: flex; }
   .gantt-left-pane { width: 120px; }
@@ -241,7 +241,34 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 
 <div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label></div></div><div id="members-container"></div></div>
 
-<div id="page-personal" class="page"><div class="page-header"><span class="page-title">내 일정</span><div style="margin-left:auto; display:flex; align-items:center; gap:10px;"><label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;"><input type="checkbox" id="pf-hide-past" onchange="renderPersonalList()"> 지난 일정 숨기기</label><button class="btn btn-primary btn-sm" onclick="openAddEvent()">+ 일정 추가</button></div></div><div class="card"><div class="card-title">내가 맡은 사업</div><div id="my-project-list"></div></div><div class="card"><div class="card-title">내 일정 목록</div><div class="filter-chips"><button class="chip active" id="pf-all" onclick="filterP('all')">전체</button><button class="chip" id="pf-public" onclick="filterP('public')">공유됨</button><button class="chip" id="pf-private" onclick="filterP('private')">비공개</button></div><div id="personal-list"></div></div></div>
+<div id="page-personal" class="page">
+  <div class="page-header">
+    <span class="page-title">내 일정</span>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+      <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;">
+        <input type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"> 지난 일정 숨기기
+      </label>
+      <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
+      <button class="chip" id="pv-projects" onclick="setPV('projects')">맡은 사업</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddEvent()">+ 일정 추가</button>
+    </div>
+  </div>
+
+  <div class="card" id="personal-list-wrap">
+    <div class="card-title">내 일정 목록</div>
+    <div class="filter-chips">
+      <button class="chip active" id="pf-all" onclick="filterP('all')">전체</button>
+      <button class="chip" id="pf-public" onclick="filterP('public')">공유됨</button>
+      <button class="chip" id="pf-private" onclick="filterP('private')">비공개</button>
+    </div>
+    <div id="personal-list"></div>
+  </div>
+
+  <div class="card" id="my-project-wrap" style="display:none">
+    <div class="card-title">내가 맡은 사업</div>
+    <div id="my-project-list"></div>
+  </div>
+</div>
 
 <div id="page-todo" class="page">
 <div class="page-header"><span class="page-title">할일</span><div style="margin-left:auto; display:flex; align-items:center; gap:10px;"><label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;"><input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 할일 숨기기</label></div></div>
@@ -284,7 +311,7 @@ let selfId = ls('selfId')||'';
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [];
 let hiddenMb = new Set(); 
 let selProj = 'all'; 
-let vm = 'cal', ovMode = 'board', pFilter = 'all'; 
+let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'list'; 
 const today = new Date(); 
 let editingEventId = null; 
 let editingProposalId = null;
@@ -348,7 +375,7 @@ function startRealtimeListeners() {
   db.collection("todos").onSnapshot(snap => { todos = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<7) checkInitLoad(); else refreshAll(); });
 }
 
-function refreshAll(){ buildSidebar(); refreshProjSelect(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderMyProjectsList(); renderPersonalList(); renderTodos(); renderMemberManageList(); renderProjectManageList(); }
+function refreshAll(){ buildSidebar(); refreshProjSelect(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderProjectManageList(); }
 
 window.addTodo = function(type, text) { if(!text.trim()) return; apiSave({ action: 'addTodo', id: 'td_'+Date.now(), who: selfId, type, text: text.trim(), done: "FALSE", date: todayStr }, () => { document.getElementById('todo-'+type+'-in').value = ''; }); };
 window.toggleTodo = function(id) { const t = todos.find(x => x.id === id); if(!t) return; apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: t.done === "TRUE" ? "FALSE" : "TRUE", date: t.date }); };
@@ -752,6 +779,28 @@ function renderMembersPage(){
   document.getElementById('members-container').innerHTML=h+'</div>';
 }
 
+function setPV(mode){
+  pvMode = mode;
+  renderPersonalCurrentView();
+}
+
+function renderPersonalCurrentView(){
+  const listWrap = document.getElementById('personal-list-wrap');
+  const projectWrap = document.getElementById('my-project-wrap');
+
+  const listBtn = document.getElementById('pv-list');
+  const projectBtn = document.getElementById('pv-projects');
+
+  if(listBtn) listBtn.classList.toggle('active', pvMode === 'list');
+  if(projectBtn) projectBtn.classList.toggle('active', pvMode === 'projects');
+
+  if(listWrap) listWrap.style.display = pvMode === 'list' ? 'block' : 'none';
+  if(projectWrap) projectWrap.style.display = pvMode === 'projects' ? 'block' : 'none';
+
+  if(pvMode === 'projects') renderMyProjectsList();
+  else renderPersonalList();
+}
+
 function renderMyProjectsList(){
   const container = document.getElementById('my-project-list');
   if(!container) return;
@@ -763,7 +812,7 @@ function renderMyProjectsList(){
     return;
   }
 
-  let h = '';
+  let h = '<div class="overview-grid">';
 
   myAssigns.forEach(a => {
     const p = pj(a.projectId);
@@ -777,32 +826,45 @@ function renderMyProjectsList(){
       .filter(e => e.project === p.id && e.who === selfId && (!hidePast || !isPast(e.end)))
       .sort((x,y)=>parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime());
 
-    const taskChips = myTasks.map(t => {
+    const taskRows = myTasks.map(t => {
       const od = isOverdue(t);
-      const cls = od ? 'overdue' : (t.status === '완료' ? 'done' : 'doing');
-      return `<span class="mini-task ${cls}" onclick="showTask('${t.id}')">${od ? '[지연] ' : ''}${escapeHtml(t.title || '')}</span>`;
+      const cls = STATUS_TAG[t.status] || 'tag-sub';
+      return `<div class="task-row">
+        <div class="task-title" onclick="showTask('${t.id}')" style="${od ? 'color:#D85A30;font-weight:600;' : ''}">
+          ${od ? '[지연] ' : ''}${escapeHtml(t.title || '')}
+        </div>
+        <span class="tag ${cls}" style="font-size:10px">${escapeHtml(t.status || '')}</span>
+        <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
+      </div>`;
     }).join('');
 
-    const eventChips = myEvents.map(e => {
-      return `<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`;
+    const eventRows = myEvents.map(e => {
+      return `<div class="task-row">
+        <div class="task-title" onclick="showEv('${e.id}')" style="color:#185FA5">${escapeHtml(e.title || '')}</div>
+        <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
+        <div class="task-dates">${fmtDate(e.start)}~${fmtDate(e.end)}</div>
+      </div>`;
     }).join('');
 
-    h += `<div class="proj-row" style="flex-wrap:wrap">
-      <div class="proj-row-name" style="flex:1 1 100%; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-        <div class="dot" style="background:${p.color || '#888'}"></div>
-        ${escapeHtml(p.name || '사업명 없음')}
-        ${a.role ? `<span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:4px">(${escapeHtml(a.role)})</span>` : ''}
+    h += `<div class="proj-card">
+      <div class="proj-card-header">
+        <div class="proj-color-bar" style="background:${p.color || '#888'}"></div>
+        <div>
+          <div class="proj-card-title">${escapeHtml(p.name || '사업명 없음')}</div>
+          <div class="proj-card-sub">
+            ${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정'}
+            ${a.role ? ` · ${escapeHtml(a.role)}` : ''}
+          </div>
+        </div>
       </div>
-      <div style="font-size:11px;color:var(--text2);width:100%;margin-bottom:5px">
-        ${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정'}
-      </div>
-      <div class="proj-tasks" style="width:100%">
-        ${taskChips + eventChips || '<span style="font-size:12px;color:var(--text3)">내 담당 세부 내역 없음</span>'}
+      <div class="proj-card-body">
+        ${taskRows + eventRows || '<div style="font-size:13px;color:var(--text3);padding:6px 0">내 담당 세부 내역이 없습니다</div>'}
       </div>
     </div>`;
   });
 
-  container.innerHTML = h || '<div class="empty" style="padding:14px">배정된 사업이 없습니다</div>';
+  h += '</div>';
+  container.innerHTML = h === '<div class="overview-grid"></div>' ? '<div class="empty" style="padding:14px">배정된 사업이 없습니다</div>' : h;
 }
 
 function renderPersonalList() {
@@ -852,14 +914,14 @@ function toggleProj(id){ selProj=selProj===id?'all':id; buildSidebar(); refreshA
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
 function setVM(m){ vm=m; ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===m)); renderCal(); } 
 function setOV(m){ ovMode=m; ['board','gantt'].forEach(k=>document.getElementById('ov-'+k).classList.toggle('active',k===m)); renderOverview(); } 
-function filterP(f){ pFilter=f; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f)); renderPersonalList(); } 
+function filterP(f){ pFilter=f; pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f)); renderPersonalCurrentView(); } 
 function openChangeSelf(){ const opts=members.map(m=>`<option value="${m.id}"${m.id===selfId?' selected':''}>${escapeHtml(m.name || '')}</option>`).join(''); document.getElementById('modal-body').innerHTML=`<select id="self-sel" style="margin-bottom:14px">${opts}</select><button class="btn btn-primary" style="width:100%" onclick="changeSelf()">확인</button>`; openModal('계정 변경'); } 
 function changeSelf(){ selfId=document.getElementById('self-sel').value; ls('selfId',selfId); closeModal(); refreshAll(); }
 
 function goPage(p){ 
   ['cal','overview','proposals','members','personal','todo','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); } 
-  if(p==='personal') { renderMyProjectsList(); renderPersonalList(); } 
+  if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
   if(p==='members') renderMembersPage(); 
