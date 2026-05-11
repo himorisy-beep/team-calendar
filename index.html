@@ -172,6 +172,27 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .todo-cb { width:16px; height:16px; cursor:pointer; }
 .todo-del { margin-left:auto; cursor:pointer; color:var(--text3); background:none; border:none; font-size:14px; padding:0 4px; }
 .todo-del:hover { color:#A32D2D; }
+.eisenhower-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-height:0}
+.eisen-card{margin-bottom:0;display:flex;flex-direction:column;min-height:260px;max-height:calc((100vh - 170px)/2);overflow:hidden}
+.eisen-title{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.eisen-desc{font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.4}
+.eisen-input{margin-bottom:10px}
+.eisen-list{display:flex;flex-direction:column;gap:4px;overflow:auto;padding-right:4px}
+.eisen-list::-webkit-scrollbar{width:6px}
+.eisen-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px}
+@media(max-width:900px){
+  .eisenhower-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .eisen-card{max-height:320px;min-height:210px}
+}
+@media(max-width:680px){
+  .eisenhower-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .eisen-card{max-height:300px;min-height:190px;padding:12px}
+  .eisen-title{font-size:11px}
+  .eisen-desc{font-size:10px}
+  .eisen-input{font-size:12px;padding:6px 8px}
+  .todo-item{font-size:12px;gap:5px}
+  .todo-del{font-size:11px}
+}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;align-items:center;justify-content:center}
 .modal-bg.show{display:flex}
 .modal{background:var(--bg);border-radius:var(--r);padding:22px;width:400px;max-width:94vw;border:.5px solid var(--border2);max-height:88vh;overflow-y:auto}
@@ -235,7 +256,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 
 <div id="page-cal" class="page active"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#1D9E75"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#378ADD"></div>업무</div><div class="legend-item"><div class="dot" style="background:#EF9F27"></div>출장</div><div class="legend-item"><div class="dot" style="background:#533AB7"></div>회의</div><div class="legend-item"><div class="dot" style="background:#6366F1"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>제출종료</div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -248,7 +269,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   </div>
 </div>
 
-<div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label></div></div><div id="members-container"></div></div>
+<div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label></div></div><div id="members-container"></div></div>
 
 <div id="page-personal" class="page">
   <div class="page-header">
@@ -280,10 +301,41 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 </div>
 
 <div id="page-todo" class="page">
-<div class="page-header"><span class="page-title">할일</span><div style="margin-left:auto; display:flex; align-items:center; gap:10px;"><label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;"><input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 할일 숨기기</label></div></div>
-<div class="overview-grid">
-<div class="card" style="margin-bottom:0; display:flex; flex-direction:column; max-height:80vh;"><div class="card-title" style="color:#D85A30">🔥 Must-Do (핵심 업무)</div><input type="text" id="todo-must-in" placeholder="+ 핵심 추가 (Enter)" style="margin-bottom:12px;" onkeypress="if(event.key==='Enter') addTodo('must', this.value)"><div id="todo-must-list" style="display:flex; flex-direction:column; gap:4px; overflow-y:auto;"></div></div>
-<div class="card" style="margin-bottom:0; display:flex; flex-direction:column; max-height:80vh;"><div class="card-title" style="color:#185FA5">☕ Should-Do (서브 업무)</div><input type="text" id="todo-should-in" placeholder="+ 서브 추가 (Enter)" style="margin-bottom:12px;" onkeypress="if(event.key==='Enter') addTodo('should', this.value)"><div id="todo-should-list" style="display:flex; flex-direction:column; gap:4px; overflow-y:auto;"></div></div>
+<div class="page-header">
+<span class="page-title">할일</span>
+<div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+<label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;"><input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 할일 숨기기</label>
+</div>
+</div>
+
+<div class="eisenhower-grid">
+  <div class="card eisen-card">
+    <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
+    <div class="eisen-desc">오늘 바로 처리해야 하는 일</div>
+    <input class="eisen-input" type="text" id="todo-urgent-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent-important', this.value)">
+    <div id="todo-urgent-important-list" class="eisen-list"></div>
+  </div>
+
+  <div class="card eisen-card">
+    <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
+    <div class="eisen-desc">중요하지만 시간을 정해서 처리할 일</div>
+    <input class="eisen-input" type="text" id="todo-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('important', this.value)">
+    <div id="todo-important-list" class="eisen-list"></div>
+  </div>
+
+  <div class="card eisen-card">
+    <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
+    <div class="eisen-desc">빨리 처리하거나 위임할 일</div>
+    <input class="eisen-input" type="text" id="todo-urgent-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent', this.value)">
+    <div id="todo-urgent-list" class="eisen-list"></div>
+  </div>
+
+  <div class="card eisen-card">
+    <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
+    <div class="eisen-desc">나중에 검토하거나 삭제할 일</div>
+    <input class="eisen-input" type="text" id="todo-backlog-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('backlog', this.value)">
+    <div id="todo-backlog-list" class="eisen-list"></div>
+  </div>
 </div>
 </div>
 
@@ -386,35 +438,130 @@ function startRealtimeListeners() {
 
 function refreshAll(){ buildSidebar(); refreshProjSelect(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderProjectManageList(); }
 
-window.addTodo = function(type, text) { if(!text.trim()) return; apiSave({ action: 'addTodo', id: 'td_'+Date.now(), who: selfId, type, text: text.trim(), done: "FALSE", date: todayStr }, () => { document.getElementById('todo-'+type+'-in').value = ''; }); };
-window.toggleTodo = function(id) { const t = todos.find(x => x.id === id); if(!t) return; apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: t.type, text: t.text, done: t.done === "TRUE" ? "FALSE" : "TRUE", date: t.date }); };
-window.deleteTodo = function(id) { if(!confirm('할 일을 삭제할까요?')) return; apiSave({ action: 'deleteTodo', id }); };
-window.toggleHideDone = function(val) { ls('hideDone', val ? 'Y' : 'N'); renderTodos(); };
+const TODO_TYPE_META = {
+  'urgent-important': { label:'긴급·중요', empty:'긴급하고 중요한 할일이 없습니다' },
+  'important': { label:'중요·계획', empty:'계획해서 처리할 중요한 할일이 없습니다' },
+  'urgent': { label:'긴급·단순', empty:'긴급하지만 단순한 할일이 없습니다' },
+  'backlog': { label:'보류', empty:'보류 중인 할일이 없습니다' }
+};
+
+function normalizeTodoType(type){
+  if(type === 'must') return 'urgent-important';
+  if(type === 'should') return 'important';
+  if(TODO_TYPE_META[type]) return type;
+  return 'backlog';
+}
+
+window.addTodo = function(type, text) { 
+  if(!text.trim()) return; 
+  const normType = normalizeTodoType(type);
+  apiSave({ action: 'addTodo', id: 'td_'+Date.now(), who: selfId, type: normType, text: text.trim(), done: "FALSE", date: todayStr }, () => { 
+    const input = document.getElementById('todo-'+normType+'-in');
+    if(input) input.value = ''; 
+  }); 
+};
+
+window.toggleTodo = function(id) { 
+  const t = todos.find(x => x.id === id); 
+  if(!t) return; 
+  apiSave({ action: 'updateTodo', id: t.id, who: t.who, type: normalizeTodoType(t.type), text: t.text, done: t.done === "TRUE" ? "FALSE" : "TRUE", date: t.date }); 
+};
+
+window.deleteTodo = function(id) { 
+  if(!confirm('할 일을 삭제할까요?')) return; 
+  apiSave({ action: 'deleteTodo', id }); 
+};
+
+window.toggleHideDone = function(val) { 
+  ls('hideDone', val ? 'Y' : 'N'); 
+  renderTodos(); 
+};
 
 window.openEditTodo = function(id) {
-  const t = todos.find(x => x.id === id); if(!t) return;
-  const html = `<div style="margin-bottom:14px"><div class="fl">할 일 내용</div><input type="text" id="edit-todo-text" value="${escapeHtml(t.text || '')}" onkeypress="if(event.key==='Enter') saveEditTodo('${t.id}')"></div><div style="display:flex; gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="saveEditTodo('${t.id}')">수정 완료</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
-  document.getElementById('modal-body').innerHTML = html; openModal('할 일 수정'); setTimeout(() => document.getElementById('edit-todo-text').focus(), 100);
+  const t = todos.find(x => x.id === id); 
+  if(!t) return;
+
+  const curType = normalizeTodoType(t.type);
+  const opts = Object.entries(TODO_TYPE_META).map(([value, meta]) => 
+    `<option value="${value}" ${value === curType ? 'selected' : ''}>${meta.label}</option>`
+  ).join('');
+
+  const html = `<div style="margin-bottom:10px">
+      <div class="fl">할 일 내용</div>
+      <input type="text" id="edit-todo-text" value="${escapeHtml(t.text || '')}" onkeypress="if(event.key==='Enter') saveEditTodo('${t.id}')">
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="fl">분류</div>
+      <select id="edit-todo-type">${opts}</select>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditTodo('${t.id}')">수정 완료</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`;
+
+  document.getElementById('modal-body').innerHTML = html; 
+  openModal('할 일 수정'); 
+  setTimeout(() => document.getElementById('edit-todo-text').focus(), 100);
 };
+
 window.saveEditTodo = function(id) {
-  const t = todos.find(x => x.id === id); const newText = document.getElementById('edit-todo-text').value.trim();
-  if(!newText) { showToast('내용을 입력해주세요'); return; }
-  apiSave({ ...t, action: 'updateTodo', text: newText }, () => closeModal());
+  const t = todos.find(x => x.id === id); 
+  if(!t) return;
+
+  const newText = document.getElementById('edit-todo-text').value.trim();
+  const newType = document.getElementById('edit-todo-type').value;
+
+  if(!newText) { 
+    showToast('내용을 입력해주세요'); 
+    return; 
+  }
+
+  apiSave({ ...t, action: 'updateTodo', type: newType, text: newText }, () => closeModal());
 };
 
 function renderTodos() {
-  const mustList = document.getElementById('todo-must-list'); const shouldList = document.getElementById('todo-should-list');
-  const hideDone = ls('hideDone') === 'Y'; const hideEl = document.getElementById('todo-hide-done'); if(hideEl) hideEl.checked = hideDone;
-  if(!mustList || !shouldList) return; let mh='', sh=''; let myTodos = todos.filter(t => String(t.who) === String(selfId));
+  const hideDone = ls('hideDone') === 'Y'; 
+  const hideEl = document.getElementById('todo-hide-done'); 
+  if(hideEl) hideEl.checked = hideDone;
+
+  const buckets = {
+    'urgent-important': '',
+    'important': '',
+    'urgent': '',
+    'backlog': ''
+  };
+
+  let myTodos = todos.filter(t => String(t.who) === String(selfId));
   if (hideDone) myTodos = myTodos.filter(t => t.done !== "TRUE");
-  myTodos.sort((a, b) => { if (a.done !== b.done) return a.done === "TRUE" ? 1 : -1; return String(b.date||'').localeCompare(String(a.date||'')); });
-  myTodos.forEach(t => {
-    const isDone = t.done === "TRUE"; const isOld = (!isDone && t.date < todayStr); const warn = (t.type === 'must' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
-    const html = `<div class="todo-item ${isDone?'done':''}"> <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')"> <span style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="클릭하여 수정" onclick="openEditTodo('${t.id}')">${warn}${escapeHtml(t.text || '')}</span> <div style="display:flex; gap:8px; align-items:center;"><button class="todo-del" style="font-size:11px; color:var(--text2)" onclick="openEditTodo('${t.id}')">수정</button><button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button></div></div>`;
-    if(t.type === 'must') mh += html; else sh += html;
+
+  myTodos.sort((a, b) => { 
+    if (a.done !== b.done) return a.done === "TRUE" ? 1 : -1; 
+    return String(b.date||'').localeCompare(String(a.date||'')); 
   });
-  mustList.innerHTML = mh || '<div class="empty" style="padding:10px; font-size:11px;">핵심 할일이 없습니다</div>';
-  shouldList.innerHTML = sh || '<div class="empty" style="padding:10px; font-size:11px;">서브 할일이 없습니다</div>';
+
+  myTodos.forEach(t => {
+    const type = normalizeTodoType(t.type);
+    const isDone = t.done === "TRUE"; 
+    const isOld = (!isDone && t.date < todayStr);
+    const warn = (type === 'urgent-important' && isOld) ? `<span style="color:#D85A30;font-weight:600;">[이월]</span> ` : '';
+
+    const html = `<div class="todo-item ${isDone?'done':''}">
+      <input type="checkbox" class="todo-cb" ${isDone?'checked':''} onchange="toggleTodo('${t.id}')">
+      <span style="flex:1; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="클릭하여 수정" onclick="openEditTodo('${t.id}')">${warn}${escapeHtml(t.text || '')}</span>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="todo-del" style="font-size:11px; color:var(--text2)" onclick="openEditTodo('${t.id}')">수정</button>
+        <button class="todo-del" onclick="deleteTodo('${t.id}')">✕</button>
+      </div>
+    </div>`;
+
+    buckets[type] += html;
+  });
+
+  Object.entries(TODO_TYPE_META).forEach(([type, meta]) => {
+    const el = document.getElementById(`todo-${type}-list`);
+    if(!el) return;
+    el.innerHTML = buckets[type] || `<div class="empty" style="padding:10px; font-size:11px;">${meta.empty}</div>`;
+  });
 }
 
 function buildSidebar(){
