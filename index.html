@@ -74,11 +74,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .dn{font-size:12px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;margin-bottom:3px}
 .cal-day.sun .dn{color:#D85A30}.cal-day.sat .dn{color:#378ADD}
 .ep{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer; max-width: 100%; font-weight: 500;}
-.ep-range{position:relative;z-index:2;border-radius:0;margin-left:-6px;margin-right:-6px}
-.ep-range-start{margin-left:0;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.ep-range-end{margin-right:0;border-top-right-radius:3px;border-bottom-right-radius:3px}
-.ep-range-mid{border-radius:0}
-.ep-single{border-radius:3px}
+.cal-month{border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--border)}
+.cal-month-header{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-week{position:relative;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border)}
+.cal-week-day{background:var(--bg);min-width:0;padding:5px;cursor:pointer}
+.cal-week-day.other{background:var(--bg2);color:var(--text3)}
+.cal-week-day.today .dn{background:var(--text);color:var(--bg);border-radius:50%}
+.cal-week-day.sun .dn{color:#D85A30}
+.cal-week-day.sat .dn{color:#378ADD}
+.cal-week-bars{position:absolute;left:0;right:0;top:28px;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:18px;row-gap:3px;pointer-events:none;padding:0 0}
+.cal-span-bar{height:18px;display:flex;align-items:center;font-size:11px;font-weight:500;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;pointer-events:auto;margin:0;border-radius:0}
+.cal-span-start{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:4px}
+.cal-span-end{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:4px}
+.cal-span-single{border-radius:4px;margin-left:4px;margin-right:4px}
 .ep-proposal-start{background:#EEF2FF;color:#4338CA;border-left:3px solid #6366F1}
 .ep-proposal-deadline{background:#FEF2F2;color:#B91C1C;border-left:3px solid #EF4444}
 .list-wrap{display:flex;flex-direction:column;gap:7px}
@@ -401,102 +409,137 @@ function proposalMarksOnDay(y,m,d){
   return marks;
 }
 
-function getEventSegmentClass(e, y, m, d, lastDay){
-  const day = new Date(y, m, d);
-  day.setHours(0,0,0,0);
-
-  const s = parseDateSafely(e.start);
-  s.setHours(0,0,0,0);
-
-  const en = parseDateSafely(e.end || e.start);
-  en.setHours(0,0,0,0);
-
-  const dayT = day.getTime();
-  const startT = s.getTime();
-  const endT = en.getTime();
-
-  if(!startT || !endT || isNaN(startT) || isNaN(endT) || startT === endT) return 'ep-single';
-
-  const dow = day.getDay();
-  const segStart = dayT === startT || dow === 0 || d === 1;
-  const segEnd = dayT === endT || dow === 6 || d === lastDay;
-
-  if(segStart && segEnd) return 'ep-single';
-  if(segStart) return 'ep-range ep-range-start';
-  if(segEnd) return 'ep-range ep-range-end';
-  return 'ep-range ep-range-mid';
+function normalizeDay(d){
+  const x = new Date(d);
+  x.setHours(0,0,0,0);
+  return x;
 }
 
-function shouldShowEventLabel(e, y, m, d){
-  const day = new Date(y, m, d);
-  day.setHours(0,0,0,0);
+function getWeekEventSegments(weekDates, vis){
+  const weekStart = normalizeDay(weekDates[0]);
+  const weekEnd = normalizeDay(weekDates[6]);
+  const segments = [];
 
-  const s = parseDateSafely(e.start);
-  s.setHours(0,0,0,0);
+  vis.forEach(e => {
+    const s = normalizeDay(parseDateSafely(e.start));
+    const en = normalizeDay(parseDateSafely(e.end || e.start));
+    const sT = s.getTime();
+    const eT = en.getTime();
 
-  return day.getTime() === s.getTime() || day.getDay() === 0 || d === 1;
+    if(!sT || !eT || isNaN(sT) || isNaN(eT)) return;
+    if(eT < weekStart.getTime() || sT > weekEnd.getTime()) return;
+
+    const segStart = sT < weekStart.getTime() ? weekStart : s;
+    const segEnd = eT > weekEnd.getTime() ? weekEnd : en;
+    const startCol = segStart.getDay() + 1;
+    const endCol = segEnd.getDay() + 2;
+
+    const m2 = mb(e.who);
+    const nm = e.who === 'all' ? '전체' : (m2 ? m2.name : '');
+    const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
+    const label = `${nm} ${e.title || ''}`.trim();
+    const isStart = sT >= weekStart.getTime();
+    const isEnd = eT <= weekEnd.getTime();
+    const isSingle = startCol + 1 === endCol && isStart && isEnd;
+
+    segments.push({
+      kind:'event',
+      id:e.id,
+      startCol,
+      endCol,
+      startT:sT,
+      endT:eT,
+      label,
+      showLabel:isStart || startCol === 1,
+      cls:isSingle ? 'cal-span-single' : `${isStart ? 'cal-span-start' : ''} ${isEnd ? 'cal-span-end' : ''}`,
+      style:`background:${lighten(bgCol)};color:${bgCol}`
+    });
+  });
+
+  weekDates.forEach(dt => {
+    proposalMarksOnDay(dt.getFullYear(), dt.getMonth(), dt.getDate()).forEach(p => {
+      const col = dt.getDay() + 1;
+      const cls = p.type === 'deadline' ? 'ep-proposal-deadline' : 'ep-proposal-start';
+      segments.push({
+        kind:'proposal',
+        id:p.id,
+        startCol:col,
+        endCol:col+1,
+        startT:dt.getTime(),
+        endT:dt.getTime(),
+        label:p.label,
+        showLabel:true,
+        cls:`cal-span-single ${cls}`,
+        style:''
+      });
+    });
+  });
+
+  segments.sort((a,b)=>{
+    if(a.startCol !== b.startCol) return a.startCol - b.startCol;
+    return (b.endCol - b.startCol) - (a.endCol - a.startCol);
+  });
+
+  const laneEnds = [];
+  segments.forEach(seg => {
+    let lane = laneEnds.findIndex(end => seg.startCol >= end);
+    if(lane === -1){
+      lane = laneEnds.length;
+      laneEnds.push(0);
+    }
+    seg.lane = lane + 1;
+    laneEnds[lane] = seg.endCol;
+  });
+
+  return { segments, laneCount: laneEnds.length };
 }
 
 function renderCal(){ vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
 function renderCalGrid(){
-  const fd=new Date(curY,curM,1).getDay(),ld=new Date(curY,curM+1,0).getDate(); 
-  const vis=getVisEv(); 
-  let h='<div class="cal-grid">'; 
+  const first = new Date(curY, curM, 1);
+  const last = new Date(curY, curM + 1, 0);
+  const gridStart = new Date(curY, curM, 1 - first.getDay());
+  const gridEnd = new Date(curY, curM + 1, last.getDate() + (6 - last.getDay()));
+  const vis = getVisEv();
 
+  let h = '<div class="cal-month">';
+  h += '<div class="cal-month-header">';
   ['일','월','화','수','목','금','토'].forEach(d=>h+=`<div class="cal-hdr">${d}</div>`);
+  h += '</div>';
 
-  for(let i=0;i<fd;i++)h+='<div class="cal-day empty"></div>';
+  for(let weekStart = new Date(gridStart); weekStart <= gridEnd; weekStart.setDate(weekStart.getDate() + 7)){
+    const weekDates = [];
+    for(let i=0;i<7;i++){
+      const dt = new Date(weekStart);
+      dt.setDate(weekStart.getDate() + i);
+      dt.setHours(0,0,0,0);
+      weekDates.push(dt);
+    }
 
-  for(let d=1;d<=ld;d++){
-    const dow=(fd+d-1)%7; 
-    const isT=d===today.getDate()&&curM===today.getMonth()&&curY===today.getFullYear(); 
+    const {segments, laneCount} = getWeekEventSegments(weekDates, vis);
+    const weekHeight = Math.max(86, 34 + Math.max(1, laneCount) * 21 + 8);
 
-    const de=vis
-      .filter(e=>inDay(e,curY,curM,d))
-      .sort((a,b)=>{
-        const as=parseDateSafely(a.start).getTime();
-        const bs=parseDateSafely(b.start).getTime();
-        if(as!==bs) return as-bs;
+    h += `<div class="cal-week" style="height:${weekHeight}px">`;
 
-        const ae=parseDateSafely(a.end || a.start).getTime();
-        const be=parseDateSafely(b.end || b.start).getTime();
-        if(ae!==be) return be-ae;
-
-        return String(a.id || '').localeCompare(String(b.id || ''));
-      }); 
-
-    const proposalMarks = proposalMarksOnDay(curY, curM, d);
-    const dayItems = [
-      ...de.map(e=>({...e,_kind:'event'})),
-      ...proposalMarks.map(p=>({...p,_kind:'proposal'}))
-    ];
-
-    const show=dayItems.slice(0,3), more=dayItems.length-3;
-
-    h+=`<div class="cal-day${isT?' today':''} ${dow===0?'sun':dow===6?'sat':''}" onclick="dayClick(${d})"><div class="dn">${d}</div>`;
-
-    show.forEach(item=>{ 
-      if(item._kind === 'proposal'){
-        const cls = item.type === 'deadline' ? 'ep-proposal-deadline' : 'ep-proposal-start';
-        h+=`<div class="ep ${cls}" onclick="event.stopPropagation();showProposal('${item.id}')" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</div>`;
-      } else {
-        const e=item; 
-        const m2=mb(e.who); 
-        const nm = e.who==='all'?'전체':(m2?m2.name:'');
-        const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; 
-        const segClass = getEventSegmentClass(e, curY, curM, d, ld);
-        const labelText = `${nm} ${e.title || ''}`.trim();
-        const visibleLabel = shouldShowEventLabel(e, curY, curM, d) ? escapeHtml(labelText) : '&nbsp;';
-
-        h+=`<div class="ep ${segClass}" style="background:${lighten(bgCol)};color:${bgCol}" onclick="event.stopPropagation();showEv('${e.id}')" title="${escapeHtml(labelText)}">${visibleLabel}</div>`; 
-      }
+    weekDates.forEach(dt => {
+      const isCurrent = dt.getMonth() === curM;
+      const dow = dt.getDay();
+      const isToday = dt.getFullYear()===today.getFullYear() && dt.getMonth()===today.getMonth() && dt.getDate()===today.getDate();
+      const click = isCurrent ? `onclick="dayClick(${dt.getDate()})"` : '';
+      h += `<div class="cal-week-day ${isCurrent?'':'other'} ${isToday?'today':''} ${dow===0?'sun':dow===6?'sat':''}" ${click}><div class="dn">${dt.getDate()}</div></div>`;
     });
 
-    if(more>0)h+=`<div class="more-p">+${more}</div>`; 
-    h+='</div>';
+    h += '<div class="cal-week-bars">';
+    segments.forEach(seg => {
+      const label = seg.showLabel ? escapeHtml(seg.label) : '&nbsp;';
+      const onClick = seg.kind === 'proposal' ? `showProposal('${seg.id}')` : `showEv('${seg.id}')`;
+      h += `<div class="cal-span-bar ${seg.cls}" style="grid-column:${seg.startCol}/${seg.endCol};grid-row:${seg.lane};${seg.style}" onclick="event.stopPropagation();${onClick}" title="${escapeHtml(seg.label)}">${label}</div>`;
+    });
+    h += '</div></div>';
   }
 
-  document.getElementById('cal-container').innerHTML=h+'</div>';
+  h += '</div>';
+  document.getElementById('cal-container').innerHTML = h;
 }
 
 function renderCalList(){
