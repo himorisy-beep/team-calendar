@@ -93,9 +93,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .cal-span-start{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:4px}
 .cal-span-end{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:4px}
 .cal-span-single{border-radius:4px;margin-left:4px;margin-right:4px}
-.ep-proposal-start{background:#EEF2FF;color:#4338CA;border-left:3px solid #6366F1}
+.ep-proposal-start{background:#E0F7FA;color:#007C89;border-left:3px solid #00ACC1}
 .ep-proposal-deadline{background:#FEF2F2;color:#B91C1C;border-left:3px solid #EF4444}
 .list-wrap{display:flex;flex-direction:column;gap:7px}
+.cal-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.cal-list-title{font-size:13px;font-weight:700;color:var(--text2)}
+.cal-list-meta{font-size:12px;color:var(--text3)}
+.cal-list-controls{display:flex;gap:6px;flex-wrap:wrap}
 .li{display:flex;gap:11px;padding:11px 14px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);align-items:flex-start;cursor:pointer;transition:border-color .12s}
 .li:hover{border-color:var(--border2)}
 .li-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}
@@ -232,11 +236,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 <div><div class="logo">캘린더</div><div class="logo-sub" id="sb-teamname">해외컨설팅</div></div>
 <div>
 <button class="sb-btn active" id="nav-cal" onclick="goPage('cal')"><span class="icon">📅</span>캘린더</button>
-<button class="sb-btn" id="nav-overview" onclick="goPage('overview')"><span class="icon">📊</span>사업 현황</button>
-<button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안 현황</button>
-<button class="sb-btn" id="nav-members" onclick="goPage('members')"><span class="icon">👥</span>멤버 현황</button>
-<button class="sb-btn" id="nav-personal" onclick="goPage('personal')"><span class="icon">👤</span>내 일정</button>
-<button class="sb-btn" id="nav-todo" onclick="goPage('todo')"><span class="icon">✅</span>할일</button>
+<button class="sb-btn" id="nav-overview" onclick="goPage('overview')"><span class="icon">📊</span>사업 관리</button>
+<button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안 관리</button>
+<button class="sb-btn" id="nav-personal" onclick="goPage('personal')"><span class="icon">✅</span>내 업무</button>
 <button class="sb-btn" id="nav-setup" onclick="goPage('setup')"><span class="icon">⚙️</span>설정</button>
 </div>
 <div class="filter-section">
@@ -254,13 +256,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 <div class="mobile-header"><button class="menu-btn" onclick="toggleSidebar()">☰</button><div style="font-weight:700;font-size:16px">캘린더</div></div>
 <div id="status-bar" style="display:none"></div>
 
-<div id="page-cal" class="page active"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#1D9E75"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#378ADD"></div>업무</div><div class="legend-item"><div class="dot" style="background:#EF9F27"></div>출장</div><div class="legend-item"><div class="dot" style="background:#533AB7"></div>회의</div><div class="legend-item"><div class="dot" style="background:#6366F1"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>제출종료</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page active"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#1D9E75"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#378ADD"></div>업무</div><div class="legend-item"><div class="dot" style="background:#EF9F27"></div>출장</div><div class="legend-item"><div class="dot" style="background:#533AB7"></div>회의</div><div class="legend-item"><div class="dot" style="background:#00ACC1"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>제출종료</div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
-    <span class="page-title">제안 현황</span>
+    <span class="page-title">제안 관리</span>
     <button class="btn btn-primary btn-sm" onclick="openAddProposal()">+ 제안 추가</button>
   </div>
   <div class="card">
@@ -273,13 +275,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 
 <div id="page-personal" class="page">
   <div class="page-header">
-    <span class="page-title">내 일정</span>
+    <span class="page-title">내 업무</span>
     <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
       <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;">
         <input type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"> 지난 일정 숨기기
       </label>
       <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
       <button class="chip" id="pv-projects" onclick="setPV('projects')">맡은 사업</button>
+      <button class="chip" id="pv-todos" onclick="setPV('todos')">할일</button>
       <button class="btn btn-primary btn-sm" onclick="openAddEvent()">+ 일정 추가</button>
     </div>
   </div>
@@ -298,45 +301,45 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
     <div class="card-title">내가 맡은 사업</div>
     <div id="my-project-list"></div>
   </div>
-</div>
 
-<div id="page-todo" class="page">
-<div class="page-header">
-<span class="page-title">할일</span>
-<div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
-<label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;"><input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 할일 숨기기</label>
-</div>
-</div>
+  <div id="my-todo-wrap" style="display:none">
+    <div class="page-header" style="margin-bottom:12px">
+      <span class="page-title" style="font-size:15px">내 할일</span>
+      <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;">
+        <input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 할일 숨기기
+      </label>
+    </div>
 
-<div class="eisenhower-grid">
-  <div class="card eisen-card">
-    <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
-    <div class="eisen-desc">오늘 바로 처리해야 하는 일</div>
-    <input class="eisen-input" type="text" id="todo-urgent-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent-important', this.value)">
-    <div id="todo-urgent-important-list" class="eisen-list"></div>
+    <div class="eisenhower-grid">
+      <div class="card eisen-card">
+        <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
+        <div class="eisen-desc">오늘 바로 처리해야 하는 일</div>
+        <input class="eisen-input" type="text" id="todo-urgent-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent-important', this.value)">
+        <div id="todo-urgent-important-list" class="eisen-list"></div>
+      </div>
+
+      <div class="card eisen-card">
+        <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
+        <div class="eisen-desc">중요하지만 시간을 정해서 처리할 일</div>
+        <input class="eisen-input" type="text" id="todo-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('important', this.value)">
+        <div id="todo-important-list" class="eisen-list"></div>
+      </div>
+
+      <div class="card eisen-card">
+        <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
+        <div class="eisen-desc">빨리 처리하거나 위임할 일</div>
+        <input class="eisen-input" type="text" id="todo-urgent-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent', this.value)">
+        <div id="todo-urgent-list" class="eisen-list"></div>
+      </div>
+
+      <div class="card eisen-card">
+        <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
+        <div class="eisen-desc">나중에 검토하거나 삭제할 일</div>
+        <input class="eisen-input" type="text" id="todo-backlog-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('backlog', this.value)">
+        <div id="todo-backlog-list" class="eisen-list"></div>
+      </div>
+    </div>
   </div>
-
-  <div class="card eisen-card">
-    <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
-    <div class="eisen-desc">중요하지만 시간을 정해서 처리할 일</div>
-    <input class="eisen-input" type="text" id="todo-important-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('important', this.value)">
-    <div id="todo-important-list" class="eisen-list"></div>
-  </div>
-
-  <div class="card eisen-card">
-    <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
-    <div class="eisen-desc">빨리 처리하거나 위임할 일</div>
-    <input class="eisen-input" type="text" id="todo-urgent-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('urgent', this.value)">
-    <div id="todo-urgent-list" class="eisen-list"></div>
-  </div>
-
-  <div class="card eisen-card">
-    <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
-    <div class="eisen-desc">나중에 검토하거나 삭제할 일</div>
-    <input class="eisen-input" type="text" id="todo-backlog-in" placeholder="+ 추가 (Enter)" onkeypress="if(event.key==='Enter') addTodo('backlog', this.value)">
-    <div id="todo-backlog-list" class="eisen-list"></div>
-  </div>
-</div>
 </div>
 
 <div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card" style="max-width:580px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list"></div></div><div class="card" style="max-width:580px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
@@ -372,7 +375,7 @@ let selfId = ls('selfId')||'';
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [];
 let hiddenMb = new Set(); 
 let selProj = 'all'; 
-let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'list'; 
+let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'list', calListMode = 'window'; 
 const today = new Date(); 
 let editingEventId = null; 
 let editingProposalId = null;
@@ -725,12 +728,122 @@ function renderCalGrid(){
   document.getElementById('cal-container').innerHTML = h;
 }
 
+function setCalListMode(mode){
+  calListMode = mode;
+  if(vm === 'list') renderCalList();
+}
+
 function renderCalList(){
-  const vis=getVisEv().sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start)); 
-  if(!vis.length){ document.getElementById('cal-container').innerHTML='<div class="empty">표시할 일정이 없습니다</div>'; return; }
-  let h='<div class="list-wrap">'; 
-  vis.forEach(e=>{
-    const m2=mb(e.who); const p=pj(e.project||''); const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
+  const now = new Date();
+  now.setHours(0,0,0,0);
+
+  const from = new Date(now);
+  from.setDate(from.getDate() - 14);
+
+  const to = new Date(now);
+  to.setDate(to.getDate() + 60);
+  to.setHours(23,59,59,999);
+
+  const eventItems = getVisEv().map(e => {
+    const s = parseDateSafely(e.start);
+    const en = parseDateSafely(e.end || e.start);
+    return {
+      kind:'event',
+      id:e.id,
+      title:e.title || '',
+      start:s,
+      end:en,
+      type:e.type,
+      subtype:e.subtype || '',
+      project:e.project || '',
+      who:e.who || '',
+      raw:e
+    };
+  });
+
+  const proposalItems = [];
+  proposals.forEach(p => {
+    if(p.start){
+      proposalItems.push({
+        kind:'proposal',
+        id:p.id,
+        title:`제안시작 · ${p.name || '제안'}`,
+        start:parseDateSafely(p.start),
+        end:parseDateSafely(p.start),
+        type:'proposal-start',
+        raw:p
+      });
+    }
+    if(p.deadline){
+      proposalItems.push({
+        kind:'proposal',
+        id:p.id,
+        title:`제출종료 · ${p.name || '제안'}`,
+        start:parseDateSafely(p.deadline),
+        end:parseDateSafely(p.deadline),
+        type:'proposal-deadline',
+        raw:p
+      });
+    }
+  });
+
+  let items = [...eventItems, ...proposalItems]
+    .filter(x => x.start && !isNaN(x.start.getTime()) && x.start.getTime() > 0)
+    .sort((a,b)=>a.start-b.start);
+
+  const totalCount = items.length;
+
+  if(calListMode === 'window'){
+    items = items.filter(x => {
+      const end = x.end && !isNaN(x.end.getTime()) ? x.end : x.start;
+      return end >= from && x.start <= to;
+    });
+  }
+
+  const head = `
+    <div class="cal-list-head">
+      <div>
+        <div class="cal-list-title">${calListMode === 'window' ? '최근·예정 일정' : '전체 일정'}</div>
+        <div class="cal-list-meta">${calListMode === 'window' ? `${fmtDateFull(from)} ~ ${fmtDateFull(to)} · ${items.length}/${totalCount}건 표시` : `${totalCount}건 전체 표시`}</div>
+      </div>
+      <div class="cal-list-controls">
+        <button class="chip ${calListMode === 'window' ? 'active' : ''}" onclick="setCalListMode('window')">최근·예정</button>
+        <button class="chip ${calListMode === 'all' ? 'active' : ''}" onclick="setCalListMode('all')">전체</button>
+      </div>
+    </div>
+  `;
+
+  if(!items.length){
+    document.getElementById('cal-container').innerHTML=head+'<div class="empty">표시할 일정이 없습니다</div>';
+    return;
+  }
+
+  let h=head+'<div class="list-wrap">';
+
+  items.forEach(item=>{
+    if(item.kind === 'proposal'){
+      const isDeadline = item.type === 'proposal-deadline';
+      const bgCol = isDeadline ? '#EF4444' : '#00ACC1';
+      const meta = isDeadline ? '제안서 제출 종료' : '제안 시작';
+      h+=`<div class="li" onclick="showProposal('${item.id}')">
+          <div class="li-dot" style="background:${bgCol}"></div>
+          <div class="li-info">
+            <div class="li-title">${escapeHtml(item.title)}</div>
+            <div class="li-meta">${isDeadline ? fmtDateTimeShort(item.start) : fmtDateFull(item.start)} · ${meta}</div>
+            <div class="tag-row">
+              <span class="tag ${isDeadline ? 'tag-sub' : 'tag-project'}">${isDeadline ? '제출종료' : '제안시작'}</span>
+              ${item.raw?.demandOrg ? `<span class="tag tag-sub">${escapeHtml(item.raw.demandOrg)}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const e = item.raw;
+    const m2=mb(e.who);
+    const p=pj(e.project||'');
+    const bgCol = e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888';
+
     h+=`<div class="li" onclick="showEv('${e.id}')">
           <div class="li-dot" style="background:${bgCol}"></div>
           <div class="li-info">
@@ -744,10 +857,11 @@ function renderCalList(){
           </div>
         </div>`;
   });
+
   document.getElementById('cal-container').innerHTML=h+'</div>';
 }
 
-function renderOverview(){ ovMode==='board'?renderBoard():renderGantt(); }
+function renderOverview(){ if(ovMode==='board') renderBoard(); else if(ovMode==='gantt') renderGantt(); else renderMemberOverview(); }
 function renderBoard(){
   const vp=projects.filter(p=>selProj==='all'||p.id===selProj); if(!vp.length){document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
   let h='<div class="overview-grid">'; vp.forEach(p=>{
@@ -927,6 +1041,50 @@ function fileLinksToTextarea(value){
   return normalizeFileLinks(value).map(f => `${f.name || '첨부파일 다운로드'} | ${f.url}`).join('\n');
 }
 
+function renderMemberOverview(){
+  const target = document.getElementById('overview-container');
+  if(!target) return;
+
+  const vm2=members.filter(m=>!hiddenMb.has(m.id)); 
+  if(!vm2.length){target.innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
+
+  let h='<div class="member-overview">'; 
+  vm2.forEach(m2=>{
+    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); 
+    const me=events.filter(e=>(e.who===m2.id||e.who==='all')&&e.public&&(!hidePast||!isPast(e.end)));
+
+    const pr=ma.map(a=>{
+      const p=pj(a.projectId); 
+      if(!p) return ''; 
+
+      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||t.status!=='완료')); 
+      const pe=me.filter(e=>e.project===p.id); 
+
+      return `<div class="proj-row" style="flex-wrap:wrap">
+        <div class="proj-row-name" style="flex:1 1 100%;">
+          <div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}
+        </div>
+        <div class="proj-tasks" style="width:100%">
+          ${mt.map(t=>`<span class="mini-task ${t.status==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}
+        </div>
+      </div>`;
+    }).join('');
+
+    h+=`<div class="member-card">
+      <div class="member-card-header">
+        <div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
+        <div class="member-card-info">
+          <div class="member-card-name">${escapeHtml(m2.name || '')}</div>
+          <div class="member-card-role">${escapeHtml(m2.role || '-')} · 담당사업 ${ma.length}개</div>
+        </div>
+      </div>
+      <div class="member-card-body">${pr || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}</div>
+    </div>`;
+  });
+
+  target.innerHTML=h+'</div>';
+}
+
 function renderMembersPage(){
   const vm2=members.filter(m=>!hiddenMb.has(m.id)); if(!vm2.length){document.getElementById('members-container').innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
   let h='<div class="member-overview">'; vm2.forEach(m2=>{
@@ -945,17 +1103,22 @@ function setPV(mode){
 function renderPersonalCurrentView(){
   const listWrap = document.getElementById('personal-list-wrap');
   const projectWrap = document.getElementById('my-project-wrap');
+  const todoWrap = document.getElementById('my-todo-wrap');
 
   const listBtn = document.getElementById('pv-list');
   const projectBtn = document.getElementById('pv-projects');
+  const todoBtn = document.getElementById('pv-todos');
 
   if(listBtn) listBtn.classList.toggle('active', pvMode === 'list');
   if(projectBtn) projectBtn.classList.toggle('active', pvMode === 'projects');
+  if(todoBtn) todoBtn.classList.toggle('active', pvMode === 'todos');
 
   if(listWrap) listWrap.style.display = pvMode === 'list' ? 'block' : 'none';
   if(projectWrap) projectWrap.style.display = pvMode === 'projects' ? 'block' : 'none';
+  if(todoWrap) todoWrap.style.display = pvMode === 'todos' ? 'block' : 'none';
 
   if(pvMode === 'projects') renderMyProjectsList();
+  else if(pvMode === 'todos') renderTodos();
   else renderPersonalList();
 }
 
@@ -1071,19 +1234,17 @@ function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('s
 function toggleProj(id){ selProj=selProj===id?'all':id; buildSidebar(); refreshAll(); } 
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
 function setVM(m){ vm=m; ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===m)); renderCal(); } 
-function setOV(m){ ovMode=m; ['board','gantt'].forEach(k=>document.getElementById('ov-'+k).classList.toggle('active',k===m)); renderOverview(); } 
+function setOV(m){ ovMode=m; ['board','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===m); }); renderOverview(); } 
 function filterP(f){ pFilter=f; pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f)); renderPersonalCurrentView(); } 
 function openChangeSelf(){ const opts=members.map(m=>`<option value="${m.id}"${m.id===selfId?' selected':''}>${escapeHtml(m.name || '')}</option>`).join(''); document.getElementById('modal-body').innerHTML=`<select id="self-sel" style="margin-bottom:14px">${opts}</select><button class="btn btn-primary" style="width:100%" onclick="changeSelf()">확인</button>`; openModal('계정 변경'); } 
 function changeSelf(){ selfId=document.getElementById('self-sel').value; ls('selfId',selfId); closeModal(); refreshAll(); }
 
 function goPage(p){ 
-  ['cal','overview','proposals','members','personal','todo','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
+  ['cal','overview','proposals','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); } 
   if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
-  if(p==='members') renderMembersPage(); 
-  if(p==='todo') renderTodos(); 
   if(p==='setup') { renderMemberManageList(); renderProjectManageList(); applyTheme(currentTheme); } 
 }
 
