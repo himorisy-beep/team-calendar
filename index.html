@@ -1389,7 +1389,15 @@ function startRealtimeListeners() {
   db.collection("proposals").onSnapshot(snap => { proposals = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('proposals', err));
   db.collection("tasks").onSnapshot(snap => { tasks = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('tasks', err));
   db.collection("assigns").onSnapshot(snap => { assigns = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('assigns', err));
-  db.collection("todos").onSnapshot(snap => { todos = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('todos', err));
+  db.collection("todos")
+    .where("who", "==", selfId)
+    .onSnapshot(
+      snap => {
+        todos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
+      },
+      err => handleSnapshotError('todos', err)
+    );
   db.collection("comments").onSnapshot(snap => { comments = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('comments', err));
   db.collection("activityLogs").onSnapshot(snap => { activityLogs = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('activityLogs', err));
   db.collection("notifications").onSnapshot(snap => { notifications = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('notifications', err));
