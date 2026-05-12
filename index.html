@@ -1642,9 +1642,21 @@ function isNotificationDday(diff){
   return [7,3,1,0].includes(diff);
 }
 
+function isPublicTask(t){
+  return t.showOnCalendar === true
+    || t.showOnCalendar === 'TRUE'
+    || t.showOnCalendar === 'true';
+}
+
 function getNotificationTaskPool(scope){
   const normalizedScope = scope || getNotificationTaskScope();
-  if(canManageAll() && normalizedScope === 'all') return tasks;
+
+  // admin/team_leader의 "전체 지연·마감 업무"는 공개 업무만 표시
+  if(canManageAll() && normalizedScope === 'all') {
+    return tasks.filter(t => isPublicTask(t));
+  }
+
+  // "내 지연·마감 업무"는 본인 담당 업무 전체 표시
   return tasks.filter(t => String(t.assignee) === String(selfId));
 }
 
