@@ -889,16 +889,16 @@ function renderHome(){
     .filter(p => p._d >= now && p._d <= weekEnd)
     .sort((a,b)=>a._d-b._d);
 
-  const overdueTasks = tasks
+  const myTasks = tasks.filter(t => t.assignee === selfId);
+
+  const overdueTasks = myTasks
     .filter(t => t.status !== '완료' && isOverdue(t))
     .sort(taskDueSort);
 
   const todayEvents = events
-    .filter(e => !isPrivatePersonal(e))
+    .filter(e => e.who === selfId)
     .filter(e => inDay(e, now.getFullYear(), now.getMonth(), now.getDate()))
     .sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start));
-
-  const myTasks = tasks.filter(t => t.assignee === selfId);
 
   const urgentTasks = myTasks
     .filter(t => t.status !== '완료')
@@ -977,7 +977,7 @@ function renderHome(){
     const dayItems = [];
 
     events
-      .filter(e => !isPrivatePersonal(e))
+      .filter(e => e.who === selfId)
       .filter(e => inDay(e, day.getFullYear(), day.getMonth(), day.getDate()))
       .forEach(e => dayItems.push({
         kind:'event',
@@ -996,6 +996,7 @@ function renderHome(){
     });
 
     getCalendarTasks()
+      .filter(t => t.assignee === selfId)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
       .forEach(t => dayItems.push({kind:'task', id:t.id, title:`주요업무 · ${t.title || '업무'}`, onClick:`showTask('${t.id}')`}));
 
@@ -1018,12 +1019,12 @@ function renderHome(){
 
     <div class="today-layout">
       <div class="card">
-        <div class="card-title">오늘 처리 필요</div>
+        <div class="card-title">내 오늘 처리 필요</div>
         <div class="action-list">${actionList || '<div class="empty">오늘 특별히 처리할 항목이 없습니다</div>'}</div>
       </div>
 
       <div class="card">
-        <div class="card-title">이번 주 일정·마감</div>
+        <div class="card-title">내 이번 주 일정·마감</div>
         <div class="week-mini">
           <div class="week-mini-head">${weekMiniHead}</div>
           <div class="week-mini-grid">${weekMiniDays}</div>
@@ -2808,6 +2809,7 @@ function getProjectFormHTML(isEdit){
     <div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div>
     <div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div>
     <div style="display:flex;gap:8px">
+      ${isEdit ? `<button class="btn-danger-sm" onclick="deleteProjectFromEdit()">삭제</button>` : ''}
       <button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button>
       <button class="btn btn-secondary" onclick="closeModal()">취소</button>
     </div>`; 
@@ -2826,6 +2828,42 @@ function submitProject(){
     start:document.getElementById('project-start').value, 
     end:document.getElementById('project-end').value
   }, ()=>closeModal()); 
+}
+
+function deleteProjectFromEdit(){
+  const id = document.getElementById('project-id').value;
+  if(!id) return;
+
+  const p = pj(id);
+  const name = p?.name || document.getElementById('project-name').value || '이 사업';
+
+  if(!confirm(`${name}을(를) 삭제할까요?\n\n- 사업 기본정보와 참여인력 배정은 삭제됩니다.\n- 기존 업무/일정은 삭제하지 않고 사업 연결만 해제합니다.`)) return;
+
+  deleteProject(id);
+}
+
+async function deleteProject(id){
+  try{
+    const batch = db.batch();
+
+    batch.delete(db.collection('projects').doc(id));
+
+    const assignSnap = await db.collection('assigns').where('projectId', '==', id).get();
+    assignSnap.forEach(doc => batch.delete(doc.ref));
+
+    const taskSnap = await db.collection('tasks').where('project', '==', id).get();
+    taskSnap.forEach(doc => batch.update(doc.ref, { project: '' }));
+
+    const eventSnap = await db.collection('events').where('project', '==', id).get();
+    eventSnap.forEach(doc => batch.update(doc.ref, { project: '' }));
+
+    await batch.commit();
+
+    closeModal();
+    showToast('사업을 삭제했습니다');
+  }catch(e){
+    showToast('사업 삭제 실패: ' + e.message);
+  }
 }
 
 function openManageProjectMembers(projectId){
