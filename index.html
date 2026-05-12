@@ -59,7 +59,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);transition:all .12s}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .tag{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
-.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#E3F2FD;color:#1565C0} .tag-training{background:#F3E5F5;color:#7B1FA2} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFF3E0;color:#E65100} .tag-meeting{background:#EDE7F6;color:#4527A0} .tag-personal{background:#F5F5F5;color:#616161} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
+.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#DBEAFE;color:#1D4ED8} .tag-training{background:#F3E8FF;color:#7C3AED} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFEDD5;color:#F97316} .tag-meeting{background:#FCE7F3;color:#DB2777} .tag-personal{background:#F3F4F6;color:#6B7280} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .form-row.full{grid-template-columns:1fr}
 .fl{font-size:11px;color:var(--text2);margin-bottom:4px}
@@ -221,7 +221,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .cal-span-start{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:4px}
 .cal-span-end{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:4px}
 .cal-span-single{border-radius:4px;margin-left:4px;margin-right:4px}
-.ep-proposal-start{background:#E0F2FE;color:#0369A1;border-left:3px solid #0284C7}
+.ep-proposal-start{background:#CFFAFE;color:#0E7490;border-left:3px solid #0891B2}
 .ep-proposal-deadline{background:#FEE2E2;color:#991B1B;border-left:3px solid #DC2626}
 .list-wrap{display:flex;flex-direction:column;gap:7px}
 .cal-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
@@ -815,7 +815,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1565C0"></div>외근</div><div class="legend-item"><div class="dot" style="background:#E65100"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7B1FA2"></div>연수</div><div class="legend-item"><div class="dot" style="background:#4527A0"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0284C7"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#DB2777"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
@@ -1031,15 +1031,15 @@ function lighten(hex){
 
     // 새 캘린더 구분 색상
     '#2E7D32':'#E8F5E9',  // 휴가
-    '#1565C0':'#E3F2FD',  // 외근
-    '#E65100':'#FFF3E0',  // 출장
-    '#7B1FA2':'#F3E5F5',  // 연수
-    '#4527A0':'#EDE7F6',  // 회의
-    '#0284C7':'#E0F2FE',  // 제안시작
+    '#1D4ED8':'#DBEAFE',  // 외근
+    '#F97316':'#FFEDD5',  // 출장
+    '#7C3AED':'#F3E8FF',  // 연수
+    '#DB2777':'#FCE7F3',  // 회의
+    '#0891B2':'#CFFAFE',  // 제안시작
     '#DC2626':'#FEE2E2',  // 제출종료
     '#455A64':'#ECEFF1',  // 과거 업무 호환
     '#475569':'#E2E8F0',  // 주요업무
-    '#616161':'#F5F5F5',  // 개인
+    '#6B7280':'#F3F4F6',  // 개인
 
     '#E91E63':'#FCE4EC',
     '#9C27B0':'#F3E5F5',
@@ -1065,17 +1065,41 @@ function fmtDate(d){ if(!d) return ''; const dt = parseDateSafely(d); if(dt.getT
 function fmtDateFull(d) { if(!d) return ''; const dt = parseDateSafely(d); if(dt.getTime()===0 || isNaN(dt.getTime())) return ''; return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
 function fmtDateTimeShort(d){ if(!d) return ''; const dt=parseDateSafely(d); if(dt.getTime()===0 || isNaN(dt.getTime())) return ''; return `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; }
 function toDateTimeLocalValue(d){ if(!d) return ''; const dt=parseDateSafely(d); if(dt.getTime()===0 || isNaN(dt.getTime())) return ''; return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}T${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; }
+function hasExplicitTime(d){ if(!d) return false; return /T\d{2}:\d{2}/.test(String(d)); }
+function fmtTimeOnly(d){ if(!hasExplicitTime(d)) return ''; const dt=parseDateSafely(d); if(dt.getTime()===0 || isNaN(dt.getTime())) return ''; return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`; }
+function datePartValue(d){ return fmtDateFull(d); }
+function timePartValue(d){ return hasExplicitTime(d) ? fmtTimeOnly(d) : ''; }
+function combineDateAndTime(dateValue, timeValue){
+  if(!dateValue) return '';
+  return timeValue ? `${dateValue}T${timeValue}` : dateValue;
+}
+function formatEventPeriod(e){
+  if(!e) return '';
+  const startDate = fmtDateFull(e.start);
+  const endDate = fmtDateFull(e.end || e.start);
+  const startTime = fmtTimeOnly(e.start);
+  const endTime = fmtTimeOnly(e.end);
+  if(!startDate) return '';
+  if(startDate === endDate){
+    if(startTime && endTime) return `${startDate} ${startTime}~${endTime}`;
+    if(startTime) return `${startDate} ${startTime}`;
+    return startDate;
+  }
+  const s = startTime ? `${startDate} ${startTime}` : startDate;
+  const en = endTime ? `${endDate} ${endTime}` : endDate;
+  return `${s} ~ ${en}`;
+}
 function daysBetween(a, b){ const d1 = parseDateSafely(a); const d2 = parseDateSafely(b); d1.setHours(0,0,0,0); d2.setHours(0,0,0,0); return Math.round((d2 - d1) / 86400000); }
 const todayStr = fmtDateFull(today);
 function inDay(e,y,m,d){ const s = parseDateSafely(e.start); s.setHours(0,0,0,0); const en = parseDateSafely(e.end || e.start); en.setHours(23,59,59,999); const day = new Date(y,m,d); return day >= s && day <= en; }
 function eventColor(type){
   if(type==='vacation') return '#2E7D32';      // 초록
-  if(type==='offsite') return '#1565C0';       // 파랑
-  if(type==='training') return '#7B1FA2';      // 보라-마젠타
+  if(type==='offsite') return '#1D4ED8';       // 선명한 파랑
+  if(type==='training') return '#7C3AED';      // 보라
   if(type==='work') return '#455A64';          // 청회색(과거 호환)
-  if(type==='trip') return '#E65100';          // 주황
-  if(type==='meeting') return '#4527A0';       // 진보라
-  if(type==='personal') return '#616161';      // 회색
+  if(type==='trip') return '#F97316';          // 주황
+  if(type==='meeting') return '#DB2777';       // 마젠타
+  if(type==='personal') return '#6B7280';      // 회색
   return '#888';
 }
 
@@ -1506,7 +1530,7 @@ function renderHome(){
     })),
     ...todayEvents.slice(0,4).map(e => ({
       title:e.title || '일정',
-      meta:`${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
+      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
       dot:eventColor(e.type),
       badge:TL[e.type] || '일정',
       badgeClass:'blue',
@@ -1651,12 +1675,12 @@ function isPublicTask(t){
 function getNotificationTaskPool(scope){
   const normalizedScope = scope || getNotificationTaskScope();
 
-  // admin/team_leader의 "전체 지연·마감 업무"는 공개 업무만 표시
+  // admin/team_leader의 "전체 지연·마감 업무"는 캘린더에 표시되는 공개 업무만 포함
   if(canManageAll() && normalizedScope === 'all') {
     return tasks.filter(t => isPublicTask(t));
   }
 
-  // "내 지연·마감 업무"는 본인 담당 업무 전체 표시
+  // "내 지연·마감 업무"는 본인 담당 업무 전체 포함
   return tasks.filter(t => String(t.assignee) === String(selfId));
 }
 
@@ -1805,7 +1829,7 @@ function doGlobalSearch(){
     const p = pj(e.project||'');
     const hay = `${e.title||''} ${e.subtype||''} ${p?.name||''}`.toLowerCase();
     if(hay.includes(q)){
-      rows.push(`<div class="search-result" onclick="closeModal();showEv('${e.id}')"><div class="search-type">일정</div><div class="search-title">${escapeHtml(e.title||'')}</div><div class="search-meta">${fmtDateFull(e.start)} ${p?`· ${escapeHtml(p.name||'')}`:''}</div></div>`);
+      rows.push(`<div class="search-result" onclick="closeModal();showEv('${e.id}')"><div class="search-type">일정</div><div class="search-title">${escapeHtml(e.title||'')}</div><div class="search-meta">${formatEventPeriod(e)} ${p?`· ${escapeHtml(p.name||'')}`:''}</div></div>`);
     }
   });
 
@@ -2629,7 +2653,7 @@ function renderCalList(){
     }
     if(item.kind === 'proposal'){
       const isDeadline = item.type === 'proposal-deadline';
-      const bgCol = isDeadline ? '#DC2626' : '#0284C7';
+      const bgCol = isDeadline ? '#DC2626' : '#0891B2';
       const meta = isDeadline ? '제안서 제출 종료' : '제안 시작';
       h+=`<div class="li" onclick="showProposal('${item.id}')">
           <div class="li-dot" style="background:${bgCol}"></div>
@@ -2654,7 +2678,7 @@ function renderCalList(){
           <div class="li-dot" style="background:${bgCol}"></div>
           <div class="li-info">
             <div class="li-title">${escapeHtml(e.title || '')}</div>
-            <div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?' ~ '+fmtDateFull(e.end):''} · ${e.who==='all'?'전체팀':(m2?escapeHtml(m2.name || ''):escapeHtml(e.who || ''))}</div>
+            <div class="li-meta">${formatEventPeriod(e)} · ${e.who==='all'?'전체팀':(m2?escapeHtml(m2.name || ''):escapeHtml(e.who || ''))}</div>
             <div class="tag-row">
               <span class="tag ${TT[e.type]||''}">${TL[e.type]||e.type}</span>
               ${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}
@@ -2676,7 +2700,7 @@ function renderBoard(){
     const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
     const tr=projTasks.map(t=>{const a=mb(t.assignee); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${isOverdue(t)?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`}).join('');
-    const er=projEvents.map(e=>{const a=mb(e.who); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${fmtDate(e.start)}~${fmtDate(e.end)}</div></div>`}).join('');
+    const er=projEvents.map(e=>{const a=mb(e.who); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`}).join('');
     h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${tr+er || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
   document.getElementById('overview-container').innerHTML=h+'</div>';
@@ -3068,7 +3092,7 @@ function renderMyWorkOverview(){
       <div class="li-dot" style="background:${eventColor(e.type)}"></div>
       <div class="work-item-main">
         <div class="work-item-title">${escapeHtml(e.title || '')}</div>
-        <div class="work-item-meta">${fmtDateFull(e.start)}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}</div>
+        <div class="work-item-meta">${formatEventPeriod(e)}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}</div>
       </div>
     </div>`).join('');
 
@@ -3148,7 +3172,7 @@ function renderMyProjectsList(){
       return `<div class="task-row">
         <div class="task-title" onclick="showEv('${e.id}')" style="color:#185FA5">${escapeHtml(e.title || '')}</div>
         <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
-        <div class="task-dates">${fmtDate(e.start)}~${fmtDate(e.end)}</div>
+        <div class="task-dates">${formatEventPeriod(e)}</div>
       </div>`;
     }).join('');
 
@@ -3178,19 +3202,38 @@ function renderPersonalList() {
   let mine = events.filter(e => e.who===selfId && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
   if(hideP) mine=mine.filter(e=>!e._p); mine.sort((a,b)=>{ if(a._p!==b._p) return a._p?1:-1; const tA=parseDateSafely(a.start).getTime(), tB=parseDateSafely(b.start).getTime(); return a._p?tB-tA:tA-tB; });
   if(!mine.length){container.innerHTML='<div class="empty">없음</div>';return;}
-  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${fmtDateFull(e.start)}${e.end!==e.start?'~'+fmtDateFull(e.end):''}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="apiSave({action:'deleteEvent',id:'${e.id}'})" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
+  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="apiSave({action:'deleteEvent',id:'${e.id}'})" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
   container.innerHTML=h;
 }
 
 function openAddEvent() { if(!requireMemberWrite()) return; editingEventId = null; document.getElementById('modal-body').innerHTML = getEventFormHTML(false); openModal('새 일정 추가'); onTypeChange(); }
-function openEditEvent(id) { const e = events.find(ev => ev.id === id); if (!e) return; editingEventId = id; document.getElementById('modal-body').innerHTML = getEventFormHTML(true); openModal('일정 수정'); document.getElementById('ev-title').value = e.title; document.getElementById('ev-start').value = fmtDateFull(e.start); document.getElementById('ev-end').value = fmtDateFull(e.end); document.getElementById('ev-type').value = e.type === 'work' ? 'offsite' : e.type; document.getElementById('pub-toggle').classList.toggle('on', !!e.public); onTypeChange(); if(document.getElementById('ev-sub')) document.getElementById('ev-sub').value = e.subtype || ""; if(document.getElementById('ev-proj')) document.getElementById('ev-proj').value = e.project || ""; onSubChange(); }
+function openEditEvent(id) {
+  const e = events.find(ev => ev.id === id);
+  if (!e) return;
+  editingEventId = id;
+  document.getElementById('modal-body').innerHTML = getEventFormHTML(true);
+  openModal('일정 수정');
+  document.getElementById('ev-title').value = e.title || '';
+  document.getElementById('ev-start').value = datePartValue(e.start);
+  document.getElementById('ev-end').value = datePartValue(e.end || e.start);
+  document.getElementById('ev-start-time').value = timePartValue(e.start);
+  document.getElementById('ev-end-time').value = timePartValue(e.end);
+  document.getElementById('ev-type').value = e.type === 'work' ? 'offsite' : e.type;
+  document.getElementById('pub-toggle').classList.toggle('on', !!e.public);
+  onTypeChange();
+  if(document.getElementById('ev-sub')) document.getElementById('ev-sub').value = e.subtype || "";
+  if(document.getElementById('ev-proj')) document.getElementById('ev-proj').value = e.project || "";
+  onSubChange();
+}
 function getEventFormHTML(isEdit) { 
   const pOpts = projects.map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
 
   return `<div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>
-  <div class="form-row"><div><div class="fl">시작</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료</div><input type="date" id="ev-end" value="${def}"></div></div>
+  <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
+  <div class="form-row" id="ev-time-row" style="display:none"><div><div class="fl">시작 시간</div><input type="time" id="ev-start-time"></div><div><div class="fl">종료 시간</div><input type="time" id="ev-end-time"></div></div>
+  <div id="ev-time-help" style="display:none;font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 10px">회의처럼 특정 시간에 진행되는 일정만 입력하세요. 비워두면 종일 일정으로 저장됩니다.</div>
   <div class="form-row full"><div><div class="fl">유형</div><select id="ev-type" onchange="onTypeChange()">
     <option value="meeting">회의</option>
     <option value="trip">출장</option>
@@ -3214,6 +3257,8 @@ function onTypeChange(){
   const pubToggle=document.getElementById('pub-toggle');
   const personalHelp=document.getElementById('personal-help');
   const projRow=document.getElementById('ev-proj-row');
+  const timeRow=document.getElementById('ev-time-row');
+  const timeHelp=document.getElementById('ev-time-help');
 
   const options = {
     vacation:'<option value="연차">연차</option><option value="오전 반차">오전 반차</option><option value="오후 반차">오후 반차</option><option value="custom">직접 입력</option>',
@@ -3229,6 +3274,16 @@ function onTypeChange(){
   } else { 
     sr.classList.remove('show'); 
     ss.innerHTML='';
+  }
+
+  if(timeRow) timeRow.style.display = t === 'meeting' ? 'grid' : 'none';
+  if(timeHelp) timeHelp.style.display = t === 'meeting' ? 'block' : 'none';
+
+  if(t !== 'meeting'){
+    const st = document.getElementById('ev-start-time');
+    const et = document.getElementById('ev-end-time');
+    if(st) st.value = '';
+    if(et) et.value = '';
   }
 
   if(t === 'personal'){
@@ -3252,7 +3307,10 @@ function onSubChange(){
 }
 
 function submitEvent(){ 
-  const t=document.getElementById('ev-title').value.trim(), s=document.getElementById('ev-start').value, ty=document.getElementById('ev-type').value; 
+  const t=document.getElementById('ev-title').value.trim();
+  const s=document.getElementById('ev-start').value;
+  const e=document.getElementById('ev-end').value || s;
+  const ty=document.getElementById('ev-type').value; 
   if(!t||!s)return; 
 
   let sub=''; 
@@ -3261,6 +3319,13 @@ function submitEvent(){
     sub=v==='custom'?document.getElementById('ev-sub-txt').value.trim():v; 
   } 
 
+  const startTime = ty === 'meeting' ? document.getElementById('ev-start-time').value : '';
+  const endTime = ty === 'meeting' ? document.getElementById('ev-end-time').value : '';
+  if((startTime && !endTime) || (!startTime && endTime)){
+    showToast('회의 시간은 시작/종료 시간을 함께 입력해주세요');
+    return;
+  }
+
   const isPersonal = ty === 'personal';
   apiSave({ 
     action: editingEventId?'updateEvent':'addEvent', 
@@ -3268,8 +3333,8 @@ function submitEvent(){
     title:t, 
     type:ty, 
     subtype:sub, 
-    start:s, 
-    end:document.getElementById('ev-end').value||s, 
+    start:combineDateAndTime(s, startTime), 
+    end:combineDateAndTime(e, endTime), 
     who:selfId, 
     project:isPersonal ? '' : document.getElementById('ev-proj').value, 
     public:isPersonal ? false : document.getElementById('pub-toggle').classList.contains('on') 
@@ -3282,7 +3347,7 @@ function showEv(id){
   const m = mb(e.who || '');
   const canEdit = canEditItem(e);
   const body = `
-    <div class="dr"><span class="dl">기간</span><span>${fmtDateFull(e.start)} ~ ${fmtDateFull(e.end)}</span></div>
+    <div class="dr"><span class="dl">기간</span><span>${formatEventPeriod(e)}</span></div>
     <div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type] || e.type}</span></div>
     ${e.subtype?`<div class="dr"><span class="dl">세부</span><span>${escapeHtml(e.subtype)}</span></div>`:''}
     ${p?`<div class="dr"><span class="dl">사업</span><span>${escapeHtml(p.name || '')}</span></div>`:''}
@@ -3310,7 +3375,7 @@ function showTask(id){
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
-function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0284C7'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(t.title || '')}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
+function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(t.title || '')}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
 
 function syncFilterSections(){
   ['members','projects'].forEach(key => {
