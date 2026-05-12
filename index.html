@@ -815,7 +815,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1565C0"></div>외근</div><div class="legend-item"><div class="dot" style="background:#E65100"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7B1FA2"></div>연수</div><div class="legend-item"><div class="dot" style="background:#4527A0"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0284C7"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>주요업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1565C0"></div>외근</div><div class="legend-item"><div class="dot" style="background:#E65100"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7B1FA2"></div>연수</div><div class="legend-item"><div class="dot" style="background:#4527A0"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0284C7"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
@@ -1560,7 +1560,7 @@ function renderHome(){
     getCalendarTasks()
       .filter(t => t.assignee === selfId)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
-      .forEach(t => dayItems.push({kind:'task', id:t.id, title:`주요업무 · ${t.title || '업무'}`, onClick:`showTask('${t.id}')`}));
+      .forEach(t => dayItems.push({kind:'task', id:t.id, title:`${t.title || '업무'}`, onClick:`showTask('${t.id}')`}));
 
     const shown = dayItems.slice(0,3).map(item => `
       <div class="week-mini-item ${item.kind}" onclick="${item.onClick}" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
@@ -2301,7 +2301,7 @@ function getWeekEventSegments(weekDates, vis){
       endCol,
       startT:sT,
       endT:eT,
-      label:`주요업무 · ${t.title || ''}`,
+      label:`${t.title || ''}`,
       showLabel:isStart || startCol === 1,
       cls:isSingle ? 'cal-span-single' : `${isStart ? 'cal-span-start' : ''} ${isEnd ? 'cal-span-end' : ''}`,
       style:'background:#E2E8F0;color:#334155'
@@ -2433,7 +2433,7 @@ function renderCalList(){
     return {
       kind:'task',
       id:t.id,
-      title:`주요업무 · ${t.title || ''}`,
+      title:`${t.title || ''}`,
       start:s,
       end:en,
       type:'task-calendar',
@@ -2513,7 +2513,7 @@ function renderCalList(){
             <div class="li-title">${escapeHtml(item.title)}</div>
             <div class="li-meta">${fmtDateFull(t.start)}${t.end!==t.start?' ~ '+fmtDateFull(t.end):''} · ${escapeHtml(a?.name || '-')}</div>
             <div class="tag-row">
-              <span class="tag tag-sub">주요업무</span>
+              <span class="tag tag-sub">업무</span>
               ${p?`<span class="tag tag-project">${escapeHtml(p.name || '')}</span>`:''}
               <span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub'}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
             </div>
@@ -3204,7 +3204,7 @@ function showTask(id){
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
-function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0284C7'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">주요업무 · ${escapeHtml(t.title || '')}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
+function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0284C7'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(t.title || '')}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
 
 function syncFilterSections(){
   ['members','projects'].forEach(key => {
