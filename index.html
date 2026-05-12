@@ -936,7 +936,7 @@ const db = firebase.firestore();
 
 const TL = {vacation:'휴가',offsite:'외근',training:'연수',work:'기타 일정',trip:'출장',meeting:'회의',personal:'개인'};
 const TT = {vacation:'tag-vacation',offsite:'tag-offsite',training:'tag-training',work:'tag-sub',trip:'tag-trip',meeting:'tag-meeting',personal:'tag-personal'};
-const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','완료':'tag-done'};
+const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','대기':'tag-todo','진행':'tag-doing','검토':'tag-doing','완료':'tag-done','보류':'tag-sub'};
 
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
@@ -1141,6 +1141,11 @@ function renderHome(){
     .filter(t => getTaskMatrixType(t) === 'urgent-important')
     .sort(taskDueSort);
 
+  const activeTodayTasks = myTasks
+    .filter(t => t.status !== '완료')
+    .filter(t => inDay(t, now.getFullYear(), now.getMonth(), now.getDate()))
+    .sort(taskDueSort);
+
   const alertParts = [];
   if(proposalsSoon.length){
     const p = proposalsSoon[0];
@@ -1170,7 +1175,15 @@ function renderHome(){
       badgeClass:'orange',
       onClick:`showTask('${t.id}')`
     })),
-    ...urgentTasks.slice(0,3).map(t => ({
+    ...activeTodayTasks.slice(0,4).map(t => ({
+      title:t.title || '업무',
+      meta:`기간 포함 · ${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
+      dot:'#475569',
+      badge:'업무',
+      badgeClass:'blue',
+      onClick:`showTask('${t.id}')`
+    })),
+    ...urgentTasks.filter(t => !activeTodayTasks.some(a=>a.id===t.id)).slice(0,3).map(t => ({
       title:t.title || '업무',
       meta:`긴급·중요 · ${escapeHtml(pj(t.project)?.name || '사업 없음')}`,
       dot:'#D85A30',
@@ -1255,12 +1268,12 @@ function renderHome(){
 
     <div class="today-layout">
       <div class="card">
-        <div class="card-title">내 오늘 처리 필요</div>
+        <div class="card-title">오늘 처리 필요</div>
         <div class="action-list">${actionList || '<div class="empty">오늘 특별히 처리할 항목이 없습니다</div>'}</div>
       </div>
 
       <div class="card">
-        <div class="card-title">내 이번 주 일정·마감</div>
+        <div class="card-title">이번 주 일정·마감</div>
         <div class="week-mini">
           <div class="week-mini-head">${weekMiniHead}</div>
           <div class="week-mini-grid">${weekMiniDays}</div>
@@ -1481,7 +1494,7 @@ function openAddTask(){
     <div class="form-row full"><div><div class="fl">업무명</div><select id="task-title-preset" onchange="onTaskTitleChange()"><option value="">— 자주 쓰는 업무 선택 —</option>${commonTaskTitleOptions('')}<option value="custom">직접 입력</option></select><input id="task-title-custom" type="text" placeholder="업무명을 직접 입력" style="display:none;margin-top:6px"></div></div>
     <div class="form-row"><div><div class="fl">사업</div><select id="task-project">${projectOptions}</select></div><div><div class="fl">담당자</div><select id="task-assignee">${memberOptions}</select></div></div>
     <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${todayVal}"></div></div>
-    <div class="form-row full"><div><div class="fl">상태</div><select id="task-status"><option value="할 일">할 일</option><option value="진행중" selected>진행중</option><option value="완료">완료</option></select></div></div>
+    <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
     <div class="task-priority-box">
       <div class="fl">업무 분류</div>
       <select id="task-priority">
@@ -1514,7 +1527,7 @@ function openEditTask(id){
   document.getElementById('task-assignee').value = t.assignee || '';
   document.getElementById('task-start').value = fmtDateFull(t.start);
   document.getElementById('task-end').value = fmtDateFull(t.end);
-  document.getElementById('task-status').value = t.status || '진행중';
+  document.getElementById('task-status').value = normalizeTaskStatus(t.status);
   document.getElementById('task-priority').value = getTaskMatrixType(t);
   document.getElementById('task-show-calendar').checked = !!(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true');
   document.getElementById('task-note').value = t.note || '';
@@ -1538,7 +1551,7 @@ function submitTask(){
     assignee:document.getElementById('task-assignee').value,
     start:document.getElementById('task-start').value,
     end:document.getElementById('task-end').value,
-    status:document.getElementById('task-status').value,
+    status:normalizeTaskStatus(document.getElementById('task-status').value),
     priority,
     important:flags.important,
     urgent:flags.urgent,
@@ -1646,6 +1659,26 @@ const TASK_MATRIX_META = {
   'backlog': { label:'보류', empty:'보류 중인 업무가 없습니다' }
 };
 
+const TASK_STATUS_OPTIONS = {
+  '대기':'대기 — 아직 시작 전',
+  '진행':'진행 — 작성/처리 중',
+  '검토':'검토 — 누군가 확인해야 함',
+  '완료':'완료 — 끝남',
+  '보류':'보류 — 당장 진행 안 함'
+};
+
+function normalizeTaskStatus(status){
+  if(status === '할 일') return '대기';
+  if(status === '진행중') return '진행';
+  if(TASK_STATUS_OPTIONS[status]) return status;
+  return status || '대기';
+}
+
+function taskStatusOptions(selected){
+  const cur = normalizeTaskStatus(selected);
+  return Object.entries(TASK_STATUS_OPTIONS).map(([value, label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
+}
+
 function boolish(v){
   if(v === true) return true;
   if(v === false) return false;
@@ -1715,7 +1748,7 @@ window.toggleTaskDone = function(id){
     action:'updateTask',
     ...t,
     id:t.id,
-    status:t.status === '완료' ? '진행중' : '완료'
+    status:normalizeTaskStatus(t.status) === '완료' ? '진행' : '완료'
   });
 };
 
@@ -2171,7 +2204,7 @@ function renderCalList(){
             <div class="tag-row">
               <span class="tag tag-sub">주요업무</span>
               ${p?`<span class="tag tag-project">${escapeHtml(p.name || '')}</span>`:''}
-              <span class="tag ${STATUS_TAG[t.status] || 'tag-sub'}">${escapeHtml(t.status || '')}</span>
+              <span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub'}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
             </div>
           </div>
         </div>`;
@@ -2225,7 +2258,7 @@ function renderBoard(){
     const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast || !isPast(t.end) || t.status !== '완료')); 
     const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
-    const tr=projTasks.map(t=>{const a=mb(t.assignee); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${isOverdue(t)?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[t.status]||'tag-sub'}" style="font-size:10px">${escapeHtml(t.status || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`}).join('');
+    const tr=projTasks.map(t=>{const a=mb(t.assignee); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${isOverdue(t)?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`}).join('');
     const er=projEvents.map(e=>{const a=mb(e.who); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${fmtDate(e.start)}~${fmtDate(e.end)}</div></div>`}).join('');
     h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${tr+er || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
@@ -2681,12 +2714,12 @@ function renderMyProjectsList(){
 
     const taskRows = myTasks.map(t => {
       const od = isOverdue(t);
-      const cls = STATUS_TAG[t.status] || 'tag-sub';
+      const cls = STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub';
       return `<div class="task-row">
         <div class="task-title" onclick="showTask('${t.id}')" style="${od ? 'color:#D85A30;font-weight:600;' : ''}">
           ${od ? '[지연] ' : ''}${escapeHtml(t.title || '')}
         </div>
-        <span class="tag ${cls}" style="font-size:10px">${escapeHtml(t.status || '')}</span>
+        <span class="tag ${cls}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
         <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
       </div>`;
     }).join('');
@@ -2849,7 +2882,7 @@ function showTask(id){
     <div class="dr"><span class="dl">담당</span><span>${escapeHtml(a?.name||'-')}</span></div>
     <div class="dr"><span class="dl">사업</span><span>${escapeHtml(p?.name||'-')}</span></div>
     <div class="dr"><span class="dl">기간</span><span>${fmtDateFull(t.start)} ~ ${fmtDateFull(t.end)}</span></div>
-    <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[t.status]}">${escapeHtml(t.status || '')}</span></div>
+    <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span></div>
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
     <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
     <div class="dr"><span class="dl">메모</span><span>${escapeHtml(t.note || '-')}</span></div>
