@@ -769,7 +769,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   <div class="login-card">
     <div class="login-title">팀 캘린더 로그인</div>
     <div class="login-sub">등록된 사용자만 접속할 수 있습니다. Google 계정으로 로그인하세요.</div>
-    <button id="google-login-btn" class="btn btn-primary" style="width:100%;height:38px" type="button">Google로 로그인</button>
+    <button id="google-login-btn" class="btn btn-primary" style="width:100%;height:38px" type="button" onclick="loginWithGoogle()">Google로 로그인</button>
     <div id="login-error" class="login-error"></div><div style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:10px">반응이 없으면 Firebase Authentication의 Google 사용 설정과 Authorized domains를 확인하세요.</div>
   </div>
 </div>
@@ -1104,36 +1104,69 @@ window.loginWithGoogle = async function loginWithGoogle(){
   const btn = document.getElementById('google-login-btn');
   const err = document.getElementById('login-error');
 
+  if(err) err.innerHTML = '';
   if(btn) {
     btn.disabled = true;
-    btn.textContent = 'Google 로그인으로 이동 중...';
+    btn.textContent = 'Google 로그인 진행 중...';
   }
-  if(err) err.innerHTML = '로그인 요청을 보냈습니다. 화면이 이동하지 않으면 Firebase 설정 또는 승인 도메인을 확인하세요.';
 
   try{
+    if(typeof firebase === 'undefined'){
+      throw new Error('Firebase SDK가 로드되지 않았습니다. 인터넷 연결 또는 script 주소를 확인하세요.');
+    }
+    if(!auth){
+      throw new Error('Firebase Auth 초기화에 실패했습니다.');
+    }
+
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    // GitHub Pages에서는 redirect 방식이 가장 안정적입니다.
-    await auth.signInWithRedirect(provider);
+    // GitHub Pages / 일반 호스팅에서는 redirect보다 popup 방식이 안정적입니다.
+    await auth.signInWithPopup(provider);
+
   }catch(e){
     if(btn) {
       btn.disabled = false;
       btn.textContent = 'Google로 로그인';
     }
-    showLoginScreen('로그인 실패: ' + escapeHtml(e.code || '') + '<br>' + escapeHtml(e.message || String(e)));
+
+    const code = e && e.code ? e.code : '';
+    const message = e && e.message ? e.message : String(e);
+
+    let guide = '';
+    if(code === 'auth/unauthorized-domain'){
+      guide = '<br><br>현재 접속 중인 도메인이 Firebase Authentication > Settings > Authorized domains에 없습니다. 브라우저 주소창의 도메인을 그대로 추가하세요.';
+    } else if(code === 'auth/popup-blocked'){
+      guide = '<br><br>브라우저가 팝업을 차단했습니다. 주소창 오른쪽의 팝업 차단 아이콘에서 이 사이트의 팝업을 허용하세요.';
+    } else if(code === 'auth/operation-not-allowed'){
+      guide = '<br><br>Firebase Authentication > 로그인 방법에서 Google 제공업체가 사용 설정되어 있는지 확인하세요.';
+    } else if(code === 'auth/network-request-failed'){
+      guide = '<br><br>Firebase SDK 또는 Google 로그인 서버에 연결하지 못했습니다. 회사망/보안프로그램/광고차단 확장 프로그램 영향을 확인하세요.';
+    }
+
+    if(err){
+      err.innerHTML =
+        '로그인 실패<br>' +
+        'code: ' + escapeHtml(code || '-') + '<br>' +
+        'message: ' + escapeHtml(message) +
+        guide;
+    }
+
+    console.error('Google login error:', e);
   }
 }
 
+
 function bindLoginButton(){
   const btn = document.getElementById('google-login-btn');
-  if(btn && !btn.dataset.bound){
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', function(e){
-      e.preventDefault();
+  if(btn){
+    btn.onclick = function(e){
+      if(e) e.preventDefault();
       window.loginWithGoogle();
-    });
+      return false;
+    };
   }
 }
 
