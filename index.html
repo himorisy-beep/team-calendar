@@ -1101,7 +1101,7 @@ function showApp(){
 
 function loginWithGoogle(){
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => {
+  auth.signInWithRedirect(provider).catch(e => {
     showLoginScreen('로그인 실패: ' + escapeHtml(e.message));
   });
 }
@@ -1111,6 +1111,10 @@ function logout(){
 }
 
 function initAuth(){
+  auth.getRedirectResult().catch(e => {
+    showLoginScreen('로그인 실패: ' + escapeHtml(e.message));
+  });
+
   auth.onAuthStateChanged(async user => {
     if(!user){
       currentUser = null;
