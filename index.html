@@ -1572,6 +1572,17 @@ function renderHome(){
         onClick:`showEv('${e.id}')`
       }));
 
+    proposals
+      .filter(p => isMyProposal(p))
+      .forEach(p => {
+        if(p.start && fmtDateFull(p.start) === fmtDateFull(day)){
+          dayItems.push({kind:'proposal', id:p.id, title:`제안시작 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
+        }
+        if(p.deadline && fmtDateFull(p.deadline) === fmtDateFull(day)){
+          dayItems.push({kind:'proposal', id:p.id, title:`제출종료 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
+        }
+      });
+
     getCalendarTasks()
       .filter(t => t.assignee === selfId)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
@@ -1614,6 +1625,87 @@ function renderHome(){
 function memberName(id){
   const m = mb(id);
   return m ? m.name : (id || '알 수 없음');
+}
+
+function normalizeIdArray(value){
+  if(Array.isArray(value)) return value.map(v => String(v || '').trim()).filter(Boolean);
+  if(typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
+  return [];
+}
+
+function getSelectedProposalParticipantIds(){
+  const hidden = document.getElementById('proposal-participant-ids');
+  return normalizeIdArray(hidden ? hidden.value : '');
+}
+
+function setSelectedProposalParticipantIds(ids){
+  const clean = normalizeIdArray(ids);
+  const hidden = document.getElementById('proposal-participant-ids');
+  if(hidden) hidden.value = clean.join(',');
+
+  document.querySelectorAll('input[name="proposal-participant"]').forEach(el => {
+    el.checked = clean.includes(el.value);
+  });
+
+  renderProposalParticipantChips();
+}
+
+function getProposalParticipantIdsFromForm(){
+  return getSelectedProposalParticipantIds();
+}
+
+function toggleProposalMemberPicker(){
+  const panel = document.getElementById('proposal-member-picker');
+  const icon = document.getElementById('proposal-member-picker-icon');
+  if(!panel) return;
+  const willOpen = panel.style.display === 'none' || !panel.style.display;
+  panel.style.display = willOpen ? 'block' : 'none';
+  if(icon) icon.textContent = willOpen ? '▴' : '▾';
+}
+
+function onProposalMemberCheck(){
+  const ids = Array.from(document.querySelectorAll('input[name="proposal-participant"]:checked')).map(el => el.value);
+  setSelectedProposalParticipantIds(ids);
+}
+
+function removeProposalParticipant(memberId){
+  const ids = getSelectedProposalParticipantIds().filter(id => id !== memberId);
+  setSelectedProposalParticipantIds(ids);
+}
+
+function renderProposalParticipantChips(){
+  const box = document.getElementById('proposal-selected-members');
+  if(!box) return;
+
+  const ids = getSelectedProposalParticipantIds();
+  if(!ids.length){
+    box.innerHTML = '<span style="font-size:12px;color:var(--text3)">선택된 내부 멤버 없음</span>';
+    return;
+  }
+
+  box.innerHTML = ids.map(id => {
+    const m = mb(id);
+    if(!m) return '';
+    return `<span class="member-tag" style="background:var(--bg2)"><span>${escapeHtml(m.name || '')}</span><button type="button" onclick="removeProposalParticipant('${escapeAttr(id)}')" style="border:none;background:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 0 0 3px">×</button></span>`;
+  }).join('') || '<span style="font-size:12px;color:var(--text3)">선택된 내부 멤버 없음</span>';
+}
+
+function proposalParticipantNames(p){
+  const ids = normalizeIdArray(p.participantIds);
+  return ids.map(id => memberName(id)).filter(Boolean);
+}
+
+function isMyProposal(p){
+  const ids = normalizeIdArray(p.participantIds);
+  if(ids.includes(selfId)) return true;
+
+  // 이전 데이터 호환: 참여자/내용란에 본인 이름·이메일·memberId가 적힌 경우도 본인 참여로 인정
+  const me = getSelfMember();
+  const hay = `${p.participants || ''} ${p.owner || ''} ${p.manager || ''} ${p.memberId || ''}`.toLowerCase();
+  const needles = [selfId, me?.name, currentUser?.email, currentUserProfile?.email, currentUserProfile?.name]
+    .filter(Boolean)
+    .map(v => String(v).toLowerCase());
+  return needles.some(v => v && hay.includes(v));
 }
 
 function activityText(action){
@@ -2851,10 +2943,23 @@ function renderProposalPage(){
 }
 
 function getProposalFormHTML(isEdit){
+  const memberChecks = members.length
+    ? members.map(m => `<label style="display:flex;align-items:center;gap:6px;font-size:13px;padding:5px 0;cursor:pointer"><input type="checkbox" name="proposal-participant" value="${escapeAttr(m.id)}" onchange="onProposalMemberCheck()" style="width:auto!important;min-width:16px;height:16px">${escapeHtml(m.name || '')}${m.role ? ` <span style="font-size:11px;color:var(--text3)">${escapeHtml(m.role)}</span>` : ''}</label>`).join('')
+    : '<div style="font-size:12px;color:var(--text3)">등록된 팀원이 없습니다.</div>';
+
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
     <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
     <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
-    <div class="form-row full"><div><div class="fl">참여자 / 내용</div><textarea id="proposal-participants" rows="4" placeholder="예: 참여자, 담당 역할, 준비 내용 등을 입력"></textarea></div></div>
+    <div class="form-row full"><div>
+      <div class="fl">참여 멤버</div>
+      <input type="hidden" id="proposal-participant-ids" value="">
+      <div id="proposal-selected-members" style="display:flex;gap:5px;flex-wrap:wrap;min-height:30px;align-items:center;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;background:var(--bg)"></div>
+      <button type="button" class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;display:flex;justify-content:center;gap:5px" onclick="toggleProposalMemberPicker()"><span>멤버 선택</span><span id="proposal-member-picker-icon">▾</span></button>
+      <div id="proposal-member-picker" style="display:none;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;max-height:150px;overflow:auto;background:var(--bg);margin-top:6px">${memberChecks}</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">선택된 내부 멤버의 오늘 탭 주간 캘린더에만 해당 제안 시작/마감이 표시됩니다.</div>
+    </div></div>
+    <div class="form-row full"><div><div class="fl">참여자</div><textarea id="proposal-participants" rows="3" placeholder="예: ○○기관 김OO 과장, 자문위원 박OO, 회계법인 담당자 등"></textarea></div></div>
+    <div class="form-row full"><div><div class="fl">내용</div><textarea id="proposal-note" rows="3" placeholder="담당 역할, 준비 내용, 특이사항 등을 입력"></textarea></div></div>
     <div class="form-row full"><div>
       <div class="fl">첨부파일 다운로드 링크 후보</div>
       <textarea id="proposal-filelinks" rows="4" placeholder="한 줄에 하나씩 입력하세요.&#10;예: 제안요청서.hwp | https://www.g2b.go.kr/...&#10;예: 입찰공고서.pdf | https://www.g2b.go.kr/..."></textarea>
@@ -2862,12 +2967,12 @@ function getProposalFormHTML(isEdit){
     </div></div>
     <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitProposal()">${isEdit ? '수정 저장' : '제안 추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
-
 function openAddProposal(){
   if(!requireManager()) return;
   editingProposalId = null;
   document.getElementById('modal-body').innerHTML = getProposalFormHTML(false);
   openModal('제안 추가');
+  setSelectedProposalParticipantIds([]);
 }
 
 function openEditProposal(id){
@@ -2881,6 +2986,8 @@ function openEditProposal(id){
   document.getElementById('proposal-deadline').value = toDateTimeLocalValue(p.deadline);
   document.getElementById('proposal-demand-org').value = p.demandOrg || '';
   document.getElementById('proposal-participants').value = p.participants || '';
+  document.getElementById('proposal-note').value = p.note || '';
+  setSelectedProposalParticipantIds(normalizeIdArray(p.participantIds));
   document.getElementById('proposal-filelinks').value = fileLinksToTextarea(p.fileLinks);
 }
 
@@ -2891,6 +2998,8 @@ function submitProposal(){
   const demandOrg = document.getElementById('proposal-demand-org').value.trim();
   const color = '#7C3AED';
   const participants = document.getElementById('proposal-participants').value.trim();
+  const note = document.getElementById('proposal-note').value.trim();
+  const participantIds = getProposalParticipantIdsFromForm();
   const fileLinks = parseFileLinksTextarea(document.getElementById('proposal-filelinks').value);
 
   if(!name){ showToast('사업명을 입력해주세요'); return; }
@@ -2905,6 +3014,8 @@ function submitProposal(){
     demandOrg,
     color,
     participants,
+    note,
+    participantIds,
     fileLinks
   }, () => { editingProposalId = null; closeModal(); });
 }
@@ -2923,13 +3034,16 @@ function showProposal(id){
     ? `<div style="margin-top:10px">${fileLinks.map(f=>`<a class="proposal-file-link" href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(f.name || '첨부파일 다운로드')}</a>`).join('')}</div>`
     : '<span>-</span>';
 
+  const participantNames = proposalParticipantNames(p);
   const body = `
     <div class="dr"><span class="dl">사업명</span><span>${escapeHtml(p.name || '-')}</span></div>
     <div class="dr"><span class="dl">D-day</span><span><span class="proposal-dday ${getProposalDdayClass(p)}">${getProposalDdayText(p)}</span></span></div>
     <div class="dr"><span class="dl">시작일</span><span>${p.start ? fmtDateFull(p.start) : '-'}</span></div>
     <div class="dr"><span class="dl">제출종료</span><span>${p.deadline ? fmtDateTimeShort(p.deadline) : '-'}</span></div>
     <div class="dr"><span class="dl">수요기관</span><span>${escapeHtml(p.demandOrg || '-')}</span></div>
-    <div class="dr"><span class="dl">내용</span><span>${escapeHtml(p.participants || '-')}</span></div>
+    <div class="dr"><span class="dl">참여 멤버</span><span>${participantNames.length ? escapeHtml(participantNames.join(', ')) : '-'}</span></div>
+    <div class="dr"><span class="dl">참여자</span><span>${escapeHtml(p.participants || '-')}</span></div>
+    <div class="dr"><span class="dl">내용</span><span>${escapeHtml(p.note || '-')}</span></div>
     <div class="dr"><span class="dl">첨부파일</span><span style="flex:1">${fileHtml}</span></div>
     <div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button></div>
   `;
