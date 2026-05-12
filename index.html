@@ -305,6 +305,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .task-priority-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .task-priority-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:5px}
 .task-option-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
+.task-check-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;line-height:1.4}
+.task-check-row input[type="checkbox"]{width:auto!important;min-width:16px;height:16px;margin:0;flex:0 0 auto}
 .task-form-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:5px}
 .eisen-list{display:flex;flex-direction:column;gap:4px;overflow:auto;padding-right:4px}
 .eisen-list::-webkit-scrollbar{width:6px}
@@ -1491,7 +1493,7 @@ function openAddTask(){
       <div class="task-priority-help">화면에는 4분류로만 보여주고, 내부적으로만 긴급도·중요도를 계산합니다.</div>
     </div>
     <div class="task-option-box">
-      <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="task-show-calendar"> 캘린더에도 표시</label>
+      <label class="task-check-row"><input type="checkbox" id="task-show-calendar"><span>캘린더에도 표시</span></label>
       <div class="task-form-help">보고·제출·마감처럼 팀 캘린더에서 공유할 필요가 있는 주요 업무만 체크하세요.</div>
     </div>
     <div class="form-row full"><div><div class="fl">메모</div><textarea id="task-note" rows="4"></textarea></div></div>
