@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>캘린더</title>
+<link rel="icon" href="data:,">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -969,7 +970,7 @@ let hidePast = true;
 
 const mb = id => members.find(m=>m.id===id); 
 const pj = id => projects.find(p=>p.id===id); 
-const self = () => mb(selfId)||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
+const getSelfMember = () => mb(selfId)||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function userRole(){
   return currentUserProfile?.role || 'viewer';
 }
@@ -2160,7 +2161,7 @@ function buildSidebar(){
   });
   const pc=document.getElementById('sb-projects'); pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
   projects.forEach(p=>{ const d=document.createElement('div'); d.className='proj-chip'+(selProj===p.id?' active':''); d.innerHTML=`<div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}`; d.onclick=()=>toggleProj(p.id); pc.appendChild(d); });
-  const s=self(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
+  const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
   syncFilterSections();
 }
 function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; projects.forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
@@ -3188,7 +3189,7 @@ function setVM(m){ vm=m; ['cal','list'].forEach(k=>document.getElementById('vm-'
 function setOV(m){ ovMode=m; ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===m); }); renderOverview(); } 
 function filterP(f){ pFilter=f; pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f)); renderPersonalCurrentView(); } 
 function openChangeSelf(){ 
-  const me = self();
+  const me = getSelfMember();
   document.getElementById('modal-body').innerHTML=`
     <div class="dr"><span class="dl">이름</span><span>${escapeHtml(me.name || '-')}</span></div>
     <div class="dr"><span class="dl">이메일</span><span>${escapeHtml(currentUser?.email || '-')}</span></div>
