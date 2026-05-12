@@ -1608,53 +1608,147 @@ function activityText(action){
   return action;
 }
 
+let notificationTaskScope = ls('notificationTaskScope') || 'all';
+
+function getNotificationTaskScope(){
+  if(!canManageAll()) return 'mine';
+  return notificationTaskScope === 'mine' ? 'mine' : 'all';
+}
+
+function setNotificationTaskScope(scope){
+  notificationTaskScope = scope === 'mine' ? 'mine' : 'all';
+  ls('notificationTaskScope', notificationTaskScope);
+  openNotifications();
+  renderNotificationBadge();
+}
+
+function getDdayInfo(dateValue){
+  if(!dateValue) return null;
+  const now = new Date();
+  now.setHours(0,0,0,0);
+
+  const target = parseDateSafely(dateValue);
+  if(!target || isNaN(target.getTime()) || target.getTime() === 0) return null;
+  target.setHours(0,0,0,0);
+
+  const diff = Math.ceil((target - now) / 86400000);
+  return {
+    diff,
+    label: diff === 0 ? 'D-Day' : (diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`)
+  };
+}
+
+function isNotificationDday(diff){
+  return [7,3,1,0].includes(diff);
+}
+
+function getNotificationTaskPool(scope){
+  const normalizedScope = scope || getNotificationTaskScope();
+  if(canManageAll() && normalizedScope === 'all') return tasks;
+  return tasks.filter(t => String(t.assignee) === String(selfId));
+}
+
 function renderNotificationBadge(){
   const countEl = document.getElementById('notice-count');
   if(!countEl) return;
-  const dynamic = buildNotifications();
+  const dynamic = buildNotifications(getNotificationTaskScope());
   const unread = notifications.filter(n=>!n.read).length + dynamic.length;
   countEl.style.display = unread ? 'inline-flex' : 'none';
   countEl.textContent = unread > 99 ? '99+' : String(unread);
 }
 
-function buildNotifications(){
-  const now = new Date();
-  now.setHours(0,0,0,0);
-
-  const soon = new Date(now);
-  soon.setDate(soon.getDate()+3);
-  soon.setHours(23,59,59,999);
-
+function buildNotifications(scope){
   const items = [];
 
   proposals.forEach(p=>{
-    if(!p.deadline) return;
-    const d = parseDateSafely(p.deadline);
-    if(d >= now && d <= soon){
-      const diff = Math.ceil((d - now) / 86400000);
-      items.push({type:'proposal', title:`제안 제출 ${diff===0?'D-Day':'D-'+diff}`, desc:p.name || '제안', targetId:p.id});
-    }
+    const dday = getDdayInfo(p.deadline);
+    if(!dday || !isNotificationDday(dday.diff)) return;
+    items.push({
+      type:'proposal',
+      priority:dday.diff === 0 ? 1 : 3,
+      title:`제안 제출 ${dday.label}`,
+      desc:`${p.name || '제안'}${p.demandOrg ? ' · ' + p.demandOrg : ''}${p.deadline ? ' · ' + fmtDateTimeShort(p.deadline) : ''}`,
+      targetId:p.id,
+      badge:dday.label
+    });
   });
 
-  tasks.forEach(t=>{
-    if(t.status !== '완료' && isOverdue(t)){
-      items.push({type:'task', title:'지연 업무', desc:t.title || '업무', targetId:t.id});
+  const taskPool = getNotificationTaskPool(scope);
+
+  taskPool.forEach(t=>{
+    if(normalizeTaskStatus(t.status) === '완료') return;
+
+    const assignee = mb(t.assignee);
+    const project = pj(t.project);
+    const whoText = canManageAll() && getNotificationTaskScope() === 'all' && assignee ? ` · 담당 ${assignee.name}` : '';
+    const projectText = project ? ` · ${project.name}` : '';
+
+    if(isOverdue(t)){
+      const dday = getDdayInfo(t.end);
+      items.push({
+        type:'task',
+        priority:0,
+        title:'지연 업무',
+        desc:`${t.title || '업무'}${projectText}${whoText}${dday ? ' · ' + dday.label : ''}`,
+        targetId:t.id,
+        badge:'지연',
+        assignee:t.assignee
+      });
+      return;
     }
+
+    const dday = getDdayInfo(t.end);
+    if(!dday || !isNotificationDday(dday.diff)) return;
+
+    items.push({
+      type:'task',
+      priority:dday.diff === 0 ? 1 : 2,
+      title:`업무 마감 ${dday.label}`,
+      desc:`${t.title || '업무'}${projectText}${whoText}${t.end ? ' · ' + fmtDate(t.end) : ''}`,
+      targetId:t.id,
+      badge:dday.label,
+      assignee:t.assignee
+    });
   });
 
-  return items;
+  return items.sort((a,b)=>{
+    if(a.priority !== b.priority) return a.priority - b.priority;
+    return String(a.desc || '').localeCompare(String(b.desc || ''));
+  });
+}
+
+function notificationRow(n){
+  const action = n.type === 'proposal' ? `closeModal();showProposal('${n.targetId}')` : `closeModal();showTask('${n.targetId}')`;
+  const typeLabel = n.type === 'proposal' ? '제안 알림' : '업무 알림';
+  const badgeHtml = n.badge ? `<span class="action-badge ${n.badge === '지연' ? 'red' : (n.badge === 'D-Day' ? 'orange' : 'blue')}" style="margin-left:6px">${escapeHtml(n.badge)}</span>` : '';
+  return `<div class="search-result" onclick="${action}">
+    <div class="search-type">${typeLabel}${badgeHtml}</div>
+    <div class="search-title">${escapeHtml(n.title)}</div>
+    <div class="search-meta">${escapeHtml(n.desc)}</div>
+  </div>`;
 }
 
 function openNotifications(){
-  const dynamic = buildNotifications();
+  const scope = getNotificationTaskScope();
+  const dynamic = buildNotifications(scope);
   const stored = [...notifications].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,20);
 
+  const managerToggle = canManageAll() ? `
+    <div class="filter-chips" style="margin-bottom:12px">
+      <button class="chip ${scope === 'all' ? 'active' : ''}" onclick="setNotificationTaskScope('all')">전체 지연·마감 업무</button>
+      <button class="chip ${scope === 'mine' ? 'active' : ''}" onclick="setNotificationTaskScope('mine')">내 지연·마감 업무</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">
+      제안 마감은 공통으로 표시하고, 업무 알림은 선택한 범위에 따라 표시합니다.
+    </div>
+  ` : `<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">내 담당 업무의 지연·마감 알림과 제안 마감을 표시합니다.</div>`;
+
   const rows = [
-    ...dynamic.map(n=>`<div class="search-result" onclick="${n.type==='proposal'?`closeModal();showProposal('${n.targetId}')`:`closeModal();showTask('${n.targetId}')`}"><div class="search-type">자동 알림</div><div class="search-title">${escapeHtml(n.title)}</div><div class="search-meta">${escapeHtml(n.desc)}</div></div>`),
-    ...stored.map(n=>`<div class="search-result"><div class="search-type">알림</div><div class="search-title">${escapeHtml(n.title || '')}</div><div class="search-meta">${escapeHtml(n.body || '')}</div></div>`)
+    ...dynamic.map(notificationRow),
+    ...stored.map(n=>`<div class="search-result"><div class="search-type">수동 알림</div><div class="search-title">${escapeHtml(n.title || '')}</div><div class="search-meta">${escapeHtml(n.body || '')}</div></div>`)
   ].join('');
 
-  document.getElementById('modal-body').innerHTML = rows || '<div class="empty">알림이 없습니다</div>';
+  document.getElementById('modal-body').innerHTML = managerToggle + (rows || '<div class="empty">알림이 없습니다</div>');
   openModal('알림');
 }
 
