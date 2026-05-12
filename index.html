@@ -959,6 +959,7 @@ let currentUserProfile = null;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
+let publicEvents = [], myPersonalEvents = [];
 let hiddenMb = new Set(); 
 let selProj = 'all'; 
 let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'today', calListMode = 'window'; 
@@ -1336,24 +1337,62 @@ async function apiSave(payload, onSuccess){
 }
 
 let loadedCols = 0; 
+const INITIAL_LISTENER_COUNT = 11;
 function checkInitLoad() { 
   loadedCols++; 
-  if(loadedCols === 10) { hideStatus(); refreshAll(); } 
+  if(loadedCols === INITIAL_LISTENER_COUNT) { hideStatus(); refreshAll(); } 
+}
+function handleSnapshotError(collectionName, error){
+  console.error(collectionName + ' listener error:', error);
+  showStatus(collectionName + ' 동기화 오류: ' + (error.message || error), 'error');
+}
+function mergeEventsAndRefresh(){
+  const map = new Map();
+  [...publicEvents, ...myPersonalEvents].forEach(e => {
+    if(e && e.id) map.set(e.id, e);
+  });
+  events = Array.from(map.values());
+
+  if(loadedCols < INITIAL_LISTENER_COUNT) checkInitLoad();
+  else refreshAll();
 }
 function startRealtimeListeners() {
   if(listenersStarted){ refreshAll(); return; }
   listenersStarted = true;
   showStatus('Firebase 동기화 중...', 'loading');
-  db.collection("events").onSnapshot(snap => { events = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("members").onSnapshot(snap => { members = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("projects").onSnapshot(snap => { projects = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("proposals").onSnapshot(snap => { proposals = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("tasks").onSnapshot(snap => { tasks = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("assigns").onSnapshot(snap => { assigns = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("todos").onSnapshot(snap => { todos = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("comments").onSnapshot(snap => { comments = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("activityLogs").onSnapshot(snap => { activityLogs = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
-  db.collection("notifications").onSnapshot(snap => { notifications = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<10) checkInitLoad(); else refreshAll(); });
+
+  // 공유 일정: 개인 비공개 일정은 제외해서 가져옵니다.
+  db.collection("events")
+    .where("type", "!=", "personal")
+    .onSnapshot(
+      snap => {
+        publicEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeEventsAndRefresh();
+      },
+      err => handleSnapshotError('events', err)
+    );
+
+  // 내 개인 일정: 로그인한 본인의 personal 일정만 가져옵니다.
+  db.collection("events")
+    .where("type", "==", "personal")
+    .where("who", "==", selfId)
+    .onSnapshot(
+      snap => {
+        myPersonalEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeEventsAndRefresh();
+      },
+      err => handleSnapshotError('events-personal', err)
+    );
+
+  db.collection("members").onSnapshot(snap => { members = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('members', err));
+  db.collection("projects").onSnapshot(snap => { projects = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('projects', err));
+  db.collection("proposals").onSnapshot(snap => { proposals = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('proposals', err));
+  db.collection("tasks").onSnapshot(snap => { tasks = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('tasks', err));
+  db.collection("assigns").onSnapshot(snap => { assigns = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('assigns', err));
+  db.collection("todos").onSnapshot(snap => { todos = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('todos', err));
+  db.collection("comments").onSnapshot(snap => { comments = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('comments', err));
+  db.collection("activityLogs").onSnapshot(snap => { activityLogs = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('activityLogs', err));
+  db.collection("notifications").onSnapshot(snap => { notifications = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('notifications', err));
 }
 
 function applyPermissionUI(){
