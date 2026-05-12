@@ -1572,15 +1572,6 @@ function renderHome(){
         onClick:`showEv('${e.id}')`
       }));
 
-    proposals.forEach(p => {
-      if(p.start && fmtDateFull(p.start) === fmtDateFull(day)){
-        dayItems.push({kind:'proposal', id:p.id, title:`제안시작 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
-      }
-      if(p.deadline && fmtDateFull(p.deadline) === fmtDateFull(day)){
-        dayItems.push({kind:'proposal', id:p.id, title:`제출종료 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
-      }
-    });
-
     getCalendarTasks()
       .filter(t => t.assignee === selfId)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
