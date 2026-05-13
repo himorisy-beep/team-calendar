@@ -1683,6 +1683,82 @@ function renderHome(){
     .filter(t => inDay(t, now.getFullYear(), now.getMonth(), now.getDate()))
     .sort(taskDueSort);
 
+  function dayKey(v){
+    return fmtDateFull(v);
+  }
+
+  function todayPeriodState(item){
+    const s = dayKey(item.start);
+    const e = dayKey(item.end || item.start);
+    if(!s || !e) return '';
+    if(s === todayKey && e === todayKey) return 'single';
+    if(e === todayKey) return 'ending';
+    if(s <= todayKey && e >= todayKey) return 'inside';
+    return '';
+  }
+
+  function todayPriorityOrder(item){
+    const state = todayPeriodState(item);
+    if(state === 'single') return 1;
+    if(state === 'ending') return 2;
+    if(state === 'inside') return 3;
+    return 9;
+  }
+
+  const topTodayTasks = activeTodayTasks
+    .filter(t => ['single','ending'].includes(todayPeriodState(t)))
+    .sort((a,b)=>todayPriorityOrder(a)-todayPriorityOrder(b) || parseDateSafely(a.end)-parseDateSafely(b.end));
+
+  const topTodayEvents = todayEvents
+    .filter(e => ['single','ending'].includes(todayPeriodState(e)))
+    .sort((a,b)=>todayPriorityOrder(a)-todayPriorityOrder(b) || parseDateSafely(a.start)-parseDateSafely(b.start));
+
+  const periodTodayTasks = activeTodayTasks
+    .filter(t => todayPeriodState(t) === 'inside')
+    .sort(taskDueSort);
+
+  const periodTodayEvents = todayEvents
+    .filter(e => todayPeriodState(e) === 'inside')
+    .sort((a,b)=>parseDateSafely(a.end)-parseDateSafely(b.end));
+
+  const todayTopRows = [
+    ...topTodayEvents.map(e => ({
+      title:e.title || '일정',
+      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
+      dot:eventColor(e.type),
+      badge:todayPeriodState(e) === 'ending' ? '종료일' : '오늘',
+      badgeClass:todayPeriodState(e) === 'ending' ? 'orange' : 'green',
+      onClick:`showEv('${e.id}')`
+    })),
+    ...topTodayTasks.map(t => ({
+      title:t.title || '업무',
+      meta:`${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
+      dot:'#475569',
+      badge:todayPeriodState(t) === 'ending' ? '종료일' : '오늘',
+      badgeClass:todayPeriodState(t) === 'ending' ? 'orange' : 'green',
+      onClick:`showTask('${t.id}')`
+    }))
+  ];
+
+  const todayPeriodRows = [
+    ...periodTodayEvents.map(e => ({
+      title:e.title || '일정',
+      meta:`기간 포함 · ${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
+      dot:eventColor(e.type),
+      badge:'기간',
+      badgeClass:'blue',
+      onClick:`showEv('${e.id}')`
+    })),
+    ...periodTodayTasks.map(t => ({
+      title:t.title || '업무',
+      meta:`기간 포함 · ${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
+      dot:'#475569',
+      badge:'기간',
+      badgeClass:'blue',
+      onClick:`showTask('${t.id}')`
+    }))
+  ];
+
   const alertParts = [];
   if(proposalsSoon.length){
     const p = proposalsSoon[0];
@@ -1693,6 +1769,7 @@ function renderHome(){
   if(todayEvents.length) alertParts.push(`<strong>오늘 일정 ${todayEvents.length}건</strong>`);
 
   const criticalRows = [
+    ...todayTopRows,
     ...proposalsSoon.slice(0,3).map(p => {
       const diff = Math.ceil((p._d - now) / 86400000);
       return {
@@ -1712,30 +1789,18 @@ function renderHome(){
       badgeClass:'orange',
       onClick:`showTask('${t.id}')`
     })),
-    ...activeTodayTasks.slice(0,4).map(t => ({
-      title:t.title || '업무',
-      meta:`기간 포함 · ${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
-      dot:'#475569',
-      badge:'업무',
-      badgeClass:'blue',
-      onClick:`showTask('${t.id}')`
-    })),
-    ...urgentTasks.filter(t => !activeTodayTasks.some(a=>a.id===t.id)).slice(0,3).map(t => ({
-      title:t.title || '업무',
-      meta:`긴급·중요 · ${escapeHtml(pj(t.project)?.name || '사업 없음')}`,
-      dot:'#D85A30',
-      badge:'긴급',
-      badgeClass:'red',
-      onClick:`showTask('${t.id}')`
-    })),
-    ...todayEvents.slice(0,4).map(e => ({
-      title:e.title || '일정',
-      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
-      dot:eventColor(e.type),
-      badge:TL[e.type] || '일정',
-      badgeClass:'blue',
-      onClick:`showEv('${e.id}')`
-    }))
+    ...todayPeriodRows,
+    ...urgentTasks
+      .filter(t => !activeTodayTasks.some(a=>a.id===t.id))
+      .slice(0,3)
+      .map(t => ({
+        title:t.title || '업무',
+        meta:`긴급·중요 · ${escapeHtml(pj(t.project)?.name || '사업 없음')}`,
+        dot:'#D85A30',
+        badge:'긴급',
+        badgeClass:'red',
+        onClick:`showTask('${t.id}')`
+      }))
   ].slice(0,9);
 
   const actionList = criticalRows.map(item => `
