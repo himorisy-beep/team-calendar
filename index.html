@@ -763,6 +763,106 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   }
 }
 
+
+
+/* Mobile header/action layout fix */
+@media(max-width:680px){
+  .mobile-header{
+    padding:12px 16px;
+  }
+
+  .global-actions{
+    padding:12px 16px 0;
+    margin-bottom:10px;
+    justify-content:flex-start!important;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .global-actions .btn{
+    flex:1 1 calc(33.333% - 6px);
+    min-width:0;
+    padding:7px 8px;
+    font-size:12px;
+    text-align:center;
+  }
+
+  .page{
+    padding:14px 14px 18px;
+  }
+
+  .page-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .page-title{
+    font-size:17px;
+    line-height:1.35;
+  }
+  .page-header > span[style*="font-size:12px"]{
+    display:block;
+    font-size:11px!important;
+    line-height:1.45;
+    white-space:normal!important;
+  }
+
+  .page-header > div[style*="margin-left:auto"]{
+    margin-left:0!important;
+    width:100%;
+    display:flex!important;
+    flex-wrap:wrap!important;
+    justify-content:flex-start!important;
+    align-items:center!important;
+    gap:6px!important;
+  }
+  .page-header label{
+    width:100%;
+    margin-right:0!important;
+    padding:3px 0 2px;
+    justify-content:flex-start!important;
+    line-height:1.4;
+  }
+  .page-header label input[type="checkbox"]{
+    flex:0 0 auto;
+  }
+  .page-header .chip{
+    padding:5px 10px;
+    font-size:12px;
+  }
+  .page-header .btn-sm{
+    padding:6px 10px;
+    font-size:12px;
+  }
+
+  #page-cal .page-header{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    align-items:center;
+    gap:8px;
+  }
+  #page-cal .page-header #month-title{
+    text-align:center;
+    font-size:17px!important;
+  }
+  #page-cal .page-header > div[style*="margin-left:auto"]{
+    grid-column:1 / -1;
+    width:100%;
+    justify-content:flex-start!important;
+  }
+
+  #page-proposals .page-header,
+  #page-setup .page-header{
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+  }
+
+  .card{
+    padding:14px;
+  }
+}
 </style>
 </head>
 <body>
