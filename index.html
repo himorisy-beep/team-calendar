@@ -1538,7 +1538,7 @@ function getTargetOwners(targetType, targetId, fallbackData){
 
   if(targetType === 'proposal'){
     const item = proposals.find(p => p.id === targetId) || fallbackData;
-    return uniqueList(item?.memberIds || []);
+    return uniqueList(item?.participantIds || item?.memberIds || []);
   }
 
   if(targetType === 'todo'){
@@ -2105,16 +2105,16 @@ function activityText(action){
   return action;
 }
 
-let notificationTaskScope = ls('notificationTaskScope') || 'all';
+let notificationViewMode = ls('notificationViewMode') || 'mine';
 
-function getNotificationTaskScope(){
+function getNotificationViewMode(){
   if(!canManageAll()) return 'mine';
-  return notificationTaskScope === 'mine' ? 'mine' : 'all';
+  return notificationViewMode === 'manage' ? 'manage' : 'mine';
 }
 
-function setNotificationTaskScope(scope){
-  notificationTaskScope = scope === 'mine' ? 'mine' : 'all';
-  ls('notificationTaskScope', notificationTaskScope);
+function setNotificationViewMode(mode){
+  notificationViewMode = mode === 'manage' ? 'manage' : 'mine';
+  ls('notificationViewMode', notificationViewMode);
   openNotifications();
   renderNotificationBadge();
 }
@@ -2131,7 +2131,7 @@ function getDdayInfo(dateValue){
   const diff = Math.ceil((target - now) / 86400000);
   return {
     diff,
-    label: diff === 0 ? 'D-Day' : (diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`)
+    label: diff < 0 ? `D+${Math.abs(diff)}` : (diff === 0 ? 'D-Day' : `D-${diff}`)
   };
 }
 
@@ -2145,63 +2145,42 @@ function isPublicTask(t){
     || t.showOnCalendar === 'true';
 }
 
-function getNotificationTaskPool(scope){
-  const normalizedScope = scope || getNotificationTaskScope();
-
-  // admin/team_leader의 "전체 지연·마감 업무"는 캘린더에 표시되는 공개 업무만 포함
-  if(canManageAll() && normalizedScope === 'all') {
-    return tasks.filter(t => isPublicTask(t));
-  }
-
-  // "내 지연·마감 업무"는 본인 담당 업무 전체 포함
-  return tasks.filter(t => String(t.assignee) === String(selfId));
-}
-
-function renderNotificationBadge(){
-  const countEl = document.getElementById('notice-count');
-  if(!countEl) return;
-  const dynamic = buildNotifications(getNotificationTaskScope());
-  const unread = notifications.filter(n=>!n.read).length + dynamic.length;
-  countEl.style.display = unread ? 'inline-flex' : 'none';
-  countEl.textContent = unread > 99 ? '99+' : String(unread);
-}
-
-function buildNotifications(scope){
+function getMyDynamicNotifications(){
   const items = [];
 
-  proposals.forEach(p=>{
+  // 내가 참여 멤버로 들어간 제안의 마감만 내 알림에 표시
+  proposals.filter(p => isMyProposal(p)).forEach(p=>{
     const dday = getDdayInfo(p.deadline);
     if(!dday || !isNotificationDday(dday.diff)) return;
     items.push({
+      source:'dynamic',
       type:'proposal',
       priority:dday.diff === 0 ? 1 : 3,
       title:`제안 제출 ${dday.label}`,
       desc:`${p.name || '제안'}${p.demandOrg ? ' · ' + p.demandOrg : ''}${p.deadline ? ' · ' + fmtDateTimeShort(p.deadline) : ''}`,
       targetId:p.id,
-      badge:dday.label
+      badge:'제안',
+      badgeClass:dday.diff === 0 ? 'orange' : 'blue'
     });
   });
 
-  const taskPool = getNotificationTaskPool(scope);
-
-  taskPool.forEach(t=>{
+  tasks.filter(t => String(t.assignee) === String(selfId)).forEach(t=>{
     if(normalizeTaskStatus(t.status) === '완료') return;
 
-    const assignee = mb(t.assignee);
     const project = pj(t.project);
-    const whoText = canManageAll() && getNotificationTaskScope() === 'all' && assignee ? ` · 담당 ${assignee.name}` : '';
     const projectText = project ? ` · ${project.name}` : '';
 
     if(isOverdue(t)){
       const dday = getDdayInfo(t.end);
       items.push({
+        source:'dynamic',
         type:'task',
         priority:0,
         title:'지연 업무',
-        desc:`${t.title || '업무'}${projectText}${whoText}${dday ? ' · ' + dday.label : ''}`,
+        desc:`${t.title || '업무'}${projectText}${dday ? ' · ' + dday.label : ''}`,
         targetId:t.id,
         badge:'지연',
-        assignee:t.assignee
+        badgeClass:'red'
       });
       return;
     }
@@ -2210,26 +2189,96 @@ function buildNotifications(scope){
     if(!dday || !isNotificationDday(dday.diff)) return;
 
     items.push({
+      source:'dynamic',
       type:'task',
       priority:dday.diff === 0 ? 1 : 2,
       title:`업무 마감 ${dday.label}`,
-      desc:`${t.title || '업무'}${projectText}${whoText}${t.end ? ' · ' + fmtDate(t.end) : ''}`,
+      desc:`${t.title || '업무'}${projectText}${t.end ? ' · ' + fmtDate(t.end) : ''}`,
       targetId:t.id,
-      badge:dday.label,
-      assignee:t.assignee
+      badge:'마감',
+      badgeClass:dday.diff === 0 ? 'orange' : 'blue'
     });
   });
 
-  return items.sort((a,b)=>{
-    if(a.priority !== b.priority) return a.priority - b.priority;
-    return String(a.desc || '').localeCompare(String(b.desc || ''));
-  });
+  return items.sort(notificationSort);
 }
 
-function notificationRow(n){
+function getManagerDynamicNotifications(){
+  const items = [];
+
+  tasks.filter(t => isPublicTask(t)).forEach(t=>{
+    if(normalizeTaskStatus(t.status) === '완료') return;
+
+    const assignee = mb(t.assignee);
+    const project = pj(t.project);
+    const whoText = assignee ? ` · 담당 ${assignee.name}` : '';
+    const projectText = project ? ` · ${project.name}` : '';
+
+    if(isOverdue(t)){
+      const dday = getDdayInfo(t.end);
+      items.push({
+        source:'dynamic',
+        type:'task',
+        priority:0,
+        title:'전체 지연 업무',
+        desc:`${t.title || '업무'}${projectText}${whoText}${dday ? ' · ' + dday.label : ''}`,
+        targetId:t.id,
+        badge:'지연',
+        badgeClass:'red'
+      });
+      return;
+    }
+
+    const dday = getDdayInfo(t.end);
+    if(!dday || !isNotificationDday(dday.diff)) return;
+
+    items.push({
+      source:'dynamic',
+      type:'task',
+      priority:dday.diff === 0 ? 1 : 2,
+      title:`전체 업무 마감 ${dday.label}`,
+      desc:`${t.title || '업무'}${projectText}${whoText}${t.end ? ' · ' + fmtDate(t.end) : ''}`,
+      targetId:t.id,
+      badge:'마감',
+      badgeClass:dday.diff === 0 ? 'orange' : 'blue'
+    });
+  });
+
+  return items.sort(notificationSort);
+}
+
+function notificationSort(a,b){
+  if(a.priority !== b.priority) return a.priority - b.priority;
+  return String(a.desc || '').localeCompare(String(b.desc || ''));
+}
+
+function unreadStoredNotifications(){
+  return notifications.filter(n=>!n.read);
+}
+
+function currentDynamicNotifications(){
+  const mode = getNotificationViewMode();
+  return mode === 'manage' ? getManagerDynamicNotifications() : getMyDynamicNotifications();
+}
+
+function renderNotificationBadge(){
+  const countEl = document.getElementById('notice-count');
+  if(!countEl) return;
+
+  // 상단 숫자는 기본적으로 내가 확인해야 할 알림 기준.
+  // 관리자는 관리 알림 탭을 보고 있을 때만 전체 공개 업무 지연·마감을 숫자에 반영.
+  const mode = getNotificationViewMode();
+  const dynamic = mode === 'manage' ? getManagerDynamicNotifications() : getMyDynamicNotifications();
+  const unread = unreadStoredNotifications().length + dynamic.length;
+
+  countEl.style.display = unread ? 'inline-flex' : 'none';
+  countEl.textContent = unread > 99 ? '99+' : String(unread);
+}
+
+function dynamicNotificationRow(n){
   const action = n.type === 'proposal' ? `closeModal();showProposal('${n.targetId}')` : `closeModal();showTask('${n.targetId}')`;
-  const typeLabel = n.type === 'proposal' ? '제안 알림' : '업무 알림';
-  const badgeHtml = n.badge ? `<span class="action-badge ${n.badge === '지연' ? 'red' : (n.badge === 'D-Day' ? 'orange' : 'blue')}" style="margin-left:6px">${escapeHtml(n.badge)}</span>` : '';
+  const typeLabel = n.type === 'proposal' ? '제안' : '업무';
+  const badgeHtml = n.badge ? `<span class="action-badge ${n.badgeClass || 'blue'}" style="margin-left:6px">${escapeHtml(n.badge)}</span>` : '';
   return `<div class="search-result" onclick="${action}">
     <div class="search-type">${typeLabel}${badgeHtml}</div>
     <div class="search-title">${escapeHtml(n.title)}</div>
@@ -2237,11 +2286,17 @@ function notificationRow(n){
   </div>`;
 }
 
+function storedNotificationBadge(n){
+  if(n.category === 'comment' || n.type === 'comment') return {label:'댓글', cls:'green'};
+  if(n.category === 'manager_update' || n.type === 'manager_update') return {label:'수정', cls:'orange'};
+  return {label:'알림', cls:'blue'};
+}
 
 function storedNotificationRow(n){
   const unreadDot = n.read ? '' : '<span class="notice-dot" style="position:static;margin-left:6px;min-width:8px;width:8px;height:8px;padding:0"></span>';
+  const badge = storedNotificationBadge(n);
   return `<div class="search-result" onclick="openStoredNotification('${n.id}')">
-    <div class="search-type">알림${unreadDot}</div>
+    <div class="search-type">개별 알림<span class="action-badge ${badge.cls}" style="margin-left:6px">${escapeHtml(badge.label)}</span>${unreadDot}</div>
     <div class="search-title">${escapeHtml(n.title || '')}</div>
     <div class="search-meta">${escapeHtml(n.body || '')}</div>
   </div>`;
@@ -2263,28 +2318,35 @@ function openStoredNotification(id){
 }
 
 function openNotifications(){
-  const scope = getNotificationTaskScope();
-  const dynamic = buildNotifications(scope);
-  const stored = [...notifications].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,20);
+  const mode = getNotificationViewMode();
+  const stored = [...notifications].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,30);
+  const dynamic = currentDynamicNotifications();
 
   const managerToggle = canManageAll() ? `
     <div class="filter-chips" style="margin-bottom:12px">
-      <button class="chip ${scope === 'all' ? 'active' : ''}" onclick="setNotificationTaskScope('all')">전체 지연·마감 업무</button>
-      <button class="chip ${scope === 'mine' ? 'active' : ''}" onclick="setNotificationTaskScope('mine')">내 지연·마감 업무</button>
+      <button class="chip ${mode === 'mine' ? 'active' : ''}" onclick="setNotificationViewMode('mine')">내 알림</button>
+      <button class="chip ${mode === 'manage' ? 'active' : ''}" onclick="setNotificationViewMode('manage')">관리 알림</button>
     </div>
     <div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">
-      제안 마감은 공통으로 표시하고, 업무 알림은 선택한 범위에 따라 표시합니다.
+      내 알림은 댓글·수정·내 업무 마감·내 참여 제안을 함께 보여주고, 관리 알림은 전체 공개 업무의 지연·마감만 따로 보여줍니다.
     </div>
-  ` : `<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">내 담당 업무의 지연·마감 알림과 제안 마감을 표시합니다.</div>`;
+  ` : `<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">댓글·수정·내 담당 업무 마감·내 참여 제안을 함께 보여줍니다.</div>`;
 
-  const rows = [
-    ...dynamic.map(notificationRow),
-    ...stored.map(storedNotificationRow)
-  ].join('');
+  let rows = '';
+
+  if(mode === 'manage'){
+    rows = dynamic.map(dynamicNotificationRow).join('');
+  } else {
+    rows = [
+      ...stored.map(storedNotificationRow),
+      ...dynamic.map(dynamicNotificationRow)
+    ].join('');
+  }
 
   document.getElementById('modal-body').innerHTML = managerToggle + (rows || '<div class="empty">알림이 없습니다</div>');
   openModal('알림');
 }
+
 
 function openGlobalSearch(){
   document.getElementById('modal-body').innerHTML = `
