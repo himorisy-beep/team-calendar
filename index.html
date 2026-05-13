@@ -1307,6 +1307,17 @@ function showApp(){
   if(app) app.style.display = 'flex';
 }
 
+async function ensureAuthPersistence(){
+  if(typeof firebase === 'undefined'){
+    throw new Error('Firebase SDK가 로드되지 않았습니다. 인터넷 연결 또는 script 주소를 확인하세요.');
+  }
+  if(!auth){
+    throw new Error('Firebase Auth 초기화에 실패했습니다.');
+  }
+  // 로그인 상태를 브라우저에 영구 저장합니다. 같은 기기/같은 브라우저에서는 다시 로그인하지 않도록 합니다.
+  await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+}
+
 window.loginWithGoogle = async function loginWithGoogle(){
   const btn = document.getElementById('google-login-btn');
   const err = document.getElementById('login-error');
@@ -1318,19 +1329,12 @@ window.loginWithGoogle = async function loginWithGoogle(){
   }
 
   try{
-    if(typeof firebase === 'undefined'){
-      throw new Error('Firebase SDK가 로드되지 않았습니다. 인터넷 연결 또는 script 주소를 확인하세요.');
-    }
-    if(!auth){
-      throw new Error('Firebase Auth 초기화에 실패했습니다.');
-    }
-
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    await ensureAuthPersistence();
 
     const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
 
-    // GitHub Pages / 일반 호스팅에서는 redirect보다 popup 방식이 안정적입니다.
+    // 이미 로그인했던 브라우저에서는 재방문 시 onAuthStateChanged가 자동 복원합니다.
+    // 이 함수는 사용자가 직접 로그인 버튼을 누른 경우에만 실행됩니다.
     await auth.signInWithPopup(provider);
 
   }catch(e){
@@ -1351,6 +1355,8 @@ window.loginWithGoogle = async function loginWithGoogle(){
       guide = '<br><br>Firebase Authentication > 로그인 방법에서 Google 제공업체가 사용 설정되어 있는지 확인하세요.';
     } else if(code === 'auth/network-request-failed'){
       guide = '<br><br>Firebase SDK 또는 Google 로그인 서버에 연결하지 못했습니다. 회사망/보안프로그램/광고차단 확장 프로그램 영향을 확인하세요.';
+    } else if(code === 'auth/unsupported-persistence-type'){
+      guide = '<br><br>현재 브라우저가 로그인 상태 저장을 제한하고 있습니다. Safari 개인정보 보호 모드나 인앱 브라우저가 아닌 일반 Safari/Chrome에서 접속하세요.';
     }
 
     if(err){
@@ -1381,8 +1387,16 @@ function logout(){
   auth.signOut();
 }
 
-function initAuth(){
+async function initAuth(){
   bindLoginButton();
+
+  try{
+    await ensureAuthPersistence();
+  }catch(e){
+    showLoginScreen('로그인 상태 저장 설정 실패: ' + escapeHtml(e.code || '') + '<br>' + escapeHtml(e.message || String(e)));
+    bindLoginButton();
+    return;
+  }
 
   auth.getRedirectResult().catch(e => {
     showLoginScreen('로그인 실패: ' + escapeHtml(e.code || '') + '<br>' + escapeHtml(e.message || String(e)));
