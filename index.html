@@ -3586,6 +3586,8 @@ function openEditEvent(id) {
   document.getElementById('modal-body').innerHTML = getEventFormHTML(true);
   openModal('일정 수정');
   document.getElementById('ev-title').value = e.title || '';
+  document.getElementById('ev-original-who').value = e.who || '';
+  document.getElementById('ev-created-by').value = e.createdBy || e.who || '';
   document.getElementById('ev-start').value = datePartValue(e.start);
   document.getElementById('ev-end').value = datePartValue(e.end || e.start);
   document.getElementById('ev-start-time').value = timePartValue(e.start);
@@ -3602,7 +3604,7 @@ function getEventFormHTML(isEdit) {
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
 
-  return `<div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>
+  return `<input type="hidden" id="ev-original-who" value="${escapeAttr(selfId)}"><input type="hidden" id="ev-created-by" value="${escapeAttr(selfId)}"><div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>
   <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
   <div class="form-row" id="ev-time-row" style="display:none"><div><div class="fl">시작 시간</div><input type="time" id="ev-start-time"></div><div><div class="fl">종료 시간</div><input type="time" id="ev-end-time"></div></div>
   <div id="ev-time-help" style="display:none;font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 10px">회의처럼 특정 시간에 진행되는 일정만 입력하세요. 비워두면 종일 일정으로 저장됩니다.</div>
@@ -3686,7 +3688,10 @@ function submitEvent(){
   if(!t||!s)return; 
 
   const existingEvent = editingEventId ? events.find(ev => ev.id === editingEventId) : null;
-  const originalWho = existingEvent?.who || selfId;
+  const originalWhoFromForm = document.getElementById('ev-original-who')?.value || '';
+  const originalCreatedByFromForm = document.getElementById('ev-created-by')?.value || '';
+  const originalWho = editingEventId ? (originalWhoFromForm || existingEvent?.who || selfId) : selfId;
+  const originalCreatedBy = editingEventId ? (originalCreatedByFromForm || existingEvent?.createdBy || originalWho) : selfId;
 
   let sub=''; 
   if(['vacation','offsite','trip','training','meeting'].includes(ty)){ 
@@ -3710,7 +3715,10 @@ function submitEvent(){
     subtype:sub, 
     start:combineDateAndTime(s, startTime), 
     end:combineDateAndTime(e, endTime), 
-    who:originalWho, 
+    who:originalWho,
+    createdBy:originalCreatedBy,
+    updatedBy:selfId,
+    updatedAt:new Date().toISOString(),
     project:isPersonal ? '' : document.getElementById('ev-proj').value, 
     public:isPersonal ? false : document.getElementById('pub-toggle').classList.contains('on') 
   }, ()=>closeModal()); 
@@ -3720,13 +3728,14 @@ function showEv(id){
   if(!e)return; 
   const p = pj(e.project || '');
   const m = mb(e.who || '');
+  const authorMember = mb(e.createdBy || e.who || '');
   const canEdit = canEditItem(e);
   const body = `
     <div class="dr"><span class="dl">기간</span><span>${formatEventPeriod(e)}</span></div>
     <div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type] || e.type}</span></div>
     ${e.subtype?`<div class="dr"><span class="dl">세부</span><span>${escapeHtml(e.subtype)}</span></div>`:''}
     ${p?`<div class="dr"><span class="dl">사업</span><span>${escapeHtml(p.name || '')}</span></div>`:''}
-    <div class="dr"><span class="dl">작성자</span><span>${escapeHtml(m?.name || (e.who==='all'?'전체팀':'-'))}</span></div>
+    <div class="dr"><span class="dl">작성자</span><span>${escapeHtml(authorMember?.name || m?.name || (e.who==='all'?'전체팀':'-'))}</span></div>
     <div class="dr"><span class="dl">공유</span><span>${e.public?'팀 공유':'비공개'}</span></div>
     ${canEdit?`<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditEvent('${e.id}')">수정</button></div>`:''}
   `;
