@@ -1853,7 +1853,7 @@ function renderHome(){
     getCalendarTasks()
       .filter(t => t.assignee === selfId)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
-      .forEach(t => dayItems.push({kind:'task', id:t.id, title:`${t.title || '업무'}`, onClick:`showTask('${t.id}')`}));
+      .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`}));
 
     const shown = dayItems.slice(0,3).map(item => `
       <div class="week-mini-item ${item.kind}" onclick="${item.onClick}" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
@@ -2276,6 +2276,14 @@ function getCalendarTasks(){
     return t.start && t.end;
   });
 }
+
+function calendarTaskTitle(t){
+  const a = mb(t.assignee || '');
+  const name = a?.name || '';
+  const title = t.title || '업무';
+  return name ? `${name} ${title}` : title;
+}
+
 
 function openAddTask(){
   if(!requireMemberWrite()) return;
@@ -2781,7 +2789,7 @@ function getWeekEventSegments(weekDates, vis){
       endCol,
       startT:sT,
       endT:eT,
-      label:`${t.title || ''}`,
+      label:calendarTaskTitle(t),
       showLabel:isStart || startCol === 1,
       cls:isSingle ? 'cal-span-single' : `${isStart ? 'cal-span-start' : ''} ${isEnd ? 'cal-span-end' : ''}`,
       style:'background:#E2E8F0;color:#334155'
@@ -2913,7 +2921,7 @@ function renderCalList(){
     return {
       kind:'task',
       id:t.id,
-      title:`${t.title || ''}`,
+      title:calendarTaskTitle(t),
       start:s,
       end:en,
       type:'task-calendar',
@@ -3759,7 +3767,7 @@ function showTask(id){
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
-function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(t.title || '')}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
+function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(calendarTaskTitle(t))}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
 
 function syncFilterSections(){
   ['members','projects'].forEach(key => {
