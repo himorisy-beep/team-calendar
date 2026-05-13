@@ -1683,6 +1683,8 @@ function renderHome(){
     .filter(t => inDay(t, now.getFullYear(), now.getMonth(), now.getDate()))
     .sort(taskDueSort);
 
+  const todayKey = fmtDateFull(now);
+
   function dayKey(v){
     return fmtDateFull(v);
   }
