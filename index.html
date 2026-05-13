@@ -1514,6 +1514,111 @@ function getCollectionFromAction(action){
   return '';
 }
 
+
+function getExistingItem(col, id){
+  const source = ({events, tasks, proposals, comments, todos, members, projects, assigns, notifications})[col] || [];
+  return source.find(x => x.id === id) || null;
+}
+
+function uniqueList(values){
+  return Array.from(new Set((values || []).filter(Boolean).map(v => String(v))));
+}
+
+function getTargetOwners(targetType, targetId, fallbackData){
+  if(targetType === 'event'){
+    const item = events.find(e => e.id === targetId) || fallbackData;
+    if(!item || item.who === 'all') return [];
+    return uniqueList([item.createdBy, item.who]);
+  }
+
+  if(targetType === 'task'){
+    const item = tasks.find(t => t.id === targetId) || fallbackData;
+    return uniqueList([item?.assignee]);
+  }
+
+  if(targetType === 'proposal'){
+    const item = proposals.find(p => p.id === targetId) || fallbackData;
+    return uniqueList(item?.memberIds || []);
+  }
+
+  if(targetType === 'todo'){
+    const item = todos.find(t => t.id === targetId) || fallbackData;
+    return uniqueList([item?.who]);
+  }
+
+  return [];
+}
+
+function targetTypeLabel(targetType){
+  return ({event:'일정', task:'업무', proposal:'제안', todo:'메모'})[targetType] || '항목';
+}
+
+function getTargetTitle(targetType, targetId, fallbackData){
+  const item = (targetType === 'event' ? events.find(e => e.id === targetId)
+    : targetType === 'task' ? tasks.find(t => t.id === targetId)
+    : targetType === 'proposal' ? proposals.find(p => p.id === targetId)
+    : targetType === 'todo' ? todos.find(t => t.id === targetId)
+    : null) || fallbackData || {};
+  return item.title || item.name || item.text || targetId || targetTypeLabel(targetType);
+}
+
+async function createAppNotification(targetUser, payload){
+  if(!targetUser || String(targetUser) === String(selfId)) return;
+  const id = 'noti_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+  await db.collection('notifications').doc(id).set({
+    targetUser:String(targetUser),
+    createdBy:selfId,
+    createdAt:new Date().toISOString(),
+    read:false,
+    ...payload
+  });
+}
+
+async function notifyCommentOwners(commentData){
+  const targetType = commentData.targetType;
+  const targetId = commentData.targetId;
+  const owners = getTargetOwners(targetType, targetId, null).filter(owner => owner !== selfId);
+  if(!owners.length) return;
+
+  const actor = memberName(selfId);
+  const label = targetTypeLabel(targetType);
+  const targetTitle = getTargetTitle(targetType, targetId, null);
+
+  await Promise.all(owners.map(owner => createAppNotification(owner, {
+    type:'comment',
+    targetType,
+    targetId,
+    title:`${actor}님이 ${label}에 댓글을 남겼습니다`,
+    body:targetTitle,
+    category:'comment'
+  }).catch(()=>{})));
+}
+
+async function notifyManagerEditOwners(action, id, existingBefore, savedData){
+  if(!canManageAll()) return;
+  if(!action.startsWith('update')) return;
+
+  const targetType = getTargetTypeFromAction(action);
+  if(!['event','task','proposal'].includes(targetType)) return;
+
+  const owners = getTargetOwners(targetType, id, {...(existingBefore || {}), ...(savedData || {})})
+    .filter(owner => owner && owner !== selfId);
+  if(!owners.length) return;
+
+  const actor = memberName(selfId);
+  const label = targetTypeLabel(targetType);
+  const targetTitle = getTargetTitle(targetType, id, {...(existingBefore || {}), ...(savedData || {})});
+
+  await Promise.all(uniqueList(owners).map(owner => createAppNotification(owner, {
+    type:'manager_update',
+    targetType,
+    targetId:id,
+    title:`${actor}님이 내 ${label}을 수정했습니다`,
+    body:targetTitle,
+    category:'manager_update'
+  }).catch(()=>{})));
+}
+
 async function logActivity(action, targetType, targetId, title){
   if(action.includes('Activity')) return;
   const who = selfId || 'unknown';
@@ -1538,6 +1643,8 @@ async function apiSave(payload, onSuccess){
       return;
     }
 
+    const existingBefore = getExistingItem(col, id);
+
     if(action.startsWith('add') || action.startsWith('update')) { 
       await db.collection(col).doc(id).set(data, { merge: true }); 
     } else if(action.startsWith('delete')) { 
@@ -1547,6 +1654,14 @@ async function apiSave(payload, onSuccess){
     if(!action.includes('Activity') && !action.includes('Notification')){
       const title = data.title || data.name || data.text || id;
       logActivity(action, getTargetTypeFromAction(action), id, title).catch(()=>{});
+    }
+
+    if(action === 'addComment'){
+      notifyCommentOwners(data).catch(()=>{});
+    }
+
+    if(action.startsWith('update') && ['events','tasks','proposals'].includes(col)){
+      notifyManagerEditOwners(action, id, existingBefore, data).catch(()=>{});
     }
 
     if(onSuccess) onSuccess(); 
@@ -1619,7 +1734,15 @@ function startRealtimeListeners() {
     );
   db.collection("comments").onSnapshot(snap => { comments = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('comments', err));
   db.collection("activityLogs").onSnapshot(snap => { activityLogs = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('activityLogs', err));
-  db.collection("notifications").onSnapshot(snap => { notifications = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('notifications', err));
+  db.collection("notifications")
+    .where("targetUser", "==", selfId)
+    .onSnapshot(
+      snap => {
+        notifications = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
+      },
+      err => handleSnapshotError('notifications', err)
+    );
 }
 
 function applyPermissionUI(){
@@ -2114,6 +2237,31 @@ function notificationRow(n){
   </div>`;
 }
 
+
+function storedNotificationRow(n){
+  const unreadDot = n.read ? '' : '<span class="notice-dot" style="position:static;margin-left:6px;min-width:8px;width:8px;height:8px;padding:0"></span>';
+  return `<div class="search-result" onclick="openStoredNotification('${n.id}')">
+    <div class="search-type">알림${unreadDot}</div>
+    <div class="search-title">${escapeHtml(n.title || '')}</div>
+    <div class="search-meta">${escapeHtml(n.body || '')}</div>
+  </div>`;
+}
+
+function openStoredNotification(id){
+  const n = notifications.find(x => x.id === id);
+  if(!n) return;
+
+  db.collection('notifications').doc(id).set({
+    read:true,
+    readAt:new Date().toISOString()
+  }, { merge:true }).catch(()=>{});
+
+  closeModal();
+  if(n.targetType === 'event') showEv(n.targetId);
+  else if(n.targetType === 'task') showTask(n.targetId);
+  else if(n.targetType === 'proposal') showProposal(n.targetId);
+}
+
 function openNotifications(){
   const scope = getNotificationTaskScope();
   const dynamic = buildNotifications(scope);
@@ -2131,7 +2279,7 @@ function openNotifications(){
 
   const rows = [
     ...dynamic.map(notificationRow),
-    ...stored.map(n=>`<div class="search-result"><div class="search-type">수동 알림</div><div class="search-title">${escapeHtml(n.title || '')}</div><div class="search-meta">${escapeHtml(n.body || '')}</div></div>`)
+    ...stored.map(storedNotificationRow)
   ].join('');
 
   document.getElementById('modal-body').innerHTML = managerToggle + (rows || '<div class="empty">알림이 없습니다</div>');
