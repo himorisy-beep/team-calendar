@@ -863,6 +863,36 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
     padding:14px;
   }
 }
+
+/* Checkbox alignment fix: prevent global input width from pushing label text off-screen */
+input[type="checkbox"]{
+  width:auto!important;
+  min-width:16px;
+  height:16px;
+  padding:0!important;
+  margin:0;
+  flex:0 0 auto;
+  vertical-align:middle;
+}
+
+@media(max-width:680px){
+  .page-header label{
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:6px!important;
+    width:auto!important;
+    max-width:100%;
+    white-space:normal!important;
+    overflow:visible!important;
+  }
+  .page-header label input[type="checkbox"]{
+    width:auto!important;
+    min-width:16px!important;
+    height:16px!important;
+    flex:0 0 auto!important;
+  }
+}
+
 </style>
 </head>
 <body>
