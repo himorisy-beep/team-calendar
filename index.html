@@ -3685,6 +3685,9 @@ function submitEvent(){
   const ty=document.getElementById('ev-type').value; 
   if(!t||!s)return; 
 
+  const existingEvent = editingEventId ? events.find(ev => ev.id === editingEventId) : null;
+  const originalWho = existingEvent?.who || selfId;
+
   let sub=''; 
   if(['vacation','offsite','trip','training','meeting'].includes(ty)){ 
     const v=document.getElementById('ev-sub').value; 
@@ -3707,7 +3710,7 @@ function submitEvent(){
     subtype:sub, 
     start:combineDateAndTime(s, startTime), 
     end:combineDateAndTime(e, endTime), 
-    who:selfId, 
+    who:originalWho, 
     project:isPersonal ? '' : document.getElementById('ev-proj').value, 
     public:isPersonal ? false : document.getElementById('pub-toggle').classList.contains('on') 
   }, ()=>closeModal()); 
