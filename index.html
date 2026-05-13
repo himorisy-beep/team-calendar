@@ -893,6 +893,57 @@ input[type="checkbox"]{
   }
 }
 
+
+/* Hard fix for mobile header checkbox labels */
+.header-check{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:6px!important;
+  width:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:3px 0!important;
+  color:var(--text2)!important;
+  font-size:12px!important;
+  line-height:1.35!important;
+  white-space:nowrap!important;
+  cursor:pointer!important;
+}
+.header-check-input{
+  appearance:auto!important;
+  -webkit-appearance:checkbox!important;
+  width:16px!important;
+  min-width:16px!important;
+  max-width:16px!important;
+  height:16px!important;
+  min-height:16px!important;
+  max-height:16px!important;
+  flex:0 0 16px!important;
+  display:inline-block!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+.header-check span{
+  display:inline-block!important;
+  width:auto!important;
+  min-width:0!important;
+  flex:0 1 auto!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+@media(max-width:680px){
+  .page-header .header-check{
+    flex:0 0 100%!important;
+    width:100%!important;
+  }
+  .page-header .header-check-input{
+    width:16px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -947,7 +998,7 @@ input[type="checkbox"]{
 
 <div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#DB2777"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;margin-right:8px;white-space:nowrap;"><input type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -960,14 +1011,14 @@ input[type="checkbox"]{
   </div>
 </div>
 
-<div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked> 과거 숨기기</label></div></div><div id="members-container"></div></div>
+<div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label></div></div><div id="members-container"></div></div>
 
 <div id="page-personal" class="page">
   <div class="page-header">
     <span class="page-title">내 업무</span>
     <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-      <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;">
-        <input type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"> 지난 일정 숨기기
+      <label class="header-check">
+        <input class="header-check-input" type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"><span>지난 일정 숨기기</span>
       </label>
       <button class="chip active" id="pv-today" onclick="setPV('today')">오늘</button>
       <button class="chip" id="pv-list" onclick="setPV('list')">일정</button>
@@ -1001,8 +1052,8 @@ input[type="checkbox"]{
     <div class="page-header" style="margin-bottom:12px">
       <span class="page-title" style="font-size:15px">업무 매트릭스</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-        <label style="font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap;">
-          <input type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"> 완료된 업무/메모 숨기기
+        <label class="header-check">
+          <input class="header-check-input" type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"><span>완료된 업무/메모 숨기기</span>
         </label>
         <button class="btn btn-primary btn-sm" onclick="openAddTask()">+ 업무 추가</button>
       </div>
