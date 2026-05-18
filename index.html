@@ -109,7 +109,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .avatar-stack{display:flex;align-items:center}
 .avatar-stack .av{margin-left:-5px;border:2px solid var(--bg)}
 .avatar-stack .av:first-child{margin-left:0}
-:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 108px}
+:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
 .proposal-db-head{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;padding:10px 12px;min-width:720px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);font-size:11px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;align-items:center}
 .proposal-db-head>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proposal-db-row{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;align-items:center;min-width:720px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:8px;font-size:13px;overflow:hidden}
@@ -346,7 +346,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .avatar-stack{display:flex;align-items:center}
 .avatar-stack .av{margin-left:-5px;border:2px solid var(--bg)}
 .avatar-stack .av:first-child{margin-left:0}
-:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 108px}
+:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
 .proposal-db-head{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;padding:10px 12px;min-width:720px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);font-size:11px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;align-items:center}
 .proposal-db-head>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proposal-db-row{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;align-items:center;min-width:720px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:8px;font-size:13px;overflow:hidden}
@@ -493,7 +493,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .avatar-stack{display:flex;align-items:center}
 .avatar-stack .av{margin-left:-5px;border:2px solid var(--bg)}
 .avatar-stack .av:first-child{margin-left:0}
-:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 108px}
+:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
 .proposal-db-head{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;padding:10px 12px;min-width:720px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);font-size:11px;color:var(--text3);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;align-items:center}
 .proposal-db-head>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proposal-db-row{display:grid;grid-template-columns:var(--proposal-db-cols);gap:6px;align-items:center;min-width:720px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:8px;font-size:13px;overflow:hidden}
@@ -608,7 +608,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 }
 
 /* Proposal table layout fix */
-:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 108px}
+:root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
 #proposal-list{overflow-x:auto;padding-bottom:2px}
 .proposal-db-head{
   display:grid;
@@ -1145,6 +1145,7 @@ let listenersStarted = false;
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
 let publicEvents = [], myPersonalEvents = [];
+let publicComments = [], myScopedComments = [], publicActivityLogs = [], myScopedActivityLogs = [];
 let hiddenMb = new Set(); 
 let selProj = 'all'; 
 let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'today', calListMode = 'window'; 
@@ -1402,11 +1403,6 @@ async function initAuth(){
     return;
   }
 
-  auth.getRedirectResult().catch(e => {
-    showLoginScreen('로그인 실패: ' + escapeHtml(e.code || '') + '<br>' + escapeHtml(e.message || String(e)));
-    bindLoginButton();
-  });
-
   auth.onAuthStateChanged(async user => {
     if(!user){
       currentUser = null;
@@ -1528,29 +1524,59 @@ function uniqueList(values){
   return Array.from(new Set((values || []).filter(Boolean).map(v => String(v))));
 }
 
-function getTargetOwners(targetType, targetId, fallbackData){
+function getTargetItem(targetType, targetId){
+  if(targetType === 'event') return events.find(e => e.id === targetId) || null;
+  if(targetType === 'task') return tasks.find(t => t.id === targetId) || null;
+  if(targetType === 'proposal') return proposals.find(p => p.id === targetId) || null;
+  if(targetType === 'todo') return todos.find(t => t.id === targetId) || null;
+  return null;
+}
+
+function getTargetOwnersFromData(targetType, item){
+  if(!item) return [];
+
   if(targetType === 'event'){
-    const item = events.find(e => e.id === targetId) || fallbackData;
-    if(!item || item.who === 'all') return [];
+    if(item.who === 'all') return [];
     return uniqueList([item.createdBy, item.who]);
   }
 
   if(targetType === 'task'){
-    const item = tasks.find(t => t.id === targetId) || fallbackData;
-    return uniqueList([item?.assignee]);
+    return uniqueList([item.assignee]);
   }
 
   if(targetType === 'proposal'){
-    const item = proposals.find(p => p.id === targetId) || fallbackData;
-    return uniqueList(item?.participantIds || item?.memberIds || []);
+    return uniqueList(item.participantIds || item.memberIds || []);
   }
 
   if(targetType === 'todo'){
-    const item = todos.find(t => t.id === targetId) || fallbackData;
-    return uniqueList([item?.who]);
+    return uniqueList([item.who]);
   }
 
   return [];
+}
+
+function getTargetOwners(targetType, targetId, fallbackData){
+  return getTargetOwnersFromData(targetType, getTargetItem(targetType, targetId) || fallbackData);
+}
+
+function getTargetVisibility(targetType, targetId, fallbackData){
+  const item = getTargetItem(targetType, targetId) || fallbackData || {};
+  const owners = getTargetOwnersFromData(targetType, item);
+
+  if(targetType === 'event'){
+    const isPrivateEvent = item.type === 'personal' || item.public === false;
+    if(isPrivateEvent){
+      return { visibility:'private', visibleTo:owners };
+    }
+    return { visibility:'team', visibleTo:[] };
+  }
+
+  if(targetType === 'todo'){
+    return { visibility:'private', visibleTo:owners };
+  }
+
+  // 업무·제안·사업 관련 기록은 팀 공유 영역으로 둡니다.
+  return { visibility:'team', visibleTo:[] };
 }
 
 function targetTypeLabel(targetType){
@@ -1605,35 +1631,49 @@ async function notifyManagerEditOwners(action, id, existingBefore, savedData){
   const targetType = getTargetTypeFromAction(action);
   if(!['event','task','proposal'].includes(targetType)) return;
 
-  const owners = getTargetOwners(targetType, id, {...(existingBefore || {}), ...(savedData || {})})
-    .filter(owner => owner && owner !== selfId);
+  const oldOwners = getTargetOwnersFromData(targetType, existingBefore || {});
+  const newOwners = getTargetOwnersFromData(targetType, savedData || {});
+  const owners = uniqueList([...oldOwners, ...newOwners]).filter(owner => owner && owner !== selfId);
   if(!owners.length) return;
 
   const actor = memberName(selfId);
   const label = targetTypeLabel(targetType);
-  const targetTitle = getTargetTitle(targetType, id, {...(existingBefore || {}), ...(savedData || {})});
+  const merged = {...(existingBefore || {}), ...(savedData || {})};
+  const targetTitle = getTargetTitle(targetType, id, merged);
 
-  await Promise.all(uniqueList(owners).map(owner => createAppNotification(owner, {
-    type:'manager_update',
-    targetType,
-    targetId:id,
-    title:`${actor}님이 내 ${label}을 수정했습니다`,
-    body:targetTitle,
-    category:'manager_update'
-  }).catch(()=>{})));
+  await Promise.all(owners.map(owner => {
+    let title = `${actor}님이 내 ${label}을 수정했습니다`;
+
+    if(targetType === 'task' && existingBefore?.assignee && savedData?.assignee && existingBefore.assignee !== savedData.assignee){
+      title = owner === savedData.assignee
+        ? `${actor}님이 업무를 배정했습니다`
+        : `${actor}님이 내 업무 담당자를 변경했습니다`;
+    }
+
+    return createAppNotification(owner, {
+      type:'manager_update',
+      targetType,
+      targetId:id,
+      title,
+      body:targetTitle,
+      category:'manager_update'
+    }).catch(()=>{});
+  }));
 }
 
-async function logActivity(action, targetType, targetId, title){
+async function logActivity(action, targetType, targetId, title, visibilitySource){
   if(action.includes('Activity')) return;
   const who = selfId || 'unknown';
   const id = 'act_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+  const visibility = getTargetVisibility(targetType, targetId, visibilitySource || null);
   await db.collection('activityLogs').doc(id).set({
     action,
     targetType,
     targetId,
     title:title || '',
     who,
-    createdAt:new Date().toISOString()
+    createdAt:new Date().toISOString(),
+    ...visibility
   });
 }
 
@@ -1656,8 +1696,10 @@ async function apiSave(payload, onSuccess){
     }
 
     if(!action.includes('Activity') && !action.includes('Notification')){
-      const title = data.title || data.name || data.text || id;
-      logActivity(action, getTargetTypeFromAction(action), id, title).catch(()=>{});
+      const targetType = getTargetTypeFromAction(action);
+      const visibilitySource = {...(existingBefore || {}), ...(data || {})};
+      const title = data.title || data.name || data.text || existingBefore?.title || existingBefore?.name || existingBefore?.text || id;
+      logActivity(action, targetType, id, title, visibilitySource).catch(()=>{});
     }
 
     if(action === 'addComment'){
@@ -1675,7 +1717,7 @@ async function apiSave(payload, onSuccess){
 }
 
 let loadedCols = 0; 
-const INITIAL_LISTENER_COUNT = 11;
+const INITIAL_LISTENER_COUNT = 13;
 function checkInitLoad() { 
   loadedCols++; 
   if(loadedCols === INITIAL_LISTENER_COUNT) { hideStatus(); refreshAll(); } 
@@ -1694,32 +1736,54 @@ function mergeEventsAndRefresh(){
   if(loadedCols < INITIAL_LISTENER_COUNT) checkInitLoad();
   else refreshAll();
 }
+
+function mergeCommentsAndRefresh(){
+  const map = new Map();
+  [...publicComments, ...myScopedComments].forEach(c => {
+    if(c && c.id) map.set(c.id, c);
+  });
+  comments = Array.from(map.values());
+
+  if(loadedCols < INITIAL_LISTENER_COUNT) checkInitLoad();
+  else refreshAll();
+}
+
+function mergeActivityLogsAndRefresh(){
+  const map = new Map();
+  [...publicActivityLogs, ...myScopedActivityLogs].forEach(l => {
+    if(l && l.id) map.set(l.id, l);
+  });
+  activityLogs = Array.from(map.values());
+
+  if(loadedCols < INITIAL_LISTENER_COUNT) checkInitLoad();
+  else refreshAll();
+}
 function startRealtimeListeners() {
   if(listenersStarted){ refreshAll(); return; }
   listenersStarted = true;
   showStatus('Firebase 동기화 중...', 'loading');
 
-  // 공유 일정: 개인 비공개 일정은 제외해서 가져옵니다.
+  // 팀 공유 일정: public == true인 일정만 가져옵니다.
   db.collection("events")
-    .where("type", "!=", "personal")
+    .where("public", "==", true)
     .onSnapshot(
       snap => {
         publicEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
         mergeEventsAndRefresh();
       },
-      err => handleSnapshotError('events', err)
+      err => handleSnapshotError('events-public', err)
     );
 
-  // 내 개인 일정: 로그인한 본인의 personal 일정만 가져옵니다.
+  // 내 비공개 일정: 개인 일정과 공유하지 않은 일정은 본인 것만 가져옵니다.
   db.collection("events")
-    .where("type", "==", "personal")
     .where("who", "==", selfId)
+    .where("public", "==", false)
     .onSnapshot(
       snap => {
         myPersonalEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
         mergeEventsAndRefresh();
       },
-      err => handleSnapshotError('events-personal', err)
+      err => handleSnapshotError('events-private', err)
     );
 
   db.collection("members").onSnapshot(snap => { members = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('members', err));
@@ -1736,8 +1800,45 @@ function startRealtimeListeners() {
       },
       err => handleSnapshotError('todos', err)
     );
-  db.collection("comments").onSnapshot(snap => { comments = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('comments', err));
-  db.collection("activityLogs").onSnapshot(snap => { activityLogs = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('activityLogs', err));
+  db.collection("comments")
+    .where("visibility", "==", "team")
+    .onSnapshot(
+      snap => {
+        publicComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeCommentsAndRefresh();
+      },
+      err => handleSnapshotError('comments-team', err)
+    );
+
+  db.collection("comments")
+    .where("visibleTo", "array-contains", selfId)
+    .onSnapshot(
+      snap => {
+        myScopedComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeCommentsAndRefresh();
+      },
+      err => handleSnapshotError('comments-private', err)
+    );
+
+  db.collection("activityLogs")
+    .where("visibility", "==", "team")
+    .onSnapshot(
+      snap => {
+        publicActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeActivityLogsAndRefresh();
+      },
+      err => handleSnapshotError('activityLogs-team', err)
+    );
+
+  db.collection("activityLogs")
+    .where("visibleTo", "array-contains", selfId)
+    .onSnapshot(
+      snap => {
+        myScopedActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        mergeActivityLogsAndRefresh();
+      },
+      err => handleSnapshotError('activityLogs-private', err)
+    );
   db.collection("notifications")
     .where("targetUser", "==", selfId)
     .onSnapshot(
@@ -1783,7 +1884,9 @@ function renderHome(){
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0,0,0,0);
 
-  const proposalsSoon = proposals
+  const homeProposalPool = canManageAll() ? proposals : proposals.filter(p => isMyProposal(p));
+
+  const proposalsSoon = homeProposalPool
     .filter(p => p.deadline)
     .map(p => ({...p, _d:parseDateSafely(p.deadline)}))
     .filter(p => p._d >= now && p._d <= weekEnd)
@@ -2420,14 +2523,19 @@ function doGlobalSearch(){
 }
 
 function openQuickAdd(){
-  document.getElementById('modal-body').innerHTML = `
-    <div class="quick-menu">
-      <div class="quick-card" onclick="closeModal();openAddEvent()"><div class="quick-title">일정</div><div class="quick-desc">회의, 출장, 휴가, 업무 일정을 추가</div></div>
-      <div class="quick-card" onclick="closeModal();openAddTask()"><div class="quick-title">업무</div><div class="quick-desc">사업별 담당 업무와 마감일을 추가</div></div>
-      <div class="quick-card" onclick="closeModal();openAddProposal()"><div class="quick-title">제안</div><div class="quick-desc">제안 마감, 수요기관, 첨부파일을 관리</div></div>
-      <div class="quick-card" onclick="closeModal();openAddProject()"><div class="quick-title">사업</div><div class="quick-desc">신규 사업과 기간을 등록</div></div>
-    </div>
-  `;
+  const cards = [
+    `<div class="quick-card" onclick="closeModal();openAddEvent()"><div class="quick-title">일정</div><div class="quick-desc">회의, 출장, 휴가, 업무 일정을 추가</div></div>`,
+    `<div class="quick-card" onclick="closeModal();openAddTask()"><div class="quick-title">업무</div><div class="quick-desc">사업별 담당 업무와 마감일을 추가</div></div>`
+  ];
+
+  if(canManageAll()){
+    cards.push(
+      `<div class="quick-card" onclick="closeModal();openAddProposal()"><div class="quick-title">제안</div><div class="quick-desc">제안 마감, 수요기관, 첨부파일을 관리</div></div>`,
+      `<div class="quick-card" onclick="closeModal();openAddProject()"><div class="quick-title">사업</div><div class="quick-desc">신규 사업과 기간을 등록</div></div>`
+    );
+  }
+
+  document.getElementById('modal-body').innerHTML = `<div class="quick-menu">${cards.join('')}</div>`;
   openModal('새로 만들기');
 }
 
@@ -2648,6 +2756,8 @@ function addComment(targetType, targetId){
   if(!text) return;
 
   const id = 'cmt_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+  const visibility = getTargetVisibility(targetType, targetId, null);
+
   apiSave({
     action:'addComment',
     id,
@@ -2655,7 +2765,8 @@ function addComment(targetType, targetId){
     targetId,
     who:selfId,
     text,
-    createdAt:new Date().toISOString()
+    createdAt:new Date().toISOString(),
+    ...visibility
   }, ()=>{
     input.value='';
     renderDetailComments(targetType, targetId);
@@ -3426,8 +3537,8 @@ function renderProposalPage(){
       <div title="${escapeHtml(p.demandOrg || '-')}">${escapeHtml(p.demandOrg || '-')}</div>
       <div title="${deadlineText}">${deadlineText}</div>
       <div class="proposal-db-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button>
-        <button class="btn-danger-sm" onclick="deleteProposal('${p.id}')">삭제</button>
+        <button class="btn btn-secondary btn-sm" onclick="showProposal('${p.id}')">보기</button>
+        ${canManageAll() ? `<button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button><button class="btn-danger-sm" onclick="deleteProposal('${p.id}')">삭제</button>` : ''}
       </div>
     </div>`;
   });
@@ -3538,7 +3649,7 @@ function showProposal(id){
     <div class="dr"><span class="dl">참여자</span><span>${escapeHtml(p.participants || '-')}</span></div>
     <div class="dr"><span class="dl">내용</span><span>${escapeHtml(p.note || '-')}</span></div>
     <div class="dr"><span class="dl">첨부파일</span><span style="flex:1">${fileHtml}</span></div>
-    <div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button></div>
+    ${canManageAll() ? `<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditProposal('${p.id}')">수정</button></div>` : ''}
   `;
 
   openDetailPanel(p.name || '제안 정보', '제안', body, 'proposal', p.id);
