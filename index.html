@@ -1868,18 +1868,18 @@ function renderHome(){
   const todayPeriodRows = [
     ...periodTodayEvents.map(e => ({
       title:e.title || '일정',
-      meta:`기간 포함 · ${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
+      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
       dot:eventColor(e.type),
-      badge:'기간',
-      badgeClass:'blue',
+      badge:'',
+      badgeClass:'',
       onClick:`showEv('${e.id}')`
     })),
     ...periodTodayTasks.map(t => ({
       title:t.title || '업무',
-      meta:`기간 포함 · ${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
+      meta:`${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
       dot:'#475569',
-      badge:'기간',
-      badgeClass:'blue',
+      badge:'',
+      badgeClass:'',
       onClick:`showTask('${t.id}')`
     }))
   ];
@@ -1935,7 +1935,7 @@ function renderHome(){
         <div class="action-title">${escapeHtml(item.title)}</div>
         <div class="action-meta">${item.meta}</div>
       </div>
-      <span class="action-badge ${item.badgeClass}">${escapeHtml(item.badge)}</span>
+      ${item.badge ? `<span class="action-badge ${item.badgeClass}">${escapeHtml(item.badge)}</span>` : ''}
     </div>
   `).join('');
 
