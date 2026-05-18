@@ -315,6 +315,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .task-check-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;line-height:1.4}
 .task-check-row input[type="checkbox"]{width:auto!important;min-width:16px;height:16px;margin:0;flex:0 0 auto}
 .task-form-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:5px}
+.privacy-help{font-size:11px;color:var(--text3);line-height:1.45;margin:-4px 0 10px}
 .eisen-list{display:flex;flex-direction:column;gap:4px;overflow:auto;padding-right:4px}
 .eisen-list::-webkit-scrollbar{width:6px}
 .eisen-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px}
@@ -1086,6 +1087,7 @@ input[type="checkbox"]{
 
     <div class="card" style="margin-top:14px">
       <div class="card-title">개인 메모</div>
+      <div class="privacy-help">개인 메모는 본인에게만 표시됩니다.</div>
       <input type="text" id="memo-in" placeholder="+ 사업과 무관한 간단 메모 추가 (Enter)" style="margin-bottom:12px" onkeypress="if(event.key==='Enter') addMemo(this.value)">
       <div id="personal-memo-list" style="display:flex;flex-direction:column;gap:4px"></div>
     </div>
@@ -3840,7 +3842,7 @@ function getEventFormHTML(isEdit) {
   <div class="sub-row" id="sub-row"><div class="fl">세부</div><select id="ev-sub" onchange="onSubChange()"></select><div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="입력"></div></div>
   <div class="form-row full" id="ev-proj-row"><div><div class="fl">사업</div><select id="ev-proj"><option value="">— 없음</option>${pOpts}</select></div></div>
   <div class="toggle-row" id="pub-row"><div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--text2)">팀 캘린더 공유</span></div>
-  <div id="personal-help" style="display:none;font-size:12px;color:var(--text3);line-height:1.5;margin:-4px 0 12px">개인 일정은 팀 캘린더에는 표시되지 않고, 내 업무 &gt; 일정에서만 보입니다.</div>
+  <div id="personal-help" style="display:none;font-size:12px;color:var(--text3);line-height:1.5;margin:-4px 0 12px">개인 일정은 본인에게만 표시됩니다. 관리자와 팀장도 확인할 수 없습니다.</div>
   <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitEvent()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; 
 }
 
