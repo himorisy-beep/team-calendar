@@ -1973,8 +1973,11 @@ function renderHome(){
         }
       });
 
-    getCalendarTasks()
-      .filter(t => t.assignee === selfId)
+    // 오늘 탭의 주간 캘린더는 '내 이번 주 흐름' 확인용이므로,
+    // 통합 캘린더 표시 여부(showOnCalendar)와 관계없이 내 담당 업무를 표시합니다.
+    tasks
+      .filter(t => String(t.assignee) === String(selfId))
+      .filter(t => t.start && t.end)
       .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
       .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`}));
 
