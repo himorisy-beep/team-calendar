@@ -1258,6 +1258,20 @@ function combineDateAndTime(dateValue, timeValue){
   if(!dateValue) return '';
   return timeValue ? `${dateValue}T${timeValue}` : dateValue;
 }
+function isStrictDateValue(v){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v || ''))) return false;
+  const [y,m,d] = String(v).split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === (m - 1) && dt.getDate() === d;
+}
+function isStrictTimeValue(v){
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(v || ''));
+}
+function isStrictDateTimeValue(v){
+  if(!/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):([0-5]\d)$/.test(String(v || ''))) return false;
+  const [datePart, timePart] = String(v).split('T');
+  return isStrictDateValue(datePart) && isStrictTimeValue(timePart);
+}
 function formatEventPeriod(e){
   if(!e) return '';
   const startDate = fmtDateFull(e.start);
@@ -3953,6 +3967,14 @@ function submitEvent(){
 
   const startValue = combineDateAndTime(s, startTime);
   const endValue = combineDateAndTime(e, endTime);
+
+  const strictDateOk = isStrictDateValue(s) && isStrictDateValue(e);
+  const strictDateTimeOk = ty !== 'meeting' || (isStrictTimeValue(startTime) && isStrictTimeValue(endTime) && isStrictDateTimeValue(startValue) && isStrictDateTimeValue(endValue));
+  if(!strictDateOk || !strictDateTimeOk){
+    showToast('유효한 날짜/시간 형식으로 입력해주세요');
+    return;
+  }
+
   const startDateTime = parseDateSafely(startValue);
   const endDateTime = parseDateSafely(endValue);
   if(isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())){
