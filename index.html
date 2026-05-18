@@ -248,6 +248,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .member-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:12px;margin:2px;border:.5px solid var(--border)}
 .task-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);font-size:13px}
 .task-row:last-child{border-bottom:none}
+.task-row.is-past{opacity:.55;filter:grayscale(.8)}
+.task-row.is-past .task-title{text-decoration:line-through;color:var(--text3)!important}
 .task-assignee{display:flex;align-items:center;gap:5px;flex-shrink:0;min-width:72px}
 .task-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-dates{font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap}
@@ -1138,6 +1140,7 @@ const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','대기':'tag-t
 
 let currentUser = null;
 let currentUserProfile = null;
+const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
@@ -1288,7 +1291,7 @@ function eventColor(type){
 function isPrivatePersonal(e){
   return e && e.type === 'personal';
 }
-function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
+function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
 function isOverdue(t){ if(!t.end || t.status === '완료') return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
 
 async function showLoginScreen(message){
@@ -3729,6 +3732,7 @@ function renderMyWorkOverview(){
 function renderMyProjectsList(){
   const container = document.getElementById('my-project-list');
   if(!container) return;
+  const hidePastInPersonal = document.getElementById('pf-hide-past')?.checked;
 
   const myAssigns = assigns.filter(a => a.memberId === selfId);
 
@@ -3744,19 +3748,33 @@ function renderMyProjectsList(){
     if(!p) return;
 
     const myTasks = tasks
-      .filter(t => t.project === p.id && t.assignee === selfId && (!hidePast || !isPast(t.end) || t.status !== '완료'))
-      .sort((x,y)=>parseDateSafely(x.end).getTime() - parseDateSafely(y.end).getTime());
+      .filter(t => t.project === p.id && t.assignee === selfId)
+      .map(t => ({ ...t, _past: normalizeTaskStatus(t.status) === '완료' || isPast(t.end) }))
+      .filter(t => !hidePastInPersonal || !t._past)
+      .sort((x,y)=>{
+        if(x._past !== y._past) return x._past ? 1 : -1;
+        return x._past
+          ? parseDateSafely(y.end).getTime() - parseDateSafely(x.end).getTime()
+          : parseDateSafely(x.end).getTime() - parseDateSafely(y.end).getTime();
+      });
 
     const myEvents = events
-      .filter(e => e.project === p.id && e.who === selfId && (!hidePast || !isPast(e.end)))
-      .sort((x,y)=>parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime());
+      .filter(e => e.project === p.id && e.who === selfId)
+      .map(e => ({ ...e, _past: isPast(e.end) }))
+      .filter(e => !hidePastInPersonal || !e._past)
+      .sort((x,y)=>{
+        if(x._past !== y._past) return x._past ? 1 : -1;
+        return x._past
+          ? parseDateSafely(y.start).getTime() - parseDateSafely(x.start).getTime()
+          : parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime();
+      });
 
     const taskRows = myTasks.map(t => {
       const od = isOverdue(t);
       const cls = STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub';
-      return `<div class="task-row">
-        <div class="task-title" onclick="showTask('${t.id}')" style="${od ? 'color:#D85A30;font-weight:600;' : ''}">
-          ${od ? '[지연] ' : ''}${escapeHtml(t.title || '')}
+      return `<div class="task-row ${t._past ? 'is-past' : ''}">
+        <div class="task-title" onclick="showTask('${t.id}')" style="${od && !t._past ? 'color:#D85A30;font-weight:600;' : ''}">
+          ${od && !t._past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
         </div>
         <span class="tag ${cls}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
         <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
@@ -3764,7 +3782,7 @@ function renderMyProjectsList(){
     }).join('');
 
     const eventRows = myEvents.map(e => {
-      return `<div class="task-row">
+      return `<div class="task-row ${e._past ? 'is-past' : ''}">
         <div class="task-title" onclick="showEv('${e.id}')" style="color:#185FA5">${escapeHtml(e.title || '')}</div>
         <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
         <div class="task-dates">${formatEventPeriod(e)}</div>
