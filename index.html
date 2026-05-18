@@ -3929,6 +3929,19 @@ function submitEvent(){
     return;
   }
 
+  const startValue = combineDateAndTime(s, startTime);
+  const endValue = combineDateAndTime(e, endTime);
+  const startDateTime = parseDateSafely(startValue);
+  const endDateTime = parseDateSafely(endValue);
+  if(isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())){
+    showToast('유효한 날짜를 입력해주세요');
+    return;
+  }
+  if(endDateTime < startDateTime){
+    showToast('종료 일시가 시작 일시보다 빠를 수 없습니다');
+    return;
+  }
+
   const isPersonal = ty === 'personal';
   apiSave({ 
     action: editingEventId?'updateEvent':'addEvent', 
