@@ -1566,17 +1566,17 @@ function getTargetVisibility(targetType, targetId, fallbackData){
   if(targetType === 'event'){
     const isPrivateEvent = item.type === 'personal' || item.public === false;
     if(isPrivateEvent){
-      return { visibility:'private', visibleTo:owners };
+      return { visibility:'private', visibleTo:owners, visibleToKey:owners[0] || '' };
     }
-    return { visibility:'team', visibleTo:[] };
+    return { visibility:'team', visibleTo:[], visibleToKey:'' };
   }
 
   if(targetType === 'todo'){
-    return { visibility:'private', visibleTo:owners };
+    return { visibility:'private', visibleTo:owners, visibleToKey:owners[0] || '' };
   }
 
   // 업무·제안·사업 관련 기록은 팀 공유 영역으로 둡니다.
-  return { visibility:'team', visibleTo:[] };
+  return { visibility:'team', visibleTo:[], visibleToKey:'' };
 }
 
 function targetTypeLabel(targetType){
@@ -1811,7 +1811,7 @@ function startRealtimeListeners() {
     );
 
   db.collection("comments")
-    .where("visibleTo", "array-contains", selfId)
+    .where("visibleToKey", "==", selfId)
     .onSnapshot(
       snap => {
         myScopedComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -1831,7 +1831,7 @@ function startRealtimeListeners() {
     );
 
   db.collection("activityLogs")
-    .where("visibleTo", "array-contains", selfId)
+    .where("visibleToKey", "==", selfId)
     .onSnapshot(
       snap => {
         myScopedActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
