@@ -3749,7 +3749,11 @@ function renderMyProjectsList(){
 
     const myTasks = tasks
       .filter(t => t.project === p.id && t.assignee === selfId)
-      .map(t => ({ ...t, _past: normalizeTaskStatus(t.status) === '완료' || isPast(t.end || t.start) }))
+      .map(t => {
+        const isDone = normalizeTaskStatus(t.status) === '완료';
+        const isOld = isPast(t.end || t.start);
+        return { ...t, _past: isDone && isOld };
+      })
       .filter(t => !hidePastInPersonal || !t._past)
       .sort((x,y)=>{
         if(x._past !== y._past) return x._past ? 1 : -1;
