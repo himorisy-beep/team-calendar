@@ -250,6 +250,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .task-row:last-child{border-bottom:none}
 .task-row.is-past{opacity:.55;filter:grayscale(.8)}
 .task-row.is-past .task-title{text-decoration:line-through;color:var(--text3)!important}
+.task-row.is-past .task-dates,.task-row.is-past .tag{color:var(--text3)!important;opacity:.75}
 .task-assignee{display:flex;align-items:center;gap:5px;flex-shrink:0;min-width:72px}
 .task-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-dates{font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap}
@@ -3852,53 +3853,69 @@ function renderMyProjectsList(){
     return;
   }
 
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+
+  function isEndedBeforeToday(dateValue){
+    if(!dateValue) return false;
+    const d = parseDateSafely(dateValue);
+    if(!d || isNaN(d.getTime()) || d.getTime() === 0) return false;
+    d.setHours(23,59,59,999);
+    return d < todayStart;
+  }
+
+  function sortProjectRows(a, b){
+    if(a._past !== b._past) return a._past ? 1 : -1;
+    if(a._past){
+      return b._sortDate - a._sortDate;
+    }
+    return a._sortDate - b._sortDate;
+  }
+
   let h = '<div class="overview-grid">';
 
   myAssigns.forEach(a => {
     const p = pj(a.projectId);
     if(!p) return;
 
-    const myTasks = tasks
+    const taskRows = tasks
       .filter(t => t.project === p.id && t.assignee === selfId)
-      .map(t => ({ ...t, _past: normalizeTaskStatus(t.status) === '완료' || isPast(t.end) }))
-      .filter(t => !hidePastInPersonal || !t._past)
-      .sort((x,y)=>{
-        if(x._past !== y._past) return x._past ? 1 : -1;
-        return x._past
-          ? parseDateSafely(y.end).getTime() - parseDateSafely(x.end).getTime()
-          : parseDateSafely(x.end).getTime() - parseDateSafely(y.end).getTime();
+      .map(t => {
+        const status = normalizeTaskStatus(t.status);
+        const od = isOverdue(t);
+        const done = status === '완료';
+        // 미완료 지연 업무는 지난 항목으로 내리지 않고 상단에 남깁니다.
+        const past = done;
+        const cls = STATUS_TAG[status] || 'tag-sub';
+        const sortDate = parseDateSafely(t.end || t.start).getTime() || 9999999999999;
+        const html = `<div class="task-row ${past ? 'is-past' : ''}">
+          <div class="task-title" onclick="showTask('${t.id}')" style="${od && !past ? 'color:#D85A30;font-weight:600;' : ''}">
+            ${od && !past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
+          </div>
+          <span class="tag ${cls}" style="font-size:10px">${escapeHtml(status || '')}</span>
+          <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
+        </div>`;
+        return { _past: past, _sortDate: sortDate, html };
       });
 
-    const myEvents = events
+    const eventRows = events
       .filter(e => e.project === p.id && e.who === selfId)
-      .map(e => ({ ...e, _past: isPast(e.end) }))
-      .filter(e => !hidePastInPersonal || !e._past)
-      .sort((x,y)=>{
-        if(x._past !== y._past) return x._past ? 1 : -1;
-        return x._past
-          ? parseDateSafely(y.start).getTime() - parseDateSafely(x.start).getTime()
-          : parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime();
+      .map(e => {
+        const past = isEndedBeforeToday(e.end || e.start);
+        const sortDate = parseDateSafely(e.end || e.start).getTime() || 9999999999999;
+        const html = `<div class="task-row ${past ? 'is-past' : ''}">
+          <div class="task-title" onclick="showEv('${e.id}')" style="${past ? '' : 'color:#185FA5'}">${escapeHtml(e.title || '')}</div>
+          <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
+          <div class="task-dates">${formatEventPeriod(e)}</div>
+        </div>`;
+        return { _past: past, _sortDate: sortDate, html };
       });
 
-    const taskRows = myTasks.map(t => {
-      const od = isOverdue(t);
-      const cls = STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub';
-      return `<div class="task-row ${t._past ? 'is-past' : ''}">
-        <div class="task-title" onclick="showTask('${t.id}')" style="${od && !t._past ? 'color:#D85A30;font-weight:600;' : ''}">
-          ${od && !t._past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
-        </div>
-        <span class="tag ${cls}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
-        <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
-      </div>`;
-    }).join('');
-
-    const eventRows = myEvents.map(e => {
-      return `<div class="task-row ${e._past ? 'is-past' : ''}">
-        <div class="task-title" onclick="showEv('${e.id}')" style="color:#185FA5">${escapeHtml(e.title || '')}</div>
-        <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
-        <div class="task-dates">${formatEventPeriod(e)}</div>
-      </div>`;
-    }).join('');
+    const rows = [...taskRows, ...eventRows]
+      .filter(row => !hidePastInPersonal || !row._past)
+      .sort(sortProjectRows)
+      .map(row => row.html)
+      .join('');
 
     h += `<div class="proj-card">
       <div class="proj-card-header">
@@ -3912,7 +3929,7 @@ function renderMyProjectsList(){
         </div>
       </div>
       <div class="proj-card-body">
-        ${taskRows + eventRows || '<div style="font-size:13px;color:var(--text3);padding:6px 0">내 담당 세부 내역이 없습니다</div>'}
+        ${rows || '<div style="font-size:13px;color:var(--text3);padding:6px 0">내 담당 세부 내역이 없습니다</div>'}
       </div>
     </div>`;
   });
