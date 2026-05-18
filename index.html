@@ -1885,13 +1885,17 @@ function renderHome(){
   ];
 
   const alertParts = [];
+  const todayWorkCount = topTodayTasks.length;
+
+  // 오늘 탭 상단 요약은 실제 당일 처리 우선순위가 높은 항목만 간단히 표시
+  if(todayEvents.length) alertParts.push(`<strong>오늘 일정 ${todayEvents.length}건</strong>`);
+  if(todayWorkCount) alertParts.push(`<strong>오늘 업무 ${todayWorkCount}건</strong>`);
+  if(overdueTasks.length) alertParts.push(`<strong>지연 업무 ${overdueTasks.length}건</strong>`);
   if(proposalsSoon.length){
     const p = proposalsSoon[0];
     const diff = Math.ceil((p._d - now) / 86400000);
     alertParts.push(`<strong>제안 제출 ${diff === 0 ? 'D-Day' : 'D-'+diff}</strong><span>${escapeHtml(p.name || '제안')}</span>`);
   }
-  if(overdueTasks.length) alertParts.push(`<strong>지연 업무 ${overdueTasks.length}건</strong>`);
-  if(todayEvents.length) alertParts.push(`<strong>오늘 일정 ${todayEvents.length}건</strong>`);
 
   const criticalRows = [
     ...todayTopRows,
