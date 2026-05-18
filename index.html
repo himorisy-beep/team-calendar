@@ -248,6 +248,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .member-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:12px;margin:2px;border:.5px solid var(--border)}
 .task-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);font-size:13px}
 .task-row:last-child{border-bottom:none}
+.task-row.is-past{opacity:.55;filter:grayscale(.8)}
+.task-row.is-past .task-title{text-decoration:line-through;color:var(--text3)!important}
 .task-assignee{display:flex;align-items:center;gap:5px;flex-shrink:0;min-width:72px}
 .task-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .task-dates{font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap}
@@ -1138,6 +1140,7 @@ const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','대기':'tag-t
 
 let currentUser = null;
 let currentUserProfile = null;
+const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
@@ -1288,7 +1291,7 @@ function eventColor(type){
 function isPrivatePersonal(e){
   return e && e.type === 'personal';
 }
-function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
+function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
 function isOverdue(t){ if(!t.end || t.status === '완료') return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
 
 async function showLoginScreen(message){
@@ -3269,8 +3272,8 @@ function renderBoard(){
   const vp=projects.filter(p=>selProj==='all'||p.id===selProj); if(!vp.length){document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
   let h='<div class="overview-grid">'; vp.forEach(p=>{
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId)); 
-    const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast || !isPast(t.end) || t.status !== '완료')); 
-    const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
+    const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast || !isPast(t.end || t.start) || t.status !== '완료')); 
+    const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end || e.start)));
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
     const tr=projTasks.map(t=>{const a=mb(t.assignee); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${isOverdue(t)?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`}).join('');
     const er=projEvents.map(e=>{const a=mb(e.who); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`}).join('');
@@ -3334,7 +3337,7 @@ function renderProjectTable(){
 
 function renderGantt() {
   const mappedEvents = events.filter(e => e.project && ['work', 'meeting', 'trip'].includes(e.type)).map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
-  const allTasks = [...tasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
+  const allTasks = [...tasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end || t.start) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
   if (!allTasks.length) { document.getElementById('overview-container').innerHTML = '<div class="empty">내역이 없습니다</div>'; return; }
   const dates = allTasks.flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()]).filter(v=>!isNaN(v) && v>0); 
   if(!dates.length){ document.getElementById('overview-container').innerHTML = '<div class="empty">유효한 날짜가 없습니다</div>'; return; }
@@ -3570,13 +3573,13 @@ function renderMemberOverview(){
   let h='<div class="member-overview">'; 
   vm2.forEach(m2=>{
     const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); 
-    const me=events.filter(e=>(e.who===m2.id||e.who==='all')&&e.public&&(!hidePast||!isPast(e.end)));
+    const me=events.filter(e=>(e.who===m2.id||e.who==='all')&&e.public&&(!hidePast||!isPast(e.end || e.start)));
 
     const pr=ma.map(a=>{
       const p=pj(a.projectId); 
       if(!p) return ''; 
 
-      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||t.status!=='완료')); 
+      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end || t.start)||t.status!=='완료')); 
       const pe=me.filter(e=>e.project===p.id); 
 
       return `<div class="proj-row" style="flex-wrap:wrap">
@@ -3607,8 +3610,8 @@ function renderMemberOverview(){
 function renderMembersPage(){
   const vm2=members.filter(m=>!hiddenMb.has(m.id)); if(!vm2.length){document.getElementById('members-container').innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
   let h='<div class="member-overview">'; vm2.forEach(m2=>{
-    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); const me=events.filter(e=>(e.who===m2.id||e.who==='all')&&e.public&&(!hidePast||!isPast(e.end)));
-    const pr=ma.map(a=>{const p=pj(a.projectId); if(!p) return ''; const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||t.status!=='완료')); const pe=me.filter(e=>e.project===p.id); return `<div class="proj-row" style="flex-wrap:wrap"><div class="proj-row-name" style="flex:1 1 100%;"><div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="proj-tasks" style="width:100%">${mt.map(t=>`<span class="mini-task ${t.status==='완료'?'done':''}" onclick="showTask('${t.id}')">${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}</div></div>`}).join('');
+    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); const me=events.filter(e=>(e.who===m2.id||e.who==='all')&&e.public&&(!hidePast||!isPast(e.end || e.start)));
+    const pr=ma.map(a=>{const p=pj(a.projectId); if(!p) return ''; const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end || t.start)||t.status!=='완료')); const pe=me.filter(e=>e.project===p.id); return `<div class="proj-row" style="flex-wrap:wrap"><div class="proj-row-name" style="flex:1 1 100%;"><div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="proj-tasks" style="width:100%">${mt.map(t=>`<span class="mini-task ${t.status==='완료'?'done':''}" onclick="showTask('${t.id}')">${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}</div></div>`}).join('');
     h+=`<div class="member-card"><div class="member-card-header"><div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div><div class="member-card-info"><div class="member-card-name">${escapeHtml(m2.name || '')}</div><div class="member-card-role">${escapeHtml(m2.role || '-')}</div></div></div><div class="member-card-body">${pr}</div></div>`;
   });
   document.getElementById('members-container').innerHTML=h+'</div>';
@@ -3729,6 +3732,7 @@ function renderMyWorkOverview(){
 function renderMyProjectsList(){
   const container = document.getElementById('my-project-list');
   if(!container) return;
+  const hidePastInPersonal = document.getElementById('pf-hide-past')?.checked;
 
   const myAssigns = assigns.filter(a => a.memberId === selfId);
 
@@ -3744,19 +3748,33 @@ function renderMyProjectsList(){
     if(!p) return;
 
     const myTasks = tasks
-      .filter(t => t.project === p.id && t.assignee === selfId && (!hidePast || !isPast(t.end) || t.status !== '완료'))
-      .sort((x,y)=>parseDateSafely(x.end).getTime() - parseDateSafely(y.end).getTime());
+      .filter(t => t.project === p.id && t.assignee === selfId)
+      .map(t => ({ ...t, _past: normalizeTaskStatus(t.status) === '완료' || isPast(t.end || t.start) }))
+      .filter(t => !hidePastInPersonal || !t._past)
+      .sort((x,y)=>{
+        if(x._past !== y._past) return x._past ? 1 : -1;
+        return x._past
+          ? parseDateSafely(y.end).getTime() - parseDateSafely(x.end).getTime()
+          : parseDateSafely(x.end).getTime() - parseDateSafely(y.end).getTime();
+      });
 
     const myEvents = events
-      .filter(e => e.project === p.id && e.who === selfId && (!hidePast || !isPast(e.end)))
-      .sort((x,y)=>parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime());
+      .filter(e => e.project === p.id && e.who === selfId)
+      .map(e => ({ ...e, _past: isPast(e.end || e.start) }))
+      .filter(e => !hidePastInPersonal || !e._past)
+      .sort((x,y)=>{
+        if(x._past !== y._past) return x._past ? 1 : -1;
+        return x._past
+          ? parseDateSafely(y.start).getTime() - parseDateSafely(x.start).getTime()
+          : parseDateSafely(x.start).getTime() - parseDateSafely(y.start).getTime();
+      });
 
     const taskRows = myTasks.map(t => {
       const od = isOverdue(t);
       const cls = STATUS_TAG[normalizeTaskStatus(t.status)] || 'tag-sub';
-      return `<div class="task-row">
-        <div class="task-title" onclick="showTask('${t.id}')" style="${od ? 'color:#D85A30;font-weight:600;' : ''}">
-          ${od ? '[지연] ' : ''}${escapeHtml(t.title || '')}
+      return `<div class="task-row ${t._past ? 'is-past' : ''}">
+        <div class="task-title" onclick="showTask('${t.id}')" style="${od && !t._past ? 'color:#D85A30;font-weight:600;' : ''}">
+          ${od && !t._past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
         </div>
         <span class="tag ${cls}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span>
         <div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div>
@@ -3764,7 +3782,7 @@ function renderMyProjectsList(){
     }).join('');
 
     const eventRows = myEvents.map(e => {
-      return `<div class="task-row">
+      return `<div class="task-row ${e._past ? 'is-past' : ''}">
         <div class="task-title" onclick="showEv('${e.id}')" style="color:#185FA5">${escapeHtml(e.title || '')}</div>
         <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
         <div class="task-dates">${formatEventPeriod(e)}</div>
@@ -3926,6 +3944,19 @@ function submitEvent(){
   const endTime = ty === 'meeting' ? document.getElementById('ev-end-time').value : '';
   if((startTime && !endTime) || (!startTime && endTime)){
     showToast('회의 시간은 시작/종료 시간을 함께 입력해주세요');
+    return;
+  }
+
+  const startValue = combineDateAndTime(s, startTime);
+  const endValue = combineDateAndTime(e, endTime);
+  const startDateTime = parseDateSafely(startValue);
+  const endDateTime = parseDateSafely(endValue);
+  if(isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())){
+    showToast('유효한 날짜를 입력해주세요');
+    return;
+  }
+  if(endDateTime < startDateTime){
+    showToast('종료 일시가 시작 일시보다 빠를 수 없습니다');
     return;
   }
 
