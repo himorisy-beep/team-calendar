@@ -1296,6 +1296,30 @@ function isPrivatePersonal(e){
 function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
 function isOverdue(t){ if(!t.end || t.status === '완료') return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
 
+function todayStartDate(){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d;
+}
+function isPastScheduleItem(item){
+  const end = parseDateSafely(item?.end || item?.start);
+  if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
+  end.setHours(23,59,59,999);
+  return end < todayStartDate();
+}
+function isManagementPastTask(t){
+  // 사업 관리에서는 완료 업무만 회색/취소선 처리합니다.
+  // 미완료 마감초과 업무는 지연 업무이므로 상단에 남겨둡니다.
+  return normalizeTaskStatus(t?.status) === '완료';
+}
+function sortManagementRows(a,b){
+  if(a._past !== b._past) return a._past ? 1 : -1;
+  const ad = parseDateSafely(a._date).getTime() || 0;
+  const bd = parseDateSafely(b._date).getTime() || 0;
+  return a._past ? bd - ad : ad - bd;
+}
+
+
 async function showLoginScreen(message){
   const login = document.getElementById('login-screen');
   const app = document.getElementById('app-layout');
@@ -3384,15 +3408,44 @@ function renderBoard(){
   const vp=projects.filter(p=>selProj==='all'||p.id===selProj); if(!vp.length){document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
   let h='<div class="overview-grid">'; vp.forEach(p=>{
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId)); 
-    const projTasks=tasks.filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee)&&(!hidePast || !isPast(t.end) || t.status !== '완료')); 
-    const projEvents=events.filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who) && (!hidePast||!isPast(e.end)));
+
+    const projTasks=tasks
+      .filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee))
+      .map(t=>({...t,_kind:'task',_past:isManagementPastTask(t),_date:t.end || t.start}))
+      .filter(t=>!hidePast || !t._past);
+
+    const projEvents=events
+      .filter(e=>e.project===p.id && ['work', 'meeting', 'trip'].includes(e.type) && !hiddenMb.has(e.who))
+      .map(e=>({...e,_kind:'event',_past:isPastScheduleItem(e),_date:e.end || e.start}))
+      .filter(e=>!hidePast || !e._past);
+
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
-    const tr=projTasks.map(t=>{const a=mb(t.assignee); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${isOverdue(t)?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`}).join('');
-    const er=projEvents.map(e=>{const a=mb(e.who); return `<div class="task-row"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`}).join('');
-    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${tr+er || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
+
+    const rows = [
+      ...projTasks.map(t=>{
+        const a=mb(t.assignee);
+        const overdue = isOverdue(t) && !t._past;
+        return {
+          _past:t._past,
+          _date:t._date,
+          html:`<div class="task-row ${t._past?'is-past':''}"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${overdue?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${overdue?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`
+        };
+      }),
+      ...projEvents.map(e=>{
+        const a=mb(e.who);
+        return {
+          _past:e._past,
+          _date:e._date,
+          html:`<div class="task-row ${e._past?'is-past':''}"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:#185FA5;" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag tag-doing" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`
+        };
+      })
+    ].sort(sortManagementRows).map(r=>r.html).join('');
+
+    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
   document.getElementById('overview-container').innerHTML=h+'</div>';
 }
+
 function renderProjectTable(){
   const target = document.getElementById('overview-container');
   const vp=projects.filter(p=>selProj==='all'||p.id===selProj);
