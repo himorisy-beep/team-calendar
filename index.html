@@ -2064,18 +2064,7 @@ function renderHome(){
       badgeClass:'orange',
       onClick:`showTask('${t.id}')`
     })),
-    ...todayPeriodRows,
-    ...urgentTasks
-      .filter(t => !activeTodayTasks.some(a=>a.id===t.id))
-      .slice(0,3)
-      .map(t => ({
-        title:t.title || '업무',
-        meta:`긴급·중요 · ${escapeHtml(pj(t.project)?.name || '사업 없음')}`,
-        dot:'#D85A30',
-        badge:'긴급',
-        badgeClass:'red',
-        onClick:`showTask('${t.id}')`
-      }))
+    ...todayPeriodRows
   ].slice(0,9);
 
   const actionList = criticalRows.map(item => `
@@ -2088,6 +2077,41 @@ function renderHome(){
       ${item.badge ? `<span class="action-badge ${item.badgeClass}">${escapeHtml(item.badge)}</span>` : ''}
     </div>
   `).join('');
+
+  const todayRelatedTaskIds = new Set([
+    ...topTodayTasks,
+    ...periodTodayTasks,
+    ...overdueTasks
+  ].map(t => t.id));
+
+  const upcomingUrgentTasks = urgentTasks
+    .filter(t => !todayRelatedTaskIds.has(t.id))
+    .filter(t => !isOverdue(t))
+    .sort(taskDueSort)
+    .slice(0, 5);
+
+  const upcomingUrgentList = upcomingUrgentTasks.map(t => {
+    const dday = getDdayInfo(t.end);
+    const project = pj(t.project);
+    const ddayText = dday ? ` · ${dday.label}` : '';
+    return `
+      <div class="action-item" onclick="showTask('${t.id}')">
+        <div class="action-dot" style="background:#D85A30"></div>
+        <div class="action-main">
+          <div class="action-title">${escapeHtml(t.title || '업무')}</div>
+          <div class="action-meta">${escapeHtml(project?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}${ddayText}</div>
+        </div>
+        <span class="action-badge red">긴급</span>
+      </div>
+    `;
+  }).join('');
+
+  const upcomingUrgentCard = upcomingUrgentTasks.length ? `
+      <div class="card">
+        <div class="card-title">다가오는 긴급·중요 업무</div>
+        <div class="action-list">${upcomingUrgentList}</div>
+      </div>
+  ` : '';
 
   const weekDates = [];
   for(let i=0;i<7;i++){
@@ -2161,6 +2185,8 @@ function renderHome(){
           <div class="week-mini-grid">${weekMiniDays}</div>
         </div>
       </div>
+
+      ${upcomingUrgentCard}
     </div>
   `;
 }
