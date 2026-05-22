@@ -1296,6 +1296,20 @@ function isPrivatePersonal(e){
 function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
 function isOverdue(t){ if(!t.end || t.status === '완료') return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
 
+function taskCompletedDate(t){
+  if(!t || normalizeTaskStatus(t.status) !== '완료') return '';
+  return fmtDateFull(t.completedAt || t.completedDate || '');
+}
+
+function taskEndForTodayWeek(t){
+  const doneDate = taskCompletedDate(t);
+  return doneDate || t.end;
+}
+
+function inDayForTodayWeekTask(t,y,m,d){
+  return inDay({...t, end:taskEndForTodayWeek(t)}, y,m,d);
+}
+
 function todayStartDate(){
   const d = new Date();
   d.setHours(0,0,0,0);
@@ -2114,7 +2128,7 @@ function renderHome(){
     tasks
       .filter(t => String(t.assignee) === String(selfId))
       .filter(t => t.start && t.end)
-      .filter(t => inDay(t, day.getFullYear(), day.getMonth(), day.getDate()))
+      .filter(t => inDayForTodayWeekTask(t, day.getFullYear(), day.getMonth(), day.getDate()))
       .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`}));
 
     const shown = dayItems.slice(0,3).map(item => `
@@ -2691,10 +2705,13 @@ function submitTask(){
   if(!title){ showToast('업무명을 입력해주세요'); return; }
 
   const id = document.getElementById('task-id').value || 'task_' + Date.now();
-  const isEdit = tasks.some(t=>t.id===id);
+  const existingTask = tasks.find(t=>t.id===id);
+  const isEdit = !!existingTask;
 
   const priority = document.getElementById('task-priority').value;
   const flags = priorityToFlags(priority);
+  const status = normalizeTaskStatus(document.getElementById('task-status').value);
+  const completedAt = status === '완료' ? (existingTask?.completedAt || todayStr) : '';
 
   apiSave({
     action:isEdit?'updateTask':'addTask',
@@ -2704,7 +2721,8 @@ function submitTask(){
     assignee:document.getElementById('task-assignee').value,
     start:document.getElementById('task-start').value,
     end:document.getElementById('task-end').value,
-    status:normalizeTaskStatus(document.getElementById('task-status').value),
+    status,
+    completedAt,
     priority,
     important:flags.important,
     urgent:flags.urgent,
@@ -2897,11 +2915,13 @@ window.toggleTaskDone = function(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
 
+  const isDone = normalizeTaskStatus(t.status) === '완료';
   apiSave({
     action:'updateTask',
     ...t,
     id:t.id,
-    status:normalizeTaskStatus(t.status) === '완료' ? '진행' : '완료'
+    status:isDone ? '진행' : '완료',
+    completedAt:isDone ? '' : todayStr
   });
 };
 
@@ -4187,6 +4207,7 @@ function showTask(id){
     <div class="dr"><span class="dl">사업</span><span>${escapeHtml(p?.name||'-')}</span></div>
     <div class="dr"><span class="dl">기간</span><span>${fmtDateFull(t.start)} ~ ${fmtDateFull(t.end)}</span></div>
     <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span></div>
+    ${taskCompletedDate(t)?`<div class="dr"><span class="dl">완료일</span><span>${taskCompletedDate(t)}</span></div>`:''}
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
     <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
     <div class="dr"><span class="dl">메모</span><span>${escapeHtml(t.note || '-')}</span></div>
