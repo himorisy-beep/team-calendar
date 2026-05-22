@@ -948,6 +948,34 @@ input[type="checkbox"]{
   }
 }
 
+
+
+/* UX refinement: mobile page controls, proposal status, closed projects */
+.proposal-status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;background:var(--bg2);color:var(--text2);white-space:nowrap}
+.proposal-status-preparing{background:#E6F1FB;color:#185FA5}
+.proposal-status-writing{background:#F3E8FF;color:#7C3AED}
+.proposal-status-review{background:#FAEEDA;color:#854F0B}
+.proposal-status-submitted{background:#E1F5EE;color:#0F6E56}
+.proposal-status-hold{background:#F3F4F6;color:#6B7280}
+.closed-project-section{margin-top:16px;border-top:.5px solid var(--border);padding-top:14px}
+.closed-project-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text2);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px}
+.closed-project-toggle:hover{background:var(--bg2);color:var(--text)}
+.closed-project-table-row td{background:var(--bg2)!important;color:var(--text2);font-size:12px;font-weight:800}
+.project-table tr.is-past{opacity:.55;filter:grayscale(.8)}
+.project-table tr.is-past td:first-child strong{text-decoration:line-through;color:var(--text3)}
+.notification-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
+@media(max-width:680px){
+  .page-header{gap:10px!important}
+  .page-header > div[style*="margin-left:auto"]{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;align-items:stretch!important}
+  .page-header > div[style*="margin-left:auto"] .chip,
+  .page-header > div[style*="margin-left:auto"] .btn{width:100%;text-align:center;justify-content:center}
+  .page-header .header-check{grid-column:1 / -1!important;width:100%!important}
+  #page-cal .page-header > div[style*="margin-left:auto"]{display:flex!important;flex-wrap:wrap!important}
+  #page-personal .page-header > div[style*="margin-left:auto"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #page-personal .page-header > div[style*="margin-left:auto"] .btn{grid-column:1 / -1}
+  .closed-project-toggle{font-size:12px;padding:9px 10px}
+}
+
 </style>
 </head>
 <body>
@@ -1331,6 +1359,54 @@ function sortManagementRows(a,b){
   const ad = parseDateSafely(a._date).getTime() || 0;
   const bd = parseDateSafely(b._date).getTime() || 0;
   return a._past ? bd - ad : ad - bd;
+}
+
+function hasOpenTaskForProject(projectId){
+  return tasks.some(t => t.project === projectId && normalizeTaskStatus(t.status) !== '완료');
+}
+
+function hasFutureEventForProject(projectId){
+  const now = todayStartDate();
+  return events.some(e => {
+    if(e.project !== projectId) return false;
+    const end = parseDateSafely(e.end || e.start);
+    if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
+    end.setHours(23,59,59,999);
+    return end >= now;
+  });
+}
+
+function isClosedProject(p){
+  if(!p || !p.end) return false;
+  const end = parseDateSafely(p.end);
+  if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
+  end.setHours(23,59,59,999);
+  if(end >= todayStartDate()) return false;
+  return !hasOpenTaskForProject(p.id) && !hasFutureEventForProject(p.id);
+}
+
+function sortProjectsBySchedule(a,b){
+  const aClosed = isClosedProject(a);
+  const bClosed = isClosedProject(b);
+  if(aClosed !== bClosed) return aClosed ? 1 : -1;
+  const ad = parseDateSafely(a.end || a.start).getTime() || 0;
+  const bd = parseDateSafely(b.end || b.start).getTime() || 0;
+  return aClosed ? bd - ad : ad - bd;
+}
+
+let closedProjectsOpen = ls('closedProjectsOpen') === 'Y';
+function toggleClosedProjects(){
+  closedProjectsOpen = !closedProjectsOpen;
+  ls('closedProjectsOpen', closedProjectsOpen ? 'Y' : 'N');
+  renderOverview();
+}
+
+function getOverviewProjectGroups(){
+  const filtered = projects.filter(p => selProj === 'all' || p.id === selProj).sort(sortProjectsBySchedule);
+  if(selProj !== 'all') return { active: filtered, closed: [] };
+  const active = filtered.filter(p => !isClosedProject(p));
+  const closed = filtered.filter(p => isClosedProject(p));
+  return { active, closed };
 }
 
 
@@ -2285,6 +2361,7 @@ function activityText(action){
 }
 
 let notificationViewMode = ls('notificationViewMode') || 'mine';
+let notificationFilter = ls('notificationFilter') || 'all';
 
 function getNotificationViewMode(){
   if(!canManageAll()) return 'mine';
@@ -2496,9 +2573,44 @@ function openStoredNotification(id){
   else if(n.targetType === 'proposal') showProposal(n.targetId);
 }
 
+
+function setNotificationFilter(filter){
+  notificationFilter = ['all','updates','deadlines'].includes(filter) ? filter : 'all';
+  ls('notificationFilter', notificationFilter);
+  openNotifications();
+}
+
+function notificationFilterLabel(filter){
+  return ({all:'전체', updates:'댓글·수정', deadlines:'마감·지연'})[filter] || '전체';
+}
+
+function notificationFilterMatchesStored(n){
+  if(notificationFilter === 'all') return true;
+  const cat = n.category || n.type || '';
+  if(notificationFilter === 'updates') return ['comment','manager_update'].includes(cat);
+  if(notificationFilter === 'deadlines') return false;
+  return true;
+}
+
+function notificationFilterMatchesDynamic(n){
+  if(notificationFilter === 'all') return true;
+  if(notificationFilter === 'updates') return false;
+  if(notificationFilter === 'deadlines') return true;
+  return true;
+}
+
+function notificationFilterChips(){
+  if(getNotificationViewMode() === 'manage') return '';
+  return `<div class="notification-filter-row">
+    ${['all','updates','deadlines'].map(f=>`<button class="chip ${notificationFilter===f?'active':''}" onclick="setNotificationFilter('${f}')">${notificationFilterLabel(f)}</button>`).join('')}
+  </div>`;
+}
+
 function openNotifications(){
   const mode = getNotificationViewMode();
-  const stored = [...notifications].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,30);
+  const stored = [...notifications]
+    .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))
+    .slice(0,30);
   const dynamic = currentDynamicNotifications();
 
   const managerToggle = canManageAll() ? `
@@ -2506,20 +2618,22 @@ function openNotifications(){
       <button class="chip ${mode === 'mine' ? 'active' : ''}" onclick="setNotificationViewMode('mine')">내 알림</button>
       <button class="chip ${mode === 'manage' ? 'active' : ''}" onclick="setNotificationViewMode('manage')">관리 알림</button>
     </div>
-  ` : `<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">댓글·수정·내 담당 업무 마감·내 참여 제안을 함께 보여줍니다.</div>`;
+  ` : '';
 
   let rows = '';
 
   if(mode === 'manage'){
     rows = dynamic.map(dynamicNotificationRow).join('');
   } else {
+    const filteredStored = stored.filter(notificationFilterMatchesStored);
+    const filteredDynamic = dynamic.filter(notificationFilterMatchesDynamic);
     rows = [
-      ...stored.map(storedNotificationRow),
-      ...dynamic.map(dynamicNotificationRow)
+      ...filteredStored.map(storedNotificationRow),
+      ...filteredDynamic.map(dynamicNotificationRow)
     ].join('');
   }
 
-  document.getElementById('modal-body').innerHTML = managerToggle + (rows || '<div class="empty">알림이 없습니다</div>');
+  document.getElementById('modal-body').innerHTML = managerToggle + notificationFilterChips() + (rows || '<div class="empty">알림이 없습니다</div>');
   openModal('알림');
 }
 
@@ -3450,9 +3564,10 @@ function renderCalList(){
 }
 
 function renderOverview(){ if(ovMode==='board') renderBoard(); else if(ovMode==='table') renderProjectTable(); else if(ovMode==='gantt') renderGantt(); else renderMemberOverview(); }
-function renderBoard(){
-  const vp=projects.filter(p=>selProj==='all'||p.id===selProj); if(!vp.length){document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';return;}
-  let h='<div class="overview-grid">'; vp.forEach(p=>{
+function renderBoardProjectCards(vp){
+  if(!vp.length) return '';
+  let h='';
+  vp.forEach(p=>{
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId)); 
 
     const projTasks=tasks
@@ -3487,19 +3602,73 @@ function renderBoard(){
       })
     ].sort(sortManagementRows).map(r=>r.html).join('');
 
-    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
+    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명${isClosedProject(p)?' · 종료 사업':''}</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
-  document.getElementById('overview-container').innerHTML=h+'</div>';
+  return h;
+}
+
+function renderBoard(){
+  const {active, closed} = getOverviewProjectGroups();
+  const hasAny = active.length || (!hidePast && closed.length);
+  if(!hasAny){
+    document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';
+    return;
+  }
+
+  let h = '';
+  if(active.length){
+    h += `<div class="overview-grid">${renderBoardProjectCards(active)}</div>`;
+  } else {
+    h += '<div class="empty" style="padding:14px">진행 중이거나 예정된 사업이 없습니다</div>';
+  }
+
+  if(!hidePast && closed.length){
+    h += `<div class="closed-project-section">
+      <button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>종료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button>
+      ${closedProjectsOpen ? `<div class="overview-grid">${renderBoardProjectCards(closed)}</div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('overview-container').innerHTML = h;
 }
 
 function renderProjectTable(){
   const target = document.getElementById('overview-container');
-  const vp=projects.filter(p=>selProj==='all'||p.id===selProj);
+  const {active, closed} = getOverviewProjectGroups();
+  const visibleClosed = !hidePast && closedProjectsOpen ? closed : [];
+  const vp = [...active, ...visibleClosed];
 
-  if(!vp.length){
+  if(!vp.length && !(closed.length && !hidePast)){
     target.innerHTML='<div class="empty">사업이 없습니다</div>';
     return;
   }
+
+  const rowHtml = (p) => {
+    const projAssigns = assigns.filter(a=>a.projectId===p.id);
+    const projTasks = tasks.filter(t=>t.project===p.id);
+    const doing = projTasks.filter(t=>normalizeTaskStatus(t.status)!=='완료').length;
+    const done = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료').length;
+    const overdue = projTasks.filter(t=>isOverdue(t)).length;
+    const closed = isClosedProject(p);
+    const statusClass = overdue ? 'danger' : closed ? 'ok' : doing ? 'warn' : 'ok';
+    const statusText = overdue ? '지연 있음' : closed ? '종료' : doing ? '진행중' : '정상';
+
+    const memberAvatars = projAssigns.slice(0,4).map(a=>{
+      const m = mb(a.memberId);
+      return m ? `<div class="av" title="${escapeHtml(m.name || '')}" style="width:24px;height:24px;font-size:9px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '';
+    }).join('');
+
+    return `<tr class="${closed?'is-past':''}">
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="dot" style="background:${p.color || '#888'}"></div><strong>${escapeHtml(p.name || '')}</strong></div></td>
+      <td><span class="status-chip ${statusClass}">${statusText}</span></td>
+      <td><div class="avatar-stack">${memberAvatars}</div></td>
+      <td>${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '-'}</td>
+      <td>${doing}</td>
+      <td style="color:${overdue?'#D85A30':'inherit'};font-weight:${overdue?'700':'400'}">${overdue}</td>
+      <td>${done}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">참여인력</button></td>
+    </tr>`;
+  };
 
   let h = `<div class="project-table-wrap"><table class="project-table">
     <thead>
@@ -3516,31 +3685,12 @@ function renderProjectTable(){
     </thead>
     <tbody>`;
 
-  vp.forEach(p=>{
-    const projAssigns = assigns.filter(a=>a.projectId===p.id);
-    const projTasks = tasks.filter(t=>t.project===p.id);
-    const doing = projTasks.filter(t=>t.status!=='완료').length;
-    const done = projTasks.filter(t=>t.status==='완료').length;
-    const overdue = projTasks.filter(t=>isOverdue(t)).length;
-    const statusClass = overdue ? 'danger' : doing ? 'warn' : 'ok';
-    const statusText = overdue ? '지연 있음' : doing ? '진행중' : '정상';
+  h += active.map(rowHtml).join('');
 
-    const memberAvatars = projAssigns.slice(0,4).map(a=>{
-      const m = mb(a.memberId);
-      return m ? `<div class="av" title="${escapeHtml(m.name || '')}" style="width:24px;height:24px;font-size:9px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '';
-    }).join('');
-
-    h += `<tr>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="dot" style="background:${p.color || '#888'}"></div><strong>${escapeHtml(p.name || '')}</strong></div></td>
-      <td><span class="status-chip ${statusClass}">${statusText}</span></td>
-      <td><div class="avatar-stack">${memberAvatars}</div></td>
-      <td>${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '-'}</td>
-      <td>${doing}</td>
-      <td style="color:${overdue?'#D85A30':'inherit'};font-weight:${overdue?'700':'400'}">${overdue}</td>
-      <td>${done}</td>
-      <td><button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">참여인력</button></td>
-    </tr>`;
-  });
+  if(!hidePast && closed.length){
+    h += `<tr class="closed-project-table-row"><td colspan="8"><button class="closed-project-toggle" style="margin:0" onclick="toggleClosedProjects()"><span>종료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button></td></tr>`;
+    if(closedProjectsOpen) h += closed.map(rowHtml).join('');
+  }
 
   h += '</tbody></table></div>';
   target.innerHTML = h;
@@ -3602,6 +3752,33 @@ function getProposalDdayText(p){
   return `D-${diff}`;
 }
 
+
+const PROPOSAL_STATUS_LABELS = {
+  preparing:'준비중',
+  writing:'작성중',
+  review:'검토중',
+  submitted:'제출완료',
+  hold:'보류'
+};
+
+function proposalStatusValue(p){
+  return p?.status && PROPOSAL_STATUS_LABELS[p.status] ? p.status : 'preparing';
+}
+
+function proposalStatusLabel(status){
+  return PROPOSAL_STATUS_LABELS[status] || PROPOSAL_STATUS_LABELS.preparing;
+}
+
+function proposalStatusOptions(selected){
+  const cur = selected && PROPOSAL_STATUS_LABELS[selected] ? selected : 'preparing';
+  return Object.entries(PROPOSAL_STATUS_LABELS).map(([value,label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
+}
+
+function proposalStatusChip(p){
+  const status = proposalStatusValue(p);
+  return `<span class="proposal-status-chip proposal-status-${status}">${proposalStatusLabel(status)}</span>`;
+}
+
 function renderProposalPage(){
   const container = document.getElementById('proposal-list');
   if(!container) return;
@@ -3632,7 +3809,7 @@ function renderProposalPage(){
       <div><span class="proposal-dday ${ddayClass}">${ddayText}</span></div>
       <div title="${escapeHtml(p.name || '제안명 없음')}">
         <div class="proposal-db-title">${escapeHtml(p.name || '제안명 없음')}</div>
-        <div class="proposal-db-meta">제안시작: ${p.start ? fmtDateFull(p.start) : '-'} · 첨부 ${fileCount}개</div>
+        <div class="proposal-db-meta">${proposalStatusChip(p)} · 제안시작: ${p.start ? fmtDateFull(p.start) : '-'} · 첨부 ${fileCount}개</div>
       </div>
       <div title="${escapeHtml(p.demandOrg || '-')}">${escapeHtml(p.demandOrg || '-')}</div>
       <div title="${deadlineText}">${deadlineText}</div>
@@ -3654,6 +3831,7 @@ function getProposalFormHTML(isEdit){
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
     <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
     <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
+    <div class="form-row full"><div><div class="fl">상태</div><select id="proposal-status">${proposalStatusOptions('preparing')}</select></div></div>
     <div class="form-row full"><div>
       <div class="fl">참여 멤버</div>
       <input type="hidden" id="proposal-participant-ids" value="">
@@ -3689,6 +3867,7 @@ function openEditProposal(id){
   document.getElementById('proposal-start').value = p.start || '';
   document.getElementById('proposal-deadline').value = toDateTimeLocalValue(p.deadline);
   document.getElementById('proposal-demand-org').value = p.demandOrg || '';
+  document.getElementById('proposal-status').value = proposalStatusValue(p);
   document.getElementById('proposal-participants').value = p.participants || '';
   document.getElementById('proposal-note').value = p.note || '';
   setSelectedProposalParticipantIds(normalizeIdArray(p.participantIds));
@@ -3700,6 +3879,7 @@ function submitProposal(){
   const start = document.getElementById('proposal-start').value;
   const deadline = document.getElementById('proposal-deadline').value;
   const demandOrg = document.getElementById('proposal-demand-org').value.trim();
+  const status = document.getElementById('proposal-status').value || 'preparing';
   const color = '#7C3AED';
   const participants = document.getElementById('proposal-participants').value.trim();
   const note = document.getElementById('proposal-note').value.trim();
@@ -3716,6 +3896,7 @@ function submitProposal(){
     start,
     deadline,
     demandOrg,
+    status,
     color,
     participants,
     note,
@@ -3742,6 +3923,7 @@ function showProposal(id){
   const body = `
     <div class="dr"><span class="dl">사업명</span><span>${escapeHtml(p.name || '-')}</span></div>
     <div class="dr"><span class="dl">D-day</span><span><span class="proposal-dday ${getProposalDdayClass(p)}">${getProposalDdayText(p)}</span></span></div>
+    <div class="dr"><span class="dl">상태</span><span>${proposalStatusChip(p)}</span></div>
     <div class="dr"><span class="dl">시작일</span><span>${p.start ? fmtDateFull(p.start) : '-'}</span></div>
     <div class="dr"><span class="dl">제출종료</span><span>${p.deadline ? fmtDateTimeShort(p.deadline) : '-'}</span></div>
     <div class="dr"><span class="dl">수요기관</span><span>${escapeHtml(p.demandOrg || '-')}</span></div>
