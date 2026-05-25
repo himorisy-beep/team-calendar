@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>캘린더</title>
 <link rel="icon" href="data:,">
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstaticc .com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
@@ -964,6 +964,55 @@ input[type="checkbox"]{
 .project-table tr.is-past{opacity:.55;filter:grayscale(.8)}
 .project-table tr.is-past td:first-child strong{text-decoration:line-through;color:var(--text3)}
 .notification-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
+.notification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.notification-toolbar-left{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.proj-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px 16px;border-bottom:.5px solid var(--border);background:var(--bg)}
+.proj-summary-item{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:7px 8px;min-width:0}
+.proj-summary-label{font-size:10px;color:var(--text3);font-weight:800;letter-spacing:.03em;margin-bottom:3px;white-space:nowrap}
+.proj-summary-value{font-size:14px;font-weight:900;color:var(--text)}
+.proj-summary-item.danger .proj-summary-value{color:#D85A30}
+.proj-summary-item.warn .proj-summary-value{color:#854F0B}
+.quick-status-row{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
+.quick-status-row .chip{font-size:11px;padding:3px 8px}
+.quick-status-row .chip.active{font-weight:800}
+.proposal-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+@media(max-width:680px){
+  .notification-toolbar{align-items:stretch}
+  .notification-toolbar-left{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .notification-toolbar-left .chip,.notification-toolbar .btn{width:100%;text-align:center;justify-content:center}
+  .proj-summary{grid-template-columns:repeat(2,minmax(0,1fr));padding:9px 12px}
+  .proj-summary-item{padding:7px}
+  .quick-status-row{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .quick-status-row .chip{width:100%;text-align:center;padding:5px 4px}
+  .proposal-filter-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .proposal-filter-row .chip{width:100%;text-align:center}
+
+  /* Mobile top controls: separate view chips, options, and action buttons visually */
+  #page-personal .page-header > div[style*="margin-left:auto"],
+  #page-overview .page-header > div[style*="margin-left:auto"]{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    align-items:center!important;
+    gap:6px!important;
+  }
+  #page-personal .page-header > div[style*="margin-left:auto"] .chip,
+  #page-overview .page-header > div[style*="margin-left:auto"] .chip{
+    order:1;
+    flex:1 1 calc(50% - 6px)!important;
+  }
+  #page-personal .page-header > div[style*="margin-left:auto"] .header-check,
+  #page-overview .page-header > div[style*="margin-left:auto"] .header-check{
+    order:2;
+    flex:1 1 100%!important;
+    width:100%!important;
+  }
+  #page-personal .page-header > div[style*="margin-left:auto"] .btn,
+  #page-overview .page-header > div[style*="margin-left:auto"] .btn{
+    order:3;
+    flex:1 1 100%!important;
+  }
+}
+
 @media(max-width:680px){
   .page-header{gap:10px!important}
   .page-header > div[style*="margin-left:auto"]{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;align-items:stretch!important}
@@ -2362,6 +2411,7 @@ function activityText(action){
 
 let notificationViewMode = ls('notificationViewMode') || 'mine';
 let notificationFilter = ls('notificationFilter') || 'all';
+let notificationUnreadOnly = ls('notificationUnreadOnly') === 'Y';
 
 function getNotificationViewMode(){
   if(!canManageAll()) return 'mine';
@@ -2373,6 +2423,43 @@ function setNotificationViewMode(mode){
   ls('notificationViewMode', notificationViewMode);
   openNotifications();
   renderNotificationBadge();
+}
+
+function toggleNotificationUnreadOnly(){
+  notificationUnreadOnly = !notificationUnreadOnly;
+  ls('notificationUnreadOnly', notificationUnreadOnly ? 'Y' : 'N');
+  openNotifications();
+}
+
+async function markAllNotificationsRead(){
+  const unread = notifications.filter(n => !n.read);
+  if(!unread.length){
+    showToast('읽지 않은 알림이 없습니다.');
+    return;
+  }
+  try{
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    unread.forEach(n => {
+      batch.set(db.collection('notifications').doc(n.id), { read:true, readAt:now }, { merge:true });
+    });
+    await batch.commit();
+    showToast('알림을 모두 읽음 처리했습니다.');
+    openNotifications();
+    renderNotificationBadge();
+  }catch(e){
+    showToast('알림 처리 실패: ' + e.message);
+  }
+}
+
+function notificationActionBar(){
+  if(getNotificationViewMode() === 'manage') return '';
+  return `<div class="notification-toolbar">
+    <div class="notification-toolbar-left">
+      <button class="chip ${notificationUnreadOnly ? 'active' : ''}" onclick="toggleNotificationUnreadOnly()">읽지 않음만</button>
+      <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">모두 읽음</button>
+    </div>
+  </div>`;
 }
 
 function getDdayInfo(dateValue){
@@ -2608,9 +2695,10 @@ function notificationFilterChips(){
 
 function openNotifications(){
   const mode = getNotificationViewMode();
-  const stored = [...notifications]
+  const storedBase = [...notifications]
     .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))
     .slice(0,30);
+  const stored = notificationUnreadOnly ? storedBase.filter(n=>!n.read) : storedBase;
   const dynamic = currentDynamicNotifications();
 
   const managerToggle = canManageAll() ? `
@@ -2633,7 +2721,7 @@ function openNotifications(){
     ].join('');
   }
 
-  document.getElementById('modal-body').innerHTML = managerToggle + notificationFilterChips() + (rows || '<div class="empty">알림이 없습니다</div>');
+  document.getElementById('modal-body').innerHTML = managerToggle + notificationFilterChips() + notificationActionBar() + (rows || '<div class="empty">알림이 없습니다</div>');
   openModal('알림');
 }
 
@@ -3564,6 +3652,40 @@ function renderCalList(){
 }
 
 function renderOverview(){ if(ovMode==='board') renderBoard(); else if(ovMode==='table') renderProjectTable(); else if(ovMode==='gantt') renderGantt(); else renderMemberOverview(); }
+
+function projectSummaryStats(p){
+  const projTasks = tasks.filter(t=>t.project===p.id && !hiddenMb.has(t.assignee));
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const weekEnd = new Date(now);
+  weekEnd.setDate(weekEnd.getDate()+7);
+  weekEnd.setHours(23,59,59,999);
+  const activeTasks = projTasks.filter(t=>normalizeTaskStatus(t.status)!=='완료');
+  const doneTasks = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료');
+  const overdueTasks = activeTasks.filter(t=>isOverdue(t));
+  const dueThisWeek = activeTasks.filter(t=>{
+    if(!t.end || isOverdue(t)) return false;
+    const d = parseDateSafely(t.end);
+    return d >= now && d <= weekEnd;
+  });
+  return {
+    doing:activeTasks.length,
+    overdue:overdueTasks.length,
+    done:doneTasks.length,
+    dueThisWeek:dueThisWeek.length
+  };
+}
+
+function projectSummaryHtml(p){
+  const st = projectSummaryStats(p);
+  return `<div class="proj-summary">
+    <div class="proj-summary-item"><div class="proj-summary-label">진행</div><div class="proj-summary-value">${st.doing}</div></div>
+    <div class="proj-summary-item ${st.overdue ? 'danger' : ''}"><div class="proj-summary-label">지연</div><div class="proj-summary-value">${st.overdue}</div></div>
+    <div class="proj-summary-item"><div class="proj-summary-label">완료</div><div class="proj-summary-value">${st.done}</div></div>
+    <div class="proj-summary-item ${st.dueThisWeek ? 'warn' : ''}"><div class="proj-summary-label">이번 주 마감</div><div class="proj-summary-value">${st.dueThisWeek}</div></div>
+  </div>`;
+}
+
 function renderBoardProjectCards(vp){
   if(!vp.length) return '';
   let h='';
@@ -3602,7 +3724,7 @@ function renderBoardProjectCards(vp){
       })
     ].sort(sortManagementRows).map(r=>r.html).join('');
 
-    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명${isClosedProject(p)?' · 종료 사업':''}</div></div></div><div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
+    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명${isClosedProject(p)?' · 종료 사업':''}</div></div></div>${projectSummaryHtml(p)}<div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
   return h;
 }
@@ -3761,6 +3883,32 @@ const PROPOSAL_STATUS_LABELS = {
   hold:'보류'
 };
 
+let proposalStatusFilter = ls('proposalStatusFilter') || 'all';
+
+
+function proposalFilterLabel(filter){
+  return ({all:'전체', active:'진행중', review:'검토중', submitted:'제출완료', hold:'보류'})[filter] || '전체';
+}
+
+function proposalStatusFilterMatches(p){
+  const status = proposalStatusValue(p);
+  if(proposalStatusFilter === 'all') return true;
+  if(proposalStatusFilter === 'active') return ['preparing','writing'].includes(status);
+  return status === proposalStatusFilter;
+}
+
+function setProposalStatusFilter(filter){
+  proposalStatusFilter = ['all','active','review','submitted','hold'].includes(filter) ? filter : 'all';
+  ls('proposalStatusFilter', proposalStatusFilter);
+  renderProposalPage();
+}
+
+function proposalStatusFilterChips(){
+  return `<div class="proposal-filter-row">
+    ${['all','active','review','submitted','hold'].map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" onclick="setProposalStatusFilter('${f}')">${proposalFilterLabel(f)}</button>`).join('')}
+  </div>`;
+}
+
 function proposalStatusValue(p){
   return p?.status && PROPOSAL_STATUS_LABELS[p.status] ? p.status : 'preparing';
 }
@@ -3783,18 +3931,25 @@ function renderProposalPage(){
   const container = document.getElementById('proposal-list');
   if(!container) return;
 
-  const sorted = [...proposals].sort((a,b)=>{
+  const controls = proposalStatusFilterChips();
+  const filtered = proposals.filter(proposalStatusFilterMatches);
+  const sorted = [...filtered].sort((a,b)=>{
     const ad = parseDateSafely(a.deadline || a.start).getTime();
     const bd = parseDateSafely(b.deadline || b.start).getTime();
     return ad - bd;
   });
 
-  if(!sorted.length){
+  if(!proposals.length){
     container.innerHTML = '<div class="empty">등록된 제안이 없습니다</div>';
     return;
   }
 
-  let h = `<div class="proposal-db-head">
+  if(!sorted.length){
+    container.innerHTML = controls + '<div class="empty">해당 상태의 제안이 없습니다</div>';
+    return;
+  }
+
+  let h = controls + `<div class="proposal-db-head">
     <div>D-day</div><div>제안명</div><div>수요기관</div><div>제출종료</div><div>관리</div>
   </div>`;
 
@@ -4404,6 +4559,37 @@ function showEv(id){
   `;
   openDetailPanel(e.title, e.type === 'personal' ? '개인 일정' : '일정', body, 'event', e.id);
 }
+
+function quickTaskStatusButtons(t){
+  if(!canEditItem(t)) return '';
+  const cur = normalizeTaskStatus(t.status);
+  const buttons = Object.keys(TASK_STATUS_OPTIONS).map(status =>
+    `<button class="chip ${cur===status?'active':''}" onclick="event.stopPropagation();quickSetTaskStatus('${t.id}','${status}')">${escapeHtml(status)}</button>`
+  ).join('');
+  return `<div class="dr"><span class="dl">빠른 변경</span><span class="quick-status-row">${buttons}</span></div>`;
+}
+
+window.quickSetTaskStatus = function(id, status){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  if(!canEditItem(t)){
+    showToast('권한이 없습니다.');
+    return;
+  }
+  const nextStatus = normalizeTaskStatus(status);
+  const payload = {
+    action:'updateTask',
+    ...t,
+    id:t.id,
+    status:nextStatus,
+    completedAt:nextStatus === '완료' ? (t.completedAt || todayStr) : ''
+  };
+  apiSave(payload, ()=>{
+    showToast('업무 상태를 변경했습니다.');
+    setTimeout(()=>showTask(id), 150);
+  });
+};
+
 function showTask(id){ 
   const t=tasks.find(v=>v.id===id); 
   if(!t)return; 
@@ -4415,6 +4601,7 @@ function showTask(id){
     <div class="dr"><span class="dl">사업</span><span>${escapeHtml(p?.name||'-')}</span></div>
     <div class="dr"><span class="dl">기간</span><span>${fmtDateFull(t.start)} ~ ${fmtDateFull(t.end)}</span></div>
     <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span></div>
+    ${quickTaskStatusButtons(t)}
     ${taskCompletedDate(t)?`<div class="dr"><span class="dl">완료일</span><span>${taskCompletedDate(t)}</span></div>`:''}
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
     <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
