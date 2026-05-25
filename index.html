@@ -966,10 +966,11 @@ input[type="checkbox"]{
 .notification-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
 .notification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .notification-toolbar-left{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.proj-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px 16px;border-bottom:.5px solid var(--border);background:var(--bg)}
-.proj-summary-item{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:7px 8px;min-width:0}
-.proj-summary-label{font-size:10px;color:var(--text3);font-weight:800;letter-spacing:.03em;margin-bottom:3px;white-space:nowrap}
-.proj-summary-value{font-size:14px;font-weight:900;color:var(--text)}
+.proj-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 16px;border-bottom:.5px solid var(--border);background:var(--bg);font-size:11px;color:var(--text2)}
+.proj-summary-item{display:inline-flex;align-items:center;gap:3px;min-width:0;white-space:nowrap;color:var(--text2)}
+.proj-summary-label{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:0;white-space:nowrap;margin:0}
+.proj-summary-value{font-size:11px;font-weight:900;color:var(--text)}
+.proj-summary-sep{color:var(--text3);font-size:10px}
 .proj-summary-item.danger .proj-summary-value{color:#D85A30}
 .proj-summary-item.warn .proj-summary-value{color:#854F0B}
 .quick-status-row{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center}
@@ -980,8 +981,8 @@ input[type="checkbox"]{
   .notification-toolbar{align-items:stretch}
   .notification-toolbar-left{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .notification-toolbar-left .chip,.notification-toolbar .btn{width:100%;text-align:center;justify-content:center}
-  .proj-summary{grid-template-columns:repeat(2,minmax(0,1fr));padding:9px 12px}
-  .proj-summary-item{padding:7px}
+  .proj-summary{padding:7px 12px;gap:5px;font-size:10px}
+  .proj-summary-label,.proj-summary-value{font-size:10px}
   .quick-status-row{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
   .quick-status-row .chip{width:100%;text-align:center;padding:5px 4px}
   .proposal-filter-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -2434,7 +2435,7 @@ function toggleNotificationUnreadOnly(){
 async function markAllNotificationsRead(){
   const unread = notifications.filter(n => !n.read);
   if(!unread.length){
-    showToast('읽지 않은 알림이 없습니다.');
+    showToast('읽지 않은 개별 알림이 없습니다.');
     return;
   }
   try{
@@ -2444,7 +2445,9 @@ async function markAllNotificationsRead(){
       batch.set(db.collection('notifications').doc(n.id), { read:true, readAt:now }, { merge:true });
     });
     await batch.commit();
-    showToast('알림을 모두 읽음 처리했습니다.');
+    showToast('개별 알림을 모두 읽음 처리했습니다.');
+    notificationUnreadOnly = false;
+    ls('notificationUnreadOnly', 'N');
     openNotifications();
     renderNotificationBadge();
   }catch(e){
@@ -2453,11 +2456,13 @@ async function markAllNotificationsRead(){
 }
 
 function notificationActionBar(){
-  if(getNotificationViewMode() === 'manage') return '';
+  // 읽음/미확인 처리는 Firestore에 저장되는 개별 알림(댓글·수정·배정 등)에만 적용됩니다.
+  // 업무 D-day, 제안 D-day, 지연 업무는 매번 계산되는 자동 리마인더라 읽음 처리 대상이 아닙니다.
+  if(getNotificationViewMode() === 'manage' || notificationFilter === 'deadlines') return '';
   return `<div class="notification-toolbar">
     <div class="notification-toolbar-left">
-      <button class="chip ${notificationUnreadOnly ? 'active' : ''}" onclick="toggleNotificationUnreadOnly()">읽지 않음만</button>
-      <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">모두 읽음</button>
+      <button class="chip ${notificationUnreadOnly ? 'active' : ''}" onclick="toggleNotificationUnreadOnly()">미확인 개별알림</button>
+      <button class="chip" onclick="markAllNotificationsRead()">개별알림 모두 읽음</button>
     </div>
   </div>`;
 }
@@ -3678,11 +3683,14 @@ function projectSummaryStats(p){
 
 function projectSummaryHtml(p){
   const st = projectSummaryStats(p);
-  return `<div class="proj-summary">
-    <div class="proj-summary-item"><div class="proj-summary-label">진행</div><div class="proj-summary-value">${st.doing}</div></div>
-    <div class="proj-summary-item ${st.overdue ? 'danger' : ''}"><div class="proj-summary-label">지연</div><div class="proj-summary-value">${st.overdue}</div></div>
-    <div class="proj-summary-item"><div class="proj-summary-label">완료</div><div class="proj-summary-value">${st.done}</div></div>
-    <div class="proj-summary-item ${st.dueThisWeek ? 'warn' : ''}"><div class="proj-summary-label">이번 주 마감</div><div class="proj-summary-value">${st.dueThisWeek}</div></div>
+  return `<div class="proj-summary" aria-label="사업 상태 요약">
+    <span class="proj-summary-item"><span class="proj-summary-label">진행</span><span class="proj-summary-value">${st.doing}</span></span>
+    <span class="proj-summary-sep">·</span>
+    <span class="proj-summary-item ${st.overdue ? 'danger' : ''}"><span class="proj-summary-label">지연</span><span class="proj-summary-value">${st.overdue}</span></span>
+    <span class="proj-summary-sep">·</span>
+    <span class="proj-summary-item"><span class="proj-summary-label">완료</span><span class="proj-summary-value">${st.done}</span></span>
+    <span class="proj-summary-sep">·</span>
+    <span class="proj-summary-item ${st.dueThisWeek ? 'warn' : ''}"><span class="proj-summary-label">이번 주</span><span class="proj-summary-value">${st.dueThisWeek}</span></span>
   </div>`;
 }
 
