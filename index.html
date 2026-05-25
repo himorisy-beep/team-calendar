@@ -950,6 +950,29 @@ input[type="checkbox"]{
 
 
 
+
+/* Proposal D-day chip styling */
+.proposal-dday{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:52px;
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.2;
+  white-space:nowrap;
+  border:.5px solid var(--border2);
+  background:var(--bg2);
+  color:var(--text2);
+}
+.proposal-dday.normal{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE}
+.proposal-dday.soon{background:#FFFBEB;color:#B45309;border-color:#FCD34D}
+.proposal-dday.urgent{background:#FEF2F2;color:#DC2626;border-color:#FCA5A5}
+.proposal-dday.done{background:#F3F4F6;color:#6B7280;border-color:#D1D5DB;text-decoration:line-through}
+.proposal-dday.none{background:#F3F4F6;color:#9CA3AF;border-color:#E5E7EB}
+
 /* UX refinement: mobile page controls, proposal status, closed projects */
 .proposal-status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;background:var(--bg2);color:var(--text2);white-space:nowrap}
 .proposal-status-preparing{background:#E6F1FB;color:#185FA5}
@@ -3851,7 +3874,7 @@ function renderGantt() {
 
 function getProposalDdayClass(p){
   const d = parseDateSafely(p.deadline);
-  if(!p.deadline || d.getTime() === 0 || isNaN(d.getTime())) return 'normal';
+  if(!p.deadline || d.getTime() === 0 || isNaN(d.getTime())) return 'none';
 
   const now = new Date();
   now.setHours(0,0,0,0);
