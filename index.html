@@ -1153,6 +1153,47 @@ input[type="checkbox"]{
   text-decoration:line-through;
 }
 
+
+/* Today marker: circle only on the date number + visible cell border */
+.cal-week-day.today{
+  outline:2px solid rgba(0,0,0,.28);
+  outline-offset:-2px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+}
+html[data-theme="dark"] .cal-week-day.today{
+  outline-color:rgba(255,255,255,.35);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+}
+@media (prefers-color-scheme: dark){
+  html:not([data-theme="light"]) .cal-week-day.today{
+    outline-color:rgba(255,255,255,.35);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+}
+.cal-week-day.today .dn{
+  background:transparent!important;
+  color:inherit!important;
+  border-radius:0!important;
+  width:auto!important;
+  min-width:0!important;
+  justify-content:flex-start!important;
+}
+.cal-week-day.today .today-num{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  background:var(--text);
+  color:var(--bg);
+  flex:0 0 20px;
+}
+.cal-week-day.today.sun .today-num,
+.cal-week-day.today.sat .today-num{
+  color:var(--bg)!important;
+}
+
 </style>
 </head>
 <body>
@@ -1204,7 +1245,7 @@ input[type="checkbox"]{
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>공휴일</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
@@ -3711,8 +3752,9 @@ function renderCalGrid(){
       const firstHoliday = dayHolidays[0];
       const holidayClass = dayHolidays.length ? 'holiday-day' : '';
       const holidayLabel = firstHoliday ? `<span class="holiday-label" onclick="event.stopPropagation();showHoliday('${firstHoliday.id}')" title="${escapeHtml(firstHoliday.title || '공휴일')}">${escapeHtml(firstHoliday.title || '공휴일')}</span>` : '';
+      const dateNumberHtml = isToday ? `<span class="today-num">${dt.getDate()}</span>` : `${dt.getDate()}`;
       const click = isCurrent ? `onclick="dayClick(${dt.getDate()})"` : '';
-      h += `<div class="cal-week-day ${isCurrent?'':'other'} ${isToday?'today':''} ${holidayClass} ${dow===0?'sun':dow===6?'sat':''}" ${click}><div class="dn">${dt.getDate()}${holidayLabel}</div></div>`;
+      h += `<div class="cal-week-day ${isCurrent?'':'other'} ${isToday?'today':''} ${holidayClass} ${dow===0?'sun':dow===6?'sat':''}" ${click}><div class="dn">${dateNumberHtml}${holidayLabel}</div></div>`;
     });
 
     h += '<div class="cal-week-bars">';
