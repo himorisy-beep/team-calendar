@@ -1295,6 +1295,39 @@ button,
   user-select: none;
 }
 
+
+/* v15 operational refinements */
+.status-chip.info{background:#E6F1FB;color:#185FA5}
+.status-chip.neutral{background:#F3F4F6;color:#6B7280}
+.settings-scroll-list.user-team-list{max-height:420px}
+.user-team-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.user-team-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--border)}
+.user-team-row.is-inactive{opacity:.68;filter:grayscale(.45)}
+.user-team-main{flex:1;min-width:0}
+.user-team-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-team-meta{font-size:11px;color:var(--text2);line-height:1.5;margin-top:2px;word-break:break-all}
+.user-team-actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.action-quick-btn{flex:0 0 auto;align-self:center;padding:4px 8px!important;font-size:11px!important}
+.cal-span-more{background:var(--bg2)!important;color:var(--text2)!important;border:.5px solid var(--border2);font-weight:900;justify-content:center}
+.export-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.diagnostic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.diagnostic-card{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px}
+.diagnostic-label{font-size:11px;color:var(--text3);font-weight:800;margin-bottom:4px}
+.diagnostic-value{font-size:13px;font-weight:800;word-break:break-all}
+.diagnostic-list{display:flex;flex-direction:column;gap:6px}
+.diagnostic-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border:.5px solid var(--border);border-radius:var(--r-sm);font-size:12px;background:var(--bg)}
+.diagnostic-item.error{border-color:#F09595;background:#FAECE7;color:#A32D2D}
+.notification-section{margin-bottom:14px}
+.notification-section-title{font-size:12px;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 8px}
+.search-box input{min-width:0}
+@media(max-width:680px){
+  .settings-scroll-list.user-team-list{max-height:320px}
+  .user-team-row{align-items:flex-start;flex-wrap:wrap}
+  .user-team-actions{width:100%;margin-top:6px}
+  .user-team-main{flex:1 1 calc(100% - 42px)}
+  .export-grid,.diagnostic-grid{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
@@ -1446,7 +1479,54 @@ button,
   </div>
 </div>
 
-<div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card manager-only" id="setup-invite-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사용자 초대 관리 <span id="invite-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddInvite()">+ 초대 등록</button></div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">관리자/팀장이 이메일과 팀원을 연결해두면, 사용자가 첫 Google 로그인 시 자동으로 계정이 생성됩니다.</div><div id="invite-manage-list" class="settings-scroll-list"></div></div><div class="card manager-only" id="setup-member-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list" class="settings-scroll-list"></div></div><div class="card manager-only" id="setup-project-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list" class="settings-scroll-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
+<div id="page-setup" class="page">
+  <div class="page-header"><span class="page-title">설정</span></div>
+
+  <div class="card" style="max-width:760px;margin-bottom:14px">
+    <div class="card-title">화면 테마</div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button>
+      <button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button>
+      <button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button>
+    </div>
+  </div>
+
+  <div class="card manager-only" id="setup-user-team-card" style="max-width:760px;margin-bottom:14px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
+      <div class="card-title" style="margin:0">사용자·팀원 관리 <span id="user-team-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="openAddMember()">+ 팀원 추가</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddInvite()">+ 초대 등록</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">팀원 프로필, 로그인 계정, 이메일 초대 상태를 한 화면에서 관리합니다.</div>
+    <div class="user-team-tabs" id="user-team-tabs"></div>
+    <div id="user-team-manage-list" class="settings-scroll-list user-team-list"></div>
+  </div>
+
+  <div class="card manager-only" id="setup-project-card" style="max-width:760px;margin-bottom:14px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
+      <div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
+      <button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button>
+    </div>
+    <div id="project-manage-list" class="settings-scroll-list"></div>
+  </div>
+
+  <div class="card manager-only" id="setup-export-card" style="max-width:760px;margin-bottom:14px;display:none">
+    <div class="card-title">CSV 내보내기</div>
+    <div class="export-grid">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('projects')">사업 CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('tasks')">업무 CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('events')">일정 CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('proposals')">제안 CSV</button>
+    </div>
+  </div>
+
+  <div class="card manager-only" id="setup-diagnostics-card" style="max-width:760px;margin-bottom:14px;display:none">
+    <div class="card-title">진단</div>
+    <div id="settings-diagnostics"></div>
+  </div>
+</div>
 </div>
 </div>
 
@@ -1466,7 +1546,7 @@ button,
 
 
 <script>
-console.info("team-calendar build: calendar_v14");
+console.info("team-calendar build: calendar_v15");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
@@ -1494,7 +1574,7 @@ let currentUserProfile = null;
 const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
-let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [], userInvites = [];
+let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [], userInvites = [], users = [];
 let holidays = [];
 const holidayYearsLoaded = new Set();
 const holidayYearsLoading = new Set();
@@ -1513,7 +1593,11 @@ let hidePast = true;
 
 const mb = id => members.find(m=>m.id===id); 
 const pj = id => projects.find(p=>p.id===id); 
-const getSelfMember = () => mb(selfId)||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
+function isActiveMember(m){ return !!m && m.active !== false && m.status !== 'inactive' && m.archived !== true; }
+function isArchivedProject(p){ return !!p && (p.archived === true || p.status === 'archived'); }
+function getActiveMembers(){ return members.filter(isActiveMember); }
+function getActiveProjects(){ return projects.filter(p => !isArchivedProject(p)); }
+const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
   const raw = String(role || '').trim();
   const key = raw.toLowerCase().replace(/[\s-]+/g, '_');
@@ -1724,6 +1808,7 @@ function hasFutureEventForProject(projectId){
 }
 
 function isClosedProject(p){
+  if(isArchivedProject(p)) return true;
   if(!p || !p.end) return false;
   const end = parseDateSafely(p.end);
   if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
@@ -1750,9 +1835,9 @@ function toggleClosedProjects(){
 
 function getOverviewProjectGroups(){
   const filtered = projects.filter(p => selProj === 'all' || p.id === selProj).sort(sortProjectsBySchedule);
-  if(selProj !== 'all') return { active: filtered, closed: [] };
-  const active = filtered.filter(p => !isClosedProject(p));
-  const closed = filtered.filter(p => isClosedProject(p));
+  if(selProj !== 'all') return { active: filtered.filter(p => !isArchivedProject(p)), closed: filtered.filter(isArchivedProject) };
+  const active = filtered.filter(p => !isClosedProject(p) && !isArchivedProject(p));
+  const closed = filtered.filter(p => isClosedProject(p) || isArchivedProject(p));
   return { active, closed };
 }
 
@@ -2289,6 +2374,7 @@ async function apiSave(payload, onSuccess){
 }
 
 let loadedCols = 0; 
+let syncHealth = {};
 const INITIAL_LISTENER_COUNT = 12;
 function checkInitLoad() { 
   loadedCols++; 
@@ -2308,13 +2394,20 @@ function getSyncErrorGuide(collectionName){
     'comments-private': '내 비공개 댓글 정보를 불러오지 못했습니다. 비공개 일정·메모 관련 댓글이 누락될 수 있습니다.',
     'activityLogs-team': '팀 활동 로그를 불러오지 못했습니다. 상세 화면의 변경 이력이 일부 보이지 않을 수 있습니다.',
     'notifications': '알림 정보를 불러오지 못했습니다. 상단 알림 숫자와 알림 목록이 정확하지 않을 수 있습니다.',
-    'userInvites': '사용자 초대 정보를 불러오지 못했습니다. 설정 화면의 초대 사용자 목록이 비어 보일 수 있습니다.'
+    'userInvites': '사용자 초대 정보를 불러오지 못했습니다. 설정 화면의 초대 사용자 목록이 비어 보일 수 있습니다.',
+    'users': '사용자 계정 정보를 불러오지 못했습니다. 사용자·팀원 관리 화면의 연결 상태가 정확하지 않을 수 있습니다.'
   };
   return guides[collectionName] || '일부 정보를 불러오지 못했습니다. 화면에 표시되는 데이터가 최신 상태가 아닐 수 있습니다.';
 }
+function markSyncOk(collectionName){
+  syncHealth[collectionName] = { ok:true, updatedAt:new Date().toISOString(), message:'' };
+  renderSettingsDiagnostics();
+}
 function handleSnapshotError(collectionName, error){
   console.error(collectionName + ' listener error:', error);
+  syncHealth[collectionName] = { ok:false, updatedAt:new Date().toISOString(), message:getSyncErrorGuide(collectionName) };
   showStatus(getSyncErrorGuide(collectionName), 'error');
+  renderSettingsDiagnostics();
 }
 function mergeEventsAndRefresh(){
   const map = new Map();
@@ -2353,92 +2446,69 @@ function startRealtimeListeners() {
   listenersStarted = true;
   showStatus('Firebase 동기화 중...', 'loading');
 
-  // 팀 공유 일정: public == true인 일정만 가져옵니다.
-  db.collection("events")
-    .where("public", "==", true)
-    .onSnapshot(
+  function listen(label, query, onData){
+    query.onSnapshot(
       snap => {
-        publicEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeEventsAndRefresh();
+        markSyncOk(label);
+        onData(snap);
       },
-      err => handleSnapshotError('events-public', err)
+      err => handleSnapshotError(label, err)
     );
+  }
 
-  // 내 비공개 일정: 개인 일정과 공유하지 않은 일정은 본인 것만 가져옵니다.
-  db.collection("events")
-    .where("who", "==", selfId)
-    .where("public", "==", false)
-    .onSnapshot(
-      snap => {
-        myPersonalEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeEventsAndRefresh();
-      },
-      err => handleSnapshotError('events-private', err)
-    );
+  listen('events-public', db.collection("events").where("public", "==", true), snap => {
+    publicEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    mergeEventsAndRefresh();
+  });
 
-  db.collection("members").onSnapshot(snap => { members = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('members', err));
-  db.collection("projects").onSnapshot(snap => { projects = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('projects', err));
-  db.collection("proposals").onSnapshot(snap => { proposals = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('proposals', err));
-  db.collection("tasks").onSnapshot(snap => { tasks = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('tasks', err));
-  db.collection("assigns").onSnapshot(snap => { assigns = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); }, err => handleSnapshotError('assigns', err));
-  db.collection("todos")
-    .where("who", "==", selfId)
-    .onSnapshot(
-      snap => {
-        todos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
-      },
-      err => handleSnapshotError('todos', err)
-    );
-  db.collection("comments")
-    .where("visibility", "==", "team")
-    .onSnapshot(
-      snap => {
-        publicComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeCommentsAndRefresh();
-      },
-      err => handleSnapshotError('comments-team', err)
-    );
+  listen('events-private', db.collection("events").where("who", "==", selfId).where("public", "==", false), snap => {
+    myPersonalEvents = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    mergeEventsAndRefresh();
+  });
 
-  db.collection("comments")
-    .where("visibleToKey", "==", selfId)
-    .onSnapshot(
-      snap => {
-        myScopedComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeCommentsAndRefresh();
-      },
-      err => handleSnapshotError('comments-private', err)
-    );
+  listen('members', db.collection("members"), snap => { members = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); });
+  listen('projects', db.collection("projects"), snap => { projects = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); });
+  listen('proposals', db.collection("proposals"), snap => { proposals = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); });
+  listen('tasks', db.collection("tasks"), snap => { tasks = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); });
+  listen('assigns', db.collection("assigns"), snap => { assigns = snap.docs.map(d => ({id: d.id, ...d.data()})); if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll(); });
 
-  db.collection("activityLogs")
-    .where("visibility", "==", "team")
-    .onSnapshot(
-      snap => {
-        publicActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeActivityLogsAndRefresh();
-      },
-      err => handleSnapshotError('activityLogs-team', err)
-    );
+  listen('todos', db.collection("todos").where("who", "==", selfId), snap => {
+    todos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
+  });
 
-  db.collection("notifications")
-    .where("targetUser", "==", selfId)
-    .onSnapshot(
-      snap => {
-        notifications = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
-      },
-      err => handleSnapshotError('notifications', err)
-    );
+  listen('comments-team', db.collection("comments").where("visibility", "==", "team"), snap => {
+    publicComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    mergeCommentsAndRefresh();
+  });
+
+  listen('comments-private', db.collection("comments").where("visibleToKey", "==", selfId), snap => {
+    myScopedComments = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    mergeCommentsAndRefresh();
+  });
+
+  listen('activityLogs-team', db.collection("activityLogs").where("visibility", "==", "team"), snap => {
+    publicActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    mergeActivityLogsAndRefresh();
+  });
+
+  listen('notifications', db.collection("notifications").where("targetUser", "==", selfId), snap => {
+    notifications = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if(loadedCols<INITIAL_LISTENER_COUNT) checkInitLoad(); else refreshAll();
+  });
 
   if(canManageAll()){
-    db.collection("userInvites")
-      .onSnapshot(
-        snap => {
-          userInvites = snap.docs.map(d => ({id: d.id, ...d.data()}));
-          renderInviteManageList();
-        },
-        err => handleSnapshotError('userInvites', err)
-      );
+    listen('userInvites', db.collection("userInvites"), snap => {
+      userInvites = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderUserTeamManageList();
+      renderSettingsDiagnostics();
+    });
+
+    listen('users', db.collection("users"), snap => {
+      users = snap.docs.map(d => ({id: d.id, uid:d.id, ...d.data()}));
+      renderUserTeamManageList();
+      renderSettingsDiagnostics();
+    });
   }
 }
 
@@ -2459,7 +2529,7 @@ function applyPermissionUI(){
     document.querySelectorAll(sel).forEach(el=>{ el.style.display = writer ? '' : 'none'; });
   });
 }
-function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderInviteManageList(); renderProjectManageList(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -2513,13 +2583,14 @@ function renderHome(){
     .sort((a,b)=>a._d-b._d);
 
   function actionRow(item){
+    const quick = item.quickDone ? `<button class="btn btn-secondary btn-sm action-quick-btn" onclick="event.stopPropagation();quickSetTaskStatus('${item.quickDone}','완료')">완료</button>` : '';
     return `<div class="action-item" onclick="${item.onClick}">
       <div class="action-dot" style="background:${item.dot}"></div>
       <div class="action-main">
         <div class="action-title">${escapeHtml(item.title)}</div>
         <div class="action-meta">${escapeHtml(item.meta)}</div>
       </div>
-      ${item.badge ? `<span class="action-badge ${item.badgeClass || ''}">${escapeHtml(item.badge)}</span>` : ''}
+      ${quick || (item.badge ? `<span class="action-badge ${item.badgeClass || ''}">${escapeHtml(item.badge)}</span>` : '')}
     </div>`;
   }
 
@@ -2541,7 +2612,8 @@ function renderHome(){
       dot:'#D85A30',
       badge:'지연',
       badgeClass:'red',
-      onClick:`showTask('${t.id}')`
+      onClick:`showTask('${t.id}')`,
+      quickDone:t.id
     };
   });
 
@@ -2552,7 +2624,8 @@ function renderHome(){
       dot:'#EF9F27',
       badge:'오늘 마감',
       badgeClass:'orange',
-      onClick:`showTask('${t.id}')`
+      onClick:`showTask('${t.id}')`,
+      quickDone:t.id
     })),
     ...todayDueProposals.map(p => ({
       title:p.name || '제안',
@@ -2582,7 +2655,8 @@ function renderHome(){
         dot:'#378ADD',
         badge:dday?.label || '마감',
         badgeClass:dday && dday.diff <= 3 ? 'orange' : 'blue',
-        onClick:`showTask('${t.id}')`
+        onClick:`showTask('${t.id}')`,
+      quickDone:t.id
       };
     }),
     ...weekDueProposals.map(p => {
@@ -2633,7 +2707,8 @@ function renderHome(){
     myTasks
       .filter(t => t.start && t.end)
       .filter(t => inDayForTodayWeekTask(t, day.getFullYear(), day.getMonth(), day.getDate()))
-      .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`}));
+      .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`,
+      quickDone:t.id}));
 
     const shown = dayItems.slice(0,3).map(item => `
       <div class="week-mini-item ${item.kind}" onclick="${item.onClick}" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
@@ -3060,6 +3135,10 @@ function notificationFilterChips(){
   </div>`;
 }
 
+function notificationSectionHtml(title, rows, emptyText){
+  return `<div class="notification-section"><div class="notification-section-title">${escapeHtml(title)}</div>${rows || `<div class="empty" style="padding:12px">${escapeHtml(emptyText)}</div>`}</div>`;
+}
+
 function openNotifications(){
   const mode = getNotificationViewMode();
   const storedBase = [...notifications]
@@ -3075,28 +3154,24 @@ function openNotifications(){
     </div>
   ` : '';
 
-  let rows = '';
-
+  let body = managerToggle;
   if(mode === 'manage'){
-    rows = dynamic.map(dynamicNotificationRow).join('');
+    body += notificationSectionHtml('자동 리마인더', dynamic.map(dynamicNotificationRow).join(''), '관리 알림이 없습니다');
   } else {
     const filteredStored = stored.filter(notificationFilterMatchesStored);
     const filteredDynamic = dynamic.filter(notificationFilterMatchesDynamic);
-    rows = [
-      ...filteredStored.map(storedNotificationRow),
-      ...filteredDynamic.map(dynamicNotificationRow)
-    ].join('');
+    body += notificationFilterChips() + notificationActionBar();
+    body += notificationSectionHtml('개별 알림', filteredStored.map(storedNotificationRow).join(''), '댓글·수정·배정 알림이 없습니다');
+    body += notificationSectionHtml('자동 리마인더', filteredDynamic.map(dynamicNotificationRow).join(''), '마감·지연 리마인더가 없습니다');
   }
-
-  document.getElementById('modal-body').innerHTML = managerToggle + notificationFilterChips() + notificationActionBar() + (rows || '<div class="empty">알림이 없습니다</div>');
+  document.getElementById('modal-body').innerHTML = body;
   openModal('알림');
 }
-
 
 function openGlobalSearch(){
   document.getElementById('modal-body').innerHTML = `
     <div class="search-box">
-      <input id="global-search-input" type="text" placeholder="사업명, 제안명, 담당자, 일정, 업무 검색" oninput="doGlobalSearch()">
+      <input id="global-search-input" type="text" placeholder="사업명, 제안명, 담당자, 일정, 업무 검색" onkeydown="if(event.key==='Enter') doGlobalSearch()">
       <button class="btn btn-secondary" onclick="doGlobalSearch()">검색</button>
     </div>
     <div id="global-search-results"><div class="empty">검색어를 입력해주세요</div></div>
@@ -3117,7 +3192,7 @@ function doGlobalSearch(){
 
   const rows = [];
 
-  projects.forEach(p=>{
+  getActiveProjects().forEach(p=>{
     if(String(p.name||'').toLowerCase().includes(q)){
       rows.push(`<div class="search-result" onclick="closeModal();goPage('overview')"><div class="search-type">사업</div><div class="search-title">${escapeHtml(p.name||'')}</div><div class="search-meta">${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}</div></div>`);
     }
@@ -3252,8 +3327,8 @@ function calendarTaskTitle(t){
 
 function openAddTask(){
   if(!requireMemberWrite()) return;
-  const projectOptions = projects.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
-  const memberOptions = members.map(m=>`<option value="${m.id}" ${m.id===selfId?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
+  const projectOptions = getActiveProjects().map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
+  const memberOptions = getActiveMembers().map(m=>`<option value="${m.id}" ${m.id===selfId?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
   const todayVal = todayStr;
 
   document.getElementById('modal-body').innerHTML = `
@@ -3664,16 +3739,16 @@ function renderTodos() {
 }
 
 function buildSidebar(){
-  const mc=document.getElementById('sb-members'); mc.innerHTML=''; members.forEach(m=>{
+  const mc=document.getElementById('sb-members'); mc.innerHTML=''; getActiveMembers().forEach(m=>{
     const bg=lighten(m.color); const d=document.createElement('div'); d.className='mb-chip'+(hiddenMb.has(m.id)?' off':''); d.onclick=()=>{hiddenMb.has(m.id)?hiddenMb.delete(m.id):hiddenMb.add(m.id); refreshAll();};
     d.innerHTML=`<div class="av" style="background:${bg};color:${m.color}">${ini(m.name)}</div><span class="mb-chip-name">${escapeHtml(m.name || '')}</span>`; mc.appendChild(d);
   });
   const pc=document.getElementById('sb-projects'); pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
-  projects.forEach(p=>{ const d=document.createElement('div'); d.className='proj-chip'+(selProj===p.id?' active':''); d.innerHTML=`<div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}`; d.onclick=()=>toggleProj(p.id); pc.appendChild(d); });
+  getActiveProjects().forEach(p=>{ const d=document.createElement('div'); d.className='proj-chip'+(selProj===p.id?' active':''); d.innerHTML=`<div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}`; d.onclick=()=>toggleProj(p.id); pc.appendChild(d); });
   const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
   syncFilterSections();
 }
-function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; projects.forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
+function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; getActiveProjects().forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
 function renderActiveFilterBar(){
   const bar = document.getElementById('active-filter-bar');
   if(!bar) return;
@@ -3937,7 +4012,22 @@ function getWeekEventSegments(weekDates, vis){
     laneEnds[lane] = seg.endCol;
   });
 
-  return { segments, laneCount: laneEnds.length };
+  const MAX_CAL_WEEK_LANES = 3;
+  const moreCounts = Array(8).fill(0);
+  segments.forEach(seg => {
+    if(seg.lane > MAX_CAL_WEEK_LANES){
+      for(let c=seg.startCol; c<seg.endCol; c++) moreCounts[c]++;
+    }
+  });
+  const visibleSegments = segments.filter(seg => seg.lane <= MAX_CAL_WEEK_LANES);
+  moreCounts.forEach((count, col) => {
+    if(count > 0){
+      const dt = weekDates[col-1];
+      visibleSegments.push({ kind:'more', id:fmtDateFull(dt), startCol:col, endCol:col+1, startT:dt.getTime(), endT:dt.getTime(), label:`+${count}`, showLabel:true, cls:'cal-span-single cal-span-more', style:'', lane:MAX_CAL_WEEK_LANES + 1 });
+    }
+  });
+  const visibleLaneCount = Math.min(laneEnds.length, MAX_CAL_WEEK_LANES) + (moreCounts.some(Boolean) ? 1 : 0);
+  return { segments:visibleSegments, laneCount:visibleLaneCount };
 }
 
 function renderCal(){ requestHolidayYearsForCurrentView(); vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
@@ -3983,7 +4073,7 @@ function renderCalGrid(){
     h += '<div class="cal-week-bars">';
     segments.forEach(seg => {
       const label = seg.showLabel ? escapeHtml(seg.label) : '&nbsp;';
-      const onClick = seg.kind === 'proposal' ? `showProposal('${seg.id}')` : (seg.kind === 'task' ? `showTask('${seg.id}')` : (seg.kind === 'holiday' ? `showHoliday('${seg.id}')` : `showEv('${seg.id}')`));
+      const onClick = seg.kind === 'more' ? `dayClickFromDate('${seg.id}')` : (seg.kind === 'proposal' ? `showProposal('${seg.id}')` : (seg.kind === 'task' ? `showTask('${seg.id}')` : (seg.kind === 'holiday' ? `showHoliday('${seg.id}')` : `showEv('${seg.id}')`)));
       h += `<div class="cal-span-bar ${seg.cls}" style="grid-column:${seg.startCol}/${seg.endCol};grid-row:${seg.lane};${seg.style}" onclick="event.stopPropagation();${onClick}" title="${escapeHtml(seg.label)}">${label}</div>`;
     });
     h += '</div></div>';
@@ -4365,7 +4455,7 @@ function renderGantt() {
   let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
   const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1; 
   const pct = (d) => { const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10)); return Math.max(0, Math.min(100, (diff / totalDays) * 100)); };
-  let h = ''; projects.filter(p => selProj === 'all' || p.id === selProj).forEach(p => {
+  let h = ''; projects.filter(p => !isArchivedProject(p) && (selProj === 'all' || p.id === selProj)).forEach(p => {
     const pt = allTasks.filter(t => t.project === p.id); if (!pt.length) return;
     h += `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
     pt.forEach(t => { const a = mb(t.assignee); h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`; });
@@ -4940,7 +5030,7 @@ function openEditEvent(id) {
   onSubChange();
 }
 function getEventFormHTML(isEdit) { 
-  const pOpts = projects.map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
+  const pOpts = getActiveProjects().map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
 
@@ -5145,6 +5235,17 @@ function showTask(id){
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
+function dayClickFromDate(dateStr){
+  const dt = parseDateSafely(dateStr);
+  if(!dt || isNaN(dt.getTime()) || dt.getTime()===0) return;
+  const prevY = curY, prevM = curM;
+  curY = dt.getFullYear();
+  curM = dt.getMonth();
+  dayClick(dt.getDate());
+  curY = prevY;
+  curM = prevM;
+}
+
 function dayClick(d){
   const dayHolidays = holidaysOnDay(curY, curM, d);
   const marks = proposalMarksOnDay(curY, curM, d);
@@ -5210,127 +5311,110 @@ function goPage(p){
   if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
-  if(p==='setup') { renderMemberManageList(); renderInviteManageList(); renderProjectManageList(); applyTheme(currentTheme); } 
+  if(p==='setup') { renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); applyTheme(currentTheme); } 
 }
 
 const PALETTE=[{color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},{color:'#D85A30',bg:'#FAECE7'},{color:'#EF9F27',bg:'#FAEEDA'},{color:'#533AB7',bg:'#EEEDFE'},{color:'#993556',bg:'#FBEAF0'},{color:'#3B6D11',bg:'#EAF3DE'},{color:'#185FA5',bg:'#B5D4F4'},{color:'#E91E63',bg:'#FCE4EC'},{color:'#9C27B0',bg:'#F3E5F5'},{color:'#673AB7',bg:'#EDE7F6'},{color:'#3F51B5',bg:'#E8EAF6'},{color:'#03A9F4',bg:'#E1F5FE'},{color:'#00BCD4',bg:'#E0F7FA'},{color:'#009688',bg:'#E0F2F1'},{color:'#4CAF50',bg:'#E8F5E9'},{color:'#8BC34A',bg:'#F1F8E9'},{color:'#CDDC39',bg:'#F9FBE7'},{color:'#FFC107',bg:'#FFFDE7'},{color:'#FF9800',bg:'#FFF3E0'},{color:'#FF5722',bg:'#FBE9E7'},{color:'#795548',bg:'#EFEBE9'},{color:'#9E9E9E',bg:'#FAFAFA'},{color:'#607D8B',bg:'#ECEFF1'}];
 
-function renderMemberManageList(){ 
-  const el = document.getElementById('mb-count'); 
-  if(!el) return; 
-  el.textContent=`(${members.length})`; 
-  let h=''; 
+let userTeamFilter = ls('userTeamFilter') || 'all';
 
-  members.forEach(m2=>{ 
-    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
-      <div class="av" style="width:30px;height:30px;font-size:11px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:500">${escapeHtml(m2.name || '')}</div>
-        <div style="font-size:11px;color:var(--text2)">${escapeHtml(m2.role || '-')}</div>
-      </div>
-      <div style="display:flex;gap:5px;">
-        <button class="btn btn-secondary btn-sm" onclick="openEditMember('${m2.id}')">수정</button>
-        <button class="btn-danger-sm" onclick="deleteMember('${m2.id}')">삭제</button>
-      </div>
-    </div>`; 
-  }); 
-
-  document.getElementById('member-manage-list').innerHTML=h || '<div class="empty">팀원이 없습니다</div>'; 
+function setUserTeamFilter(filter){
+  userTeamFilter = ['all','linked','pending','profile_only','inactive','broken'].includes(filter) ? filter : 'all';
+  ls('userTeamFilter', userTeamFilter);
+  renderUserTeamManageList();
 }
 
+function userTeamFilterLabel(filter){
+  return ({all:'전체',linked:'연결됨',pending:'초대 대기',profile_only:'팀원만 등록',inactive:'비활성',broken:'연결 오류'})[filter] || '전체';
+}
+
+function getUserTeamRows(){
+  const rows = [];
+  members.forEach(member => {
+    const memberUsers = users.filter(u => u.memberId === member.id);
+    const memberInvites = userInvites.filter(i => i.memberId === member.id);
+    const primaryUser = memberUsers[0] || null;
+    const primaryInvite = memberInvites[0] || null;
+    const inactive = member.active === false || primaryUser?.active === false || primaryInvite?.active === false;
+    let statusKey = 'profile_only', statusLabel = '팀원만 등록', statusCls = 'neutral';
+    if(inactive){ statusKey = 'inactive'; statusLabel = '비활성'; statusCls = 'danger'; }
+    else if(primaryUser){ statusKey = 'linked'; statusLabel = '연결됨'; statusCls = 'ok'; }
+    else if(primaryInvite){ statusKey = 'pending'; statusLabel = '초대 대기'; statusCls = 'warn'; }
+    rows.push({ key:`member:${member.id}`, statusKey, statusLabel, statusCls, member, user:primaryUser, invite:primaryInvite, email:primaryUser?.email || primaryInvite?.email || '', role:primaryUser?.role || primaryInvite?.role || '', broken:false });
+  });
+  users.filter(u => u.memberId && !mb(u.memberId)).forEach(u => rows.push({ key:`user:${u.id}`, statusKey:u.active === false ? 'inactive' : 'broken', statusLabel:u.active === false ? '비활성' : '연결 오류', statusCls:'danger', member:null, user:u, invite:null, email:u.email || '', role:u.role || '', broken:true }));
+  userInvites.filter(i => i.memberId && !mb(i.memberId)).forEach(i => rows.push({ key:`invite:${i.id}`, statusKey:i.active === false ? 'inactive' : 'broken', statusLabel:i.active === false ? '비활성 초대' : '연결 오류', statusCls:'danger', member:null, user:null, invite:i, email:i.email || decodeURIComponent(i.id || ''), role:i.role || '', broken:true }));
+  return rows.sort((a,b)=>{
+    const order = {broken:0, linked:1, pending:2, profile_only:3, inactive:4};
+    const ao = order[a.statusKey] ?? 9, bo = order[b.statusKey] ?? 9;
+    if(ao !== bo) return ao - bo;
+    return String(a.member?.name || a.email || '').localeCompare(String(b.member?.name || b.email || ''));
+  });
+}
+
+function renderUserTeamManageList(){
+  const countEl = document.getElementById('user-team-count');
+  const listEl = document.getElementById('user-team-manage-list');
+  const tabsEl = document.getElementById('user-team-tabs');
+  if(!countEl || !listEl) return;
+  if(!canManageAll()){ countEl.textContent = ''; listEl.innerHTML = ''; if(tabsEl) tabsEl.innerHTML = ''; return; }
+  const allRows = getUserTeamRows();
+  const counts = allRows.reduce((acc,r)=>{acc[r.statusKey]=(acc[r.statusKey]||0)+1;return acc;},{});
+  const filters = ['all','linked','pending','profile_only','inactive','broken'];
+  if(tabsEl){ tabsEl.innerHTML = filters.map(f=>{ const c=f==='all'?allRows.length:(counts[f]||0); return `<button class="chip ${userTeamFilter===f?'active':''}" onclick="setUserTeamFilter('${f}')">${userTeamFilterLabel(f)} ${c}</button>`; }).join(''); }
+  const rows = allRows.filter(r => userTeamFilter === 'all' || r.statusKey === userTeamFilter);
+  countEl.textContent = `(${rows.length}/${allRows.length})`;
+  if(!rows.length){ listEl.innerHTML = '<div class="empty" style="padding:12px">표시할 사용자가 없습니다</div>'; return; }
+  listEl.innerHTML = rows.map(row => {
+    const m = row.member;
+    const email = row.email || '-';
+    const role = row.role ? roleLabel(row.role) : '-';
+    const color = m?.color || '#9E9E9E';
+    const name = m?.name || '(팀원 없음)';
+    const metaBits = [`이메일: ${email}`, `권한: ${role}`, row.user?.uid ? `UID: ${row.user.uid}` : '', row.invite?.id ? `초대: ${row.invite.id}` : '', row.broken ? `memberId: ${row.user?.memberId || row.invite?.memberId || '-'}` : ''].filter(Boolean);
+    const inactive = row.statusKey === 'inactive';
+    const actions = [];
+    if(m){
+      actions.push(`<button class="btn btn-secondary btn-sm" onclick="openEditMember('${escapeAttr(m.id)}')">팀원 수정</button>`);
+      if(row.invite) actions.push(`<button class="btn btn-secondary btn-sm" onclick="openEditInvite('${escapeAttr(row.invite.id)}')">초대 수정</button>`);
+      else actions.push(`<button class="btn btn-secondary btn-sm" onclick="openAddInviteForMember('${escapeAttr(m.id)}')">초대 만들기</button>`);
+      if(inactive) actions.push(`<button class="btn btn-secondary btn-sm" onclick="restoreMember('${escapeAttr(m.id)}')">재활성화</button>`);
+      else actions.push(`<button class="btn-danger-sm" onclick="disableMember('${escapeAttr(m.id)}')">비활성화</button>`);
+    } else {
+      if(row.invite) actions.push(`<button class="btn btn-secondary btn-sm" onclick="openEditInvite('${escapeAttr(row.invite.id)}')">초대 수정</button>`);
+      if(row.user) actions.push(`<button class="btn-danger-sm" onclick="toggleUserActive('${escapeAttr(row.user.id)}', false)">계정 비활성</button>`);
+    }
+    return `<div class="user-team-row ${inactive?'is-inactive':''}"><div class="av" style="width:30px;height:30px;font-size:11px;background:${lighten(color)};color:${color}">${ini(name)}</div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(name)}</div><span class="status-chip ${row.statusCls}">${escapeHtml(row.statusLabel)}</span></div><div class="user-team-meta">${metaBits.map(escapeHtml).join(' · ')}</div></div><div class="user-team-actions">${actions.join('')}</div></div>`;
+  }).join('');
+}
+
+function renderMemberManageList(){ renderUserTeamManageList(); }
+function renderInviteManageList(){ renderUserTeamManageList(); }
 
 function inviteRoleOptions(selected){
-  const allRoles = [
-    ['admin','Admin'],
-    ['team_leader','Team Leader'],
-    ['member','Member'],
-    ['viewer','Viewer']
-  ];
-  // Team Leader도 초대 관리는 가능하지만, Admin 권한 부여는 Admin에게만 노출합니다.
+  const allRoles = [['admin','Admin'],['team_leader','Team Leader'],['member','Member'],['viewer','Viewer']];
   const roles = isAdminUser() ? allRoles : allRoles.filter(([value]) => value !== 'admin');
   const normalizedSelected = normalizeRoleValue(selected);
   const cur = roles.some(([value]) => value === normalizedSelected) ? normalizedSelected : 'member';
   return roles.map(([value,label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
 }
-
 function inviteMemberOptions(selected){
-  if(!members.length) return '<option value="">등록된 팀원이 없습니다</option>';
-  return members.map(m => `<option value="${escapeAttr(m.id)}" ${m.id===selected?'selected':''}>${escapeHtml(m.name || '')}${m.role ? ' · ' + escapeHtml(m.role) : ''}</option>`).join('');
+  const selectableMembers = getActiveMembers();
+  if(!selectableMembers.length) return '<option value="">등록된 활성 팀원이 없습니다</option>';
+  return selectableMembers.map(m => `<option value="${escapeAttr(m.id)}" ${m.id===selected?'selected':''}>${escapeHtml(m.name || '')}${m.role ? ' · ' + escapeHtml(m.role) : ''}</option>`).join('');
 }
-
-function inviteStatusMeta(invite){
-  if(invite?.active === false || invite?.status === 'disabled') return { label:'비활성', cls:'danger' };
-  if(invite?.linkedUid || invite?.status === 'linked') return { label:'연결됨', cls:'ok' };
-  return { label:'대기', cls:'warn' };
-}
-
-function renderInviteManageList(){
-  const countEl = document.getElementById('invite-count');
-  const listEl = document.getElementById('invite-manage-list');
-  if(!countEl || !listEl) return;
-
-  if(!canManageAll()){
-    countEl.textContent = '';
-    listEl.innerHTML = '';
-    return;
-  }
-
-  const sorted = [...userInvites].sort((a,b)=>String(a.email||a.id||'').localeCompare(String(b.email||b.id||'')));
-  countEl.textContent = `(${sorted.length})`;
-
-  if(!sorted.length){
-    listEl.innerHTML = '<div class="empty" style="padding:12px">등록된 초대 사용자가 없습니다</div>';
-    return;
-  }
-
-  listEl.innerHTML = sorted.map(invite => {
-    const member = mb(invite.memberId || '');
-    const status = inviteStatusMeta(invite);
-    const email = normalizeLoginEmail(invite.email || decodeURIComponent(invite.id || ''));
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-          <strong style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${escapeHtml(email || '-')}</strong>
-          <span class="status-chip ${status.cls}">${escapeHtml(status.label)}</span>
-        </div>
-        <div style="font-size:11px;color:var(--text2);line-height:1.45">
-          팀원: ${escapeHtml(member?.name || invite.memberId || '-')} · 권한: ${escapeHtml(roleLabel(invite.role || 'member'))}${invite.linkedAt ? ' · 연결일: ' + fmtDateTimeShort(invite.linkedAt) : ''}
-        </div>
-      </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
-        <button class="btn btn-secondary btn-sm" onclick="openEditInvite('${escapeAttr(invite.id)}')">수정</button>
-        <button class="btn-danger-sm" onclick="deleteInvite('${escapeAttr(invite.id)}')">삭제</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
+function inviteStatusMeta(invite){ if(invite?.active === false || invite?.status === 'disabled') return { label:'비활성', cls:'danger' }; if(invite?.linkedUid || invite?.status === 'linked') return { label:'연결됨', cls:'ok' }; return { label:'대기', cls:'warn' }; }
 function getInviteFormHTML(isEdit){
-  return `<input type="hidden" id="invite-original-id">
-    <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"></div></div>
-    <div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div>
-    <div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div><div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div></div>
-    <div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">초대 등록 후 사용자가 같은 Google 이메일로 로그인하면 users/{uid} 계정이 자동 생성됩니다.</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button>
-      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-    </div>`;
+  return `<input type="hidden" id="invite-original-id"><div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"></div></div><div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div><div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div><div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div></div><div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">초대 등록 후 사용자가 같은 Google 이메일로 로그인하면 users/{uid} 계정이 자동 생성됩니다.</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
-
-function openAddInvite(){
-  if(!requireManager()) return;
-  document.getElementById('modal-body').innerHTML = getInviteFormHTML(false);
-  openModal('사용자 초대 등록');
-}
-
+function openAddInvite(){ if(!requireManager()) return; document.getElementById('modal-body').innerHTML = getInviteFormHTML(false); openModal('사용자 초대 등록'); }
+function openAddInviteForMember(memberId){ if(!requireManager()) return; openAddInvite(); const sel=document.getElementById('invite-member'); if(sel) sel.value=memberId; }
 function openEditInvite(id){
   if(!requireManager()) return;
   const invite = userInvites.find(x => x.id === id);
   if(!invite) return;
-
   document.getElementById('modal-body').innerHTML = getInviteFormHTML(true);
   openModal('사용자 초대 수정');
-
   const email = normalizeLoginEmail(invite.email || decodeURIComponent(invite.id || ''));
   document.getElementById('invite-original-id').value = invite.id || '';
   document.getElementById('invite-email').value = email;
@@ -5339,285 +5423,69 @@ function openEditInvite(id){
   document.getElementById('invite-role').value = normalizeRoleValue(invite.role || 'member');
   document.getElementById('invite-active').value = invite.active === false ? 'false' : 'true';
 }
-
 async function submitInvite(){
   if(!requireManager()) return;
-
   const originalId = document.getElementById('invite-original-id')?.value || '';
   const email = normalizeLoginEmail(document.getElementById('invite-email')?.value || '');
   const memberId = document.getElementById('invite-member')?.value || '';
   const role = normalizeRoleValue(document.getElementById('invite-role')?.value || 'member');
   const active = document.getElementById('invite-active')?.value !== 'false';
-
-  if(!email || !email.includes('@')){
-    showToast('유효한 이메일을 입력해주세요');
-    return;
-  }
-  if(!memberId){
-    showToast('연결할 팀원을 선택해주세요');
-    return;
-  }
-  if(!['admin','team_leader','member','viewer'].includes(role)){
-    showToast('유효한 권한을 선택해주세요');
-    return;
-  }
-  if(role === 'admin' && !isAdminUser()){
-    showToast('Admin 권한 부여는 Admin만 가능합니다.');
-    return;
-  }
-
+  if(!email || !email.includes('@')){ showToast('유효한 이메일을 입력해주세요'); return; }
+  if(!memberId){ showToast('연결할 팀원을 선택해주세요'); return; }
+  if(!['admin','team_leader','member','viewer'].includes(role)){ showToast('유효한 권한을 선택해주세요'); return; }
+  if(role === 'admin' && !isAdminUser()){ showToast('Admin 권한 부여는 Admin만 가능합니다.'); return; }
   const inviteId = inviteDocIdFromEmail(email);
   const existing = originalId ? userInvites.find(x => x.id === originalId) : userInvites.find(x => x.id === inviteId);
   const member = mb(memberId);
   const now = new Date().toISOString();
-  const payload = {
-    email,
-    memberId,
-    role,
-    active,
-    name:member?.name || existing?.name || '',
-    status: active ? (existing?.linkedUid ? 'linked' : (existing?.status === 'linked' ? 'linked' : 'pending')) : 'disabled',
-    invitedBy: existing?.invitedBy || selfId,
-    invitedAt: existing?.invitedAt || now,
-    updatedBy:selfId,
-    updatedAt:now
-  };
-
-  if(existing?.linkedUid){
-    payload.linkedUid = existing.linkedUid;
-    payload.linkedAt = existing.linkedAt || '';
-  }
-
+  const payload = { email, memberId, role, active, name:member?.name || existing?.name || '', status: active ? (existing?.linkedUid ? 'linked' : (existing?.status === 'linked' ? 'linked' : 'pending')) : 'disabled', invitedBy: existing?.invitedBy || selfId, invitedAt: existing?.invitedAt || now, updatedBy:selfId, updatedAt:now };
+  if(existing?.linkedUid){ payload.linkedUid = existing.linkedUid; payload.linkedAt = existing.linkedAt || ''; }
   try{
     const batch = db.batch();
-    const inviteRef = db.collection('userInvites').doc(inviteId);
-    batch.set(inviteRef, payload, { merge:true });
-
-    if(originalId && originalId !== inviteId){
-      batch.delete(db.collection('userInvites').doc(originalId));
-    }
-
-    const linkedUid = existing?.linkedUid || '';
-    if(linkedUid){
-      batch.set(db.collection('users').doc(linkedUid), {
-        email,
-        memberId,
-        role,
-        active,
-        name:payload.name,
-        inviteKey:inviteId,
-        updatedAt:now,
-        updatedBy:selfId
-      }, { merge:true });
-    }
-
+    batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
+    if(originalId && originalId !== inviteId) batch.delete(db.collection('userInvites').doc(originalId));
+    const linkedUid = existing?.linkedUid || users.find(u => u.memberId === memberId)?.uid || '';
+    if(linkedUid){ batch.set(db.collection('users').doc(linkedUid), { email, memberId, role, active, name:payload.name, inviteKey:inviteId, updatedAt:now, updatedBy:selfId }, { merge:true }); }
     await batch.commit();
     showToast(originalId ? '초대 정보를 수정했습니다' : '초대 사용자를 등록했습니다');
-    closeModal();
-    renderInviteManageList();
-  }catch(e){
-    showToast('초대 저장 실패: ' + (e.message || e));
-  }
+    closeModal(); renderUserTeamManageList();
+  }catch(e){ showToast('초대 저장 실패: ' + (e.message || e)); }
 }
-
 async function deleteInvite(id){
   if(!requireManager()) return;
   const invite = userInvites.find(x => x.id === id);
   if(!invite) return;
-
-  const msg = invite.linkedUid
-    ? '이 초대는 이미 사용자 계정과 연결되어 있습니다. 초대 기록만 삭제되고 기존 로그인 계정은 유지됩니다. 계속할까요?'
-    : '이 초대 사용자를 삭제할까요?';
-  if(!confirm(msg)) return;
-
-  try{
-    await db.collection('userInvites').doc(id).delete();
-    showToast('초대 정보를 삭제했습니다');
-  }catch(e){
-    showToast('초대 삭제 실패: ' + (e.message || e));
-  }
+  if(!confirm('이 초대를 비활성화할까요? 기존 연결 계정은 유지되지만 새 로그인 연결은 막힙니다.')) return;
+  try{ await db.collection('userInvites').doc(id).set({ active:false, status:'disabled', updatedAt:new Date().toISOString(), updatedBy:selfId }, { merge:true }); showToast('초대를 비활성화했습니다'); }
+  catch(e){ showToast('초대 비활성화 실패: ' + (e.message || e)); }
 }
 
-function renderProjectManageList(){ 
-  const el = document.getElementById('proj-count'); 
-  if(!el) return; 
-  el.textContent=`(${projects.length})`; 
-  let h=''; 
+function openAddMember(){ if(!requireManager()) return; document.getElementById('modal-body').innerHTML = getMemberFormHTML(false); openModal('팀원 추가'); }
+function openEditMember(id){ if(!requireManager()) return; const m = mb(id); if(!m) return; document.getElementById('modal-body').innerHTML = getMemberFormHTML(true); openModal('팀원 수정'); document.getElementById('member-name').value=m.name||''; document.getElementById('member-role').value=m.role||''; document.getElementById('member-color').value=m.color||'#378ADD'; document.getElementById('member-id').value=m.id; }
+function getMemberFormHTML(isEdit){ return `<input type="hidden" id="member-id"><div class="form-row full"><div><div class="fl">이름</div><input id="member-name" type="text"></div></div><div class="form-row full"><div><div class="fl">역할</div><input id="member-role" type="text"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="member-color" type="color" value="#378ADD"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitMember()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
+function submitMember(){ const id=document.getElementById('member-id').value||'mb_'+Date.now(); const name=document.getElementById('member-name').value.trim(); if(!name){showToast('이름을 입력해주세요'); return;} apiSave({ action:members.some(m=>m.id===id)?'updateMember':'addMember', id, name, role:document.getElementById('member-role').value.trim(), color:document.getElementById('member-color').value, active:true }, ()=>closeModal()); }
+async function disableMember(id){ if(!requireManager()) return; const m=mb(id); if(!m) return; if(!confirm(`${m.name} 팀원을 비활성화할까요? 과거 기록은 유지되고, 연결된 계정/초대도 비활성화됩니다.`)) return; try{ const batch=db.batch(); const now=new Date().toISOString(); batch.set(db.collection('members').doc(id), {active:false,disabledAt:now,disabledBy:selfId}, {merge:true}); userInvites.filter(i=>i.memberId===id).forEach(i=>batch.set(db.collection('userInvites').doc(i.id), {active:false,status:'disabled',updatedAt:now,updatedBy:selfId}, {merge:true})); users.filter(u=>u.memberId===id).forEach(u=>batch.set(db.collection('users').doc(u.uid||u.id), {active:false,updatedAt:now,updatedBy:selfId}, {merge:true})); await batch.commit(); showToast('팀원을 비활성화했습니다'); }catch(e){ showToast('비활성화 실패: '+(e.message||e)); } }
+async function restoreMember(id){ if(!requireManager()) return; const m=mb(id); if(!m) return; if(!confirm(`${m.name} 팀원을 다시 활성화할까요?`)) return; try{ const batch=db.batch(); const now=new Date().toISOString(); batch.set(db.collection('members').doc(id), {active:true,restoredAt:now,restoredBy:selfId}, {merge:true}); userInvites.filter(i=>i.memberId===id).forEach(i=>batch.set(db.collection('userInvites').doc(i.id), {active:true,status:i.linkedUid?'linked':'pending',updatedAt:now,updatedBy:selfId}, {merge:true})); users.filter(u=>u.memberId===id).forEach(u=>batch.set(db.collection('users').doc(u.uid||u.id), {active:true,updatedAt:now,updatedBy:selfId}, {merge:true})); await batch.commit(); showToast('팀원을 활성화했습니다'); }catch(e){ showToast('재활성화 실패: '+(e.message||e)); } }
+async function toggleUserActive(uid, active){ if(!requireManager()) return; try{ await db.collection('users').doc(uid).set({active,updatedAt:new Date().toISOString(),updatedBy:selfId}, {merge:true}); showToast(active?'계정을 활성화했습니다':'계정을 비활성화했습니다'); }catch(e){ showToast('계정 상태 변경 실패: '+(e.message||e)); } }
+async function deleteMember(id){ return disableMember(id); }
 
-  projects.forEach(p=>{ 
-    const memberCount = assigns.filter(a => a.projectId === p.id).length;
-
-    h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
-      <div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;">
-        <div class="dot" style="background:${p.color}"></div>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:500">${escapeHtml(p.name || '')}</div>
-        <div style="font-size:11px;color:var(--text2)">참여인력 ${memberCount}명</div>
-      </div>
-      <div style="display:flex;gap:5px;">
-        <button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">참여인력</button>
-        <button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>
-      </div>
-    </div>`; 
-  }); 
-
-  document.getElementById('project-manage-list').innerHTML=h || '<div class="empty">사업이 없습니다</div>'; 
+function renderProjectManageList(){
+  const el=document.getElementById('proj-count'); const list=document.getElementById('project-manage-list'); if(!el||!list) return;
+  const sorted=[...projects].sort((a,b)=>{ const aa=isArchivedProject(a), bb=isArchivedProject(b); if(aa!==bb) return aa?1:-1; return String(a.name||'').localeCompare(String(b.name||'')); });
+  el.textContent=`(${sorted.length})`;
+  let h='';
+  sorted.forEach(p=>{ const memberCount=assigns.filter(a=>a.projectId===p.id).length; const archived=isArchivedProject(p); h+=`<div class="user-team-row ${archived?'is-inactive':''}"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(p.name || '')}</div><span class="status-chip ${archived?'neutral':'ok'}">${archived?'보관':'활성'}</span></div><div class="user-team-meta">참여인력 ${memberCount}명${p.start||p.end ? ' · '+fmtDateFull(p.start)+' ~ '+fmtDateFull(p.end) : ''}</div></div><div class="user-team-actions"><button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${escapeAttr(p.id)}')">참여인력</button><button class="btn btn-secondary btn-sm" onclick="openEditProject('${escapeAttr(p.id)}')">수정</button>${archived ? `<button class="btn btn-secondary btn-sm" onclick="restoreProject('${escapeAttr(p.id)}')">복원</button>` : `<button class="btn-danger-sm" onclick="archiveProject('${escapeAttr(p.id)}')">보관</button>`}</div></div>`; });
+  list.innerHTML=h || '<div class="empty">사업이 없습니다</div>';
 }
+function openAddProject(){ if(!requireManager()) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(false); openModal('사업 추가'); }
+function openEditProject(id){ if(!requireManager()) return; const p=pj(id); if(!p) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(true); openModal('사업 수정'); document.getElementById('project-id').value=p.id; document.getElementById('project-name').value=p.name||''; document.getElementById('project-color').value=p.color||'#3B6D11'; document.getElementById('project-start').value=p.start||''; document.getElementById('project-end').value=p.end||''; }
+function getProjectFormHTML(isEdit){ return `<input type="hidden" id="project-id"><div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div><div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div><div style="display:flex;gap:8px">${isEdit ? `<button class="btn-danger-sm" onclick="deleteProjectFromEdit()">보관</button>` : ''}<button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
+function submitProject(){ const id=document.getElementById('project-id').value||'pj_'+Date.now(); const name=document.getElementById('project-name').value.trim(); if(!name){showToast('사업명을 입력해주세요'); return;} const existing=projects.find(p=>p.id===id); apiSave({action:existing?'updateProject':'addProject', id, name, color:document.getElementById('project-color').value, start:document.getElementById('project-start').value, end:document.getElementById('project-end').value, archived:existing?.archived===true?true:false, status:existing?.status||'active'}, ()=>closeModal()); }
+function deleteProjectFromEdit(){ const id=document.getElementById('project-id').value; if(id) archiveProject(id); }
+async function archiveProject(id){ if(!requireManager()) return; const p=pj(id); if(!p) return; if(!confirm(`${p.name}을(를) 보관할까요? 과거 업무/일정 연결은 유지되고 신규 선택 목록에서 숨겨집니다.`)) return; try{ await db.collection('projects').doc(id).set({archived:true,status:'archived',archivedAt:new Date().toISOString(),archivedBy:selfId},{merge:true}); closeModal(); showToast('사업을 보관했습니다'); }catch(e){ showToast('사업 보관 실패: '+(e.message||e)); } }
+async function restoreProject(id){ if(!requireManager()) return; const p=pj(id); if(!p) return; if(!confirm(`${p.name}을(를) 다시 활성화할까요?`)) return; try{ await db.collection('projects').doc(id).set({archived:false,status:'active',restoredAt:new Date().toISOString(),restoredBy:selfId},{merge:true}); showToast('사업을 복원했습니다'); }catch(e){ showToast('사업 복원 실패: '+(e.message||e)); } }
+async function deleteProject(id){ return archiveProject(id); }
 
-function openAddMember(){ 
-  if(!requireManager()) return;
-  document.getElementById('modal-body').innerHTML = getMemberFormHTML(false); 
-  openModal('팀원 추가'); 
-}
-
-function openEditMember(id){ 
-  if(!requireManager()) return;
-  const m = mb(id); 
-  if(!m) return; 
-  document.getElementById('modal-body').innerHTML = getMemberFormHTML(true); 
-  openModal('팀원 수정'); 
-  document.getElementById('member-name').value=m.name||''; 
-  document.getElementById('member-role').value=m.role||''; 
-  document.getElementById('member-color').value=m.color||'#378ADD'; 
-  document.getElementById('member-id').value=m.id; 
-}
-
-function getMemberFormHTML(isEdit){ 
-  return `<input type="hidden" id="member-id">
-    <div class="form-row full"><div><div class="fl">이름</div><input id="member-name" type="text"></div></div>
-    <div class="form-row full"><div><div class="fl">역할</div><input id="member-role" type="text"></div></div>
-    <div class="form-row full"><div><div class="fl">색상</div><input id="member-color" type="color" value="#378ADD"></div></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="submitMember()">${isEdit?'저장':'추가'}</button>
-      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-    </div>`; 
-}
-
-function submitMember(){ 
-  const id=document.getElementById('member-id').value||'mb_'+Date.now(); 
-  const name=document.getElementById('member-name').value.trim(); 
-  if(!name){showToast('이름을 입력해주세요'); return;} 
-
-  apiSave({
-    action:members.some(m=>m.id===id)?'updateMember':'addMember', 
-    id, 
-    name, 
-    role:document.getElementById('member-role').value.trim(), 
-    color:document.getElementById('member-color').value
-  }, ()=>closeModal()); 
-}
-
-async function deleteMember(id){
-  if(!requireManager()) return;
-  const m = mb(id);
-  if(!m) return;
-
-  if(!confirm(`${m.name} 팀원을 삭제할까요? 해당 팀원의 사업 참여인력 배정도 같이 삭제됩니다.`)) return;
-
-  try{
-    await db.collection('members').doc(id).delete();
-
-    const snap = await db.collection('assigns').where('memberId', '==', id).get();
-    const batch = db.batch();
-    snap.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-
-    if(selfId === id){
-      const next = members.find(x => x.id !== id);
-      selfId = next ? next.id : '';
-      ls('selfId', selfId);
-    }
-
-    showToast('팀원을 삭제했습니다');
-  }catch(e){
-    showToast('삭제 실패: ' + e.message);
-  }
-}
-
-function openAddProject(){ 
-  if(!requireManager()) return;
-  document.getElementById('modal-body').innerHTML = getProjectFormHTML(false); 
-  openModal('사업 추가'); 
-}
-
-function openEditProject(id){ 
-  if(!requireManager()) return;
-  const p = pj(id); 
-  if(!p) return; 
-  document.getElementById('modal-body').innerHTML = getProjectFormHTML(true); 
-  openModal('사업 수정'); 
-  document.getElementById('project-id').value=p.id; 
-  document.getElementById('project-name').value=p.name||''; 
-  document.getElementById('project-color').value=p.color||'#3B6D11'; 
-  document.getElementById('project-start').value=p.start||''; 
-  document.getElementById('project-end').value=p.end||''; 
-}
-
-function getProjectFormHTML(isEdit){ 
-  return `<input type="hidden" id="project-id">
-    <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
-    <div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div>
-    <div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div>
-    <div style="display:flex;gap:8px">
-      ${isEdit ? `<button class="btn-danger-sm" onclick="deleteProjectFromEdit()">삭제</button>` : ''}
-      <button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button>
-      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-    </div>`; 
-}
-
-function submitProject(){ 
-  const id=document.getElementById('project-id').value||'pj_'+Date.now(); 
-  const name=document.getElementById('project-name').value.trim(); 
-  if(!name){showToast('사업명을 입력해주세요'); return;} 
-
-  apiSave({
-    action:projects.some(p=>p.id===id)?'updateProject':'addProject', 
-    id, 
-    name, 
-    color:document.getElementById('project-color').value, 
-    start:document.getElementById('project-start').value, 
-    end:document.getElementById('project-end').value
-  }, ()=>closeModal()); 
-}
-
-function deleteProjectFromEdit(){
-  if(!requireManager()) return;
-  const id = document.getElementById('project-id').value;
-  if(!id) return;
-
-  const p = pj(id);
-  const name = p?.name || document.getElementById('project-name').value || '이 사업';
-
-  if(!confirm(`${name}을(를) 삭제할까요?\n\n- 사업 기본정보와 참여인력 배정은 삭제됩니다.\n- 기존 업무/일정은 삭제하지 않고 사업 연결만 해제합니다.`)) return;
-
-  deleteProject(id);
-}
-
-async function deleteProject(id){
-  if(!requireManager()) return;
-  try{
-    const batch = db.batch();
-
-    batch.delete(db.collection('projects').doc(id));
-
-    const assignSnap = await db.collection('assigns').where('projectId', '==', id).get();
-    assignSnap.forEach(doc => batch.delete(doc.ref));
-
-    const taskSnap = await db.collection('tasks').where('project', '==', id).get();
-    taskSnap.forEach(doc => batch.update(doc.ref, { project: '' }));
-
-    const eventSnap = await db.collection('events').where('project', '==', id).get();
-    eventSnap.forEach(doc => batch.update(doc.ref, { project: '' }));
-
-    await batch.commit();
-
-    closeModal();
-    showToast('사업을 삭제했습니다');
-  }catch(e){
-    showToast('사업 삭제 실패: ' + e.message);
-  }
-}
 
 function openManageProjectMembers(projectId){
   if(!requireManager()) return;
@@ -5639,7 +5507,7 @@ function openManageProjectMembers(projectId){
     </div>`;
   }).join('');
 
-  const memberOptions = members
+  const memberOptions = getActiveMembers()
     .filter(m => !assignedIds.has(m.id))
     .map(m => `<option value="${m.id}">${escapeHtml(m.name || '')}</option>`)
     .join('');
@@ -5709,6 +5577,29 @@ function deleteProjectMember(assignId, projectId){
     showToast('참여인력을 삭제했습니다');
     openManageProjectMembers(projectId);
   });
+}
+
+
+function renderSettingsDiagnostics(){
+  const box=document.getElementById('settings-diagnostics'); if(!box) return;
+  const me=getSelfMember();
+  const healthKeys=['members','projects','assigns','tasks','events-public','events-private','todos','comments-team','comments-private','activityLogs-team','notifications','userInvites','users'];
+  const stats=[['로그인 이메일',currentUser?.email||'-'],['권한',roleLabel(userRole())],['연결 팀원',`${me.name||'-'} (${selfId||'-'})`],['데이터 수',`팀원 ${members.length} · 사업 ${projects.length} · 업무 ${tasks.length} · 일정 ${events.length}`]];
+  const errors=healthKeys.filter(k=>syncHealth[k]&&!syncHealth[k].ok);
+  const healthHtml=healthKeys.map(k=>{ const h=syncHealth[k]; const label=({'events-public':'공유 일정','events-private':'비공개 일정','comments-team':'팀 댓글','comments-private':'비공개 댓글','activityLogs-team':'활동 로그','userInvites':'초대','users':'계정'}[k]||k); return `<div class="diagnostic-item ${h&&!h.ok?'error':''}"><span>${escapeHtml(label)}</span><strong>${h?(h.ok?'정상':'오류'):'대기'}</strong></div>`; }).join('');
+  box.innerHTML=`<div class="diagnostic-grid">${stats.map(([l,v])=>`<div class="diagnostic-card"><div class="diagnostic-label">${escapeHtml(l)}</div><div class="diagnostic-value">${escapeHtml(v)}</div></div>`).join('')}</div><div class="diagnostic-list">${healthHtml}</div>${errors.length?`<div style="font-size:12px;color:#A32D2D;line-height:1.5;margin-top:10px">오류 ${errors.length}건이 있습니다. Firestore Rules와 users/{uid}.memberId/role/active 값을 확인하세요.</div>`:`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:10px">표시된 리스너가 모두 정상 상태면 동기화 권한은 대체로 맞습니다.</div>`}`;
+}
+function csvEscape(value){ const str=String(value??''); return /[",\n\r]/.test(str)?`"${str.replace(/"/g,'""')}"`:str; }
+function downloadTextFile(filename,text,mime){ const blob=new Blob([text],{type:mime||'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),500); }
+function rowsToCSV(rows,headers){ const head=headers.map(csvEscape).join(','); const body=rows.map(row=>headers.map(h=>csvEscape(row[h])).join(',')).join('\n'); return '\ufeff'+head+(body?'\n'+body:''); }
+function exportCSV(type){
+  if(!requireManager()) return; const now=new Date().toISOString().slice(0,10); let rows=[], headers=[];
+  if(type==='projects'){ headers=['id','name','start','end','status','archived','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',archived:isArchivedProject(p),memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
+  else if(type==='tasks'){ headers=['id','title','project','projectName','assignee','assigneeName','start','end','status','priority','showOnCalendar','note']; rows=tasks.map(t=>({id:t.id,title:t.title||'',project:t.project||'',projectName:pj(t.project)?.name||'',assignee:t.assignee||'',assigneeName:mb(t.assignee)?.name||'',start:t.start||'',end:t.end||'',status:normalizeTaskStatus(t.status),priority:t.priority||getTaskMatrixType(t),showOnCalendar:t.showOnCalendar===true,note:t.note||''})); }
+  else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',public:e.public===true})); }
+  else if(type==='proposals'){ headers=['id','name','status','start','deadline','demandOrg','participants','participantNames','note']; rows=proposals.map(p=>({id:p.id,name:p.name||'',status:proposalStatusLabel(proposalStatusValue(p)),start:p.start||'',deadline:p.deadline||'',demandOrg:p.demandOrg||'',participants:p.participants||'',participantNames:proposalParticipantNames(p).join('; '),note:p.note||''})); }
+  else return;
+  downloadTextFile(`calendar_${type}_${now}.csv`, rowsToCSV(rows,headers), 'text/csv;charset=utf-8');
 }
 
 function openModal(t){ document.getElementById('modal-title').textContent=t; document.getElementById('modal').classList.add('show'); } 
