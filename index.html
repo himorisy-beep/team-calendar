@@ -222,7 +222,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .cal-span-end{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:4px}
 .cal-span-single{border-radius:4px;margin-left:4px;margin-right:4px}
 .ep-proposal-start{background:#CFFAFE;color:#0E7490;border-left:3px solid #0891B2}
-.ep-proposal-deadline{background:#E0E7FF;color:#3730A3;border-left:3px solid #6366F1}
+.ep-proposal-deadline{background:#FEE2E2;color:#991B1B;border-left:3px solid #DC2626}
 .list-wrap{display:flex;flex-direction:column;gap:7px}
 .cal-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .cal-list-title{font-size:13px;font-weight:700;color:var(--text2)}
@@ -1067,6 +1067,90 @@ input[type="checkbox"]{
   background:#E0E7FF!important;
   color:#3730A3!important;
   border-left:3px solid #6366F1!important;
+}
+
+
+/* Holiday display: calendar cell background + small label beside date */
+.cal-week-day.holiday-day{
+  background:#FFF7F7!important;
+}
+.cal-week-day.holiday-day .dn{
+  width:auto;
+  justify-content:flex-start;
+  gap:4px;
+}
+.holiday-label{
+  display:inline-block;
+  margin-left:4px;
+  font-size:10px;
+  font-weight:700;
+  color:#B91C1C;
+  vertical-align:middle;
+  max-width:calc(100% - 28px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.week-mini-day.holiday-day{
+  background:#FFF7F7!important;
+}
+.week-mini-date-row{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-bottom:6px;
+  min-width:0;
+}
+.week-mini-date-row .week-mini-date{
+  margin-bottom:0!important;
+  flex:0 0 auto;
+}
+.week-mini-holiday-label{
+  font-size:10px;
+  font-weight:700;
+  color:#B91C1C;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0;
+}
+
+
+/* Proposal D-day chips */
+.proposal-dday{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:48px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  border:.5px solid var(--border2);
+  background:var(--bg2);
+  color:var(--text2);
+  white-space:nowrap;
+}
+.proposal-dday.urgent{
+  background:#FEE2E2!important;
+  color:#991B1B!important;
+  border-color:#FCA5A5!important;
+}
+.proposal-dday.soon{
+  background:#FEF3C7!important;
+  color:#92400E!important;
+  border-color:#FCD34D!important;
+}
+.proposal-dday.normal{
+  background:#DBEAFE!important;
+  color:#1D4ED8!important;
+  border-color:#93C5FD!important;
+}
+.proposal-dday.done{
+  background:#F3F4F6!important;
+  color:#6B7280!important;
+  border-color:#D1D5DB!important;
+  text-decoration:line-through;
 }
 
 </style>
@@ -2301,10 +2385,6 @@ function renderHome(){
   const weekMiniDays = weekDates.map(day => {
     const dayItems = [];
 
-    holidaysOnDay(day.getFullYear(), day.getMonth(), day.getDate()).forEach(h => {
-      dayItems.push({kind:'holiday', id:h.id, title:h.title || '공휴일', onClick:`showHoliday('${h.id}')`});
-    });
-
     events
       .filter(e => e.who === selfId)
       .filter(e => inDay(e, day.getFullYear(), day.getMonth(), day.getDate()))
@@ -2341,8 +2421,13 @@ function renderHome(){
     const more = dayItems.length > 3 ? `<div class="week-mini-more">+${dayItems.length-3}</div>` : '';
     const isToday = fmtDateFull(day) === fmtDateFull(now);
 
-    return `<div class="week-mini-day ${isToday?'today':''}">
-      <div class="week-mini-date">${day.getDate()}</div>
+    const dayHolidays = holidaysOnDay(day.getFullYear(), day.getMonth(), day.getDate());
+    const firstHoliday = dayHolidays[0];
+    const holidayClass = dayHolidays.length ? 'holiday-day' : '';
+    const holidayLabel = firstHoliday ? `<span class="week-mini-holiday-label" onclick="event.stopPropagation();showHoliday('${firstHoliday.id}')" title="${escapeHtml(firstHoliday.title || '공휴일')}">${escapeHtml(firstHoliday.title || '공휴일')}</span>` : '';
+
+    return `<div class="week-mini-day ${isToday?'today':''} ${holidayClass}">
+      <div class="week-mini-date-row"><div class="week-mini-date">${day.getDate()}</div>${holidayLabel}</div>
       ${shown || '<div style="font-size:11px;color:var(--text3)">-</div>'}
       ${more}
     </div>`;
@@ -3553,36 +3638,6 @@ function getWeekEventSegments(weekDates, vis){
     });
   });
 
-  holidays.forEach(h => {
-    const s = normalizeDay(parseDateSafely(h.start));
-    const en = normalizeDay(getHolidayEndDate(h));
-    const sT = s.getTime();
-    const eT = en.getTime();
-    if(!sT || !eT || isNaN(sT) || isNaN(eT)) return;
-    if(eT < weekStart.getTime() || sT > weekEnd.getTime()) return;
-
-    const segStart = sT < weekStart.getTime() ? weekStart : s;
-    const segEnd = eT > weekEnd.getTime() ? weekEnd : en;
-    const startCol = segStart.getDay() + 1;
-    const endCol = segEnd.getDay() + 2;
-    const isStart = sT >= weekStart.getTime();
-    const isEnd = eT <= weekEnd.getTime();
-    const isSingle = startCol + 1 === endCol && isStart && isEnd;
-
-    segments.push({
-      kind:'holiday',
-      id:h.id,
-      startCol,
-      endCol,
-      startT:sT,
-      endT:eT,
-      label:h.title || '공휴일',
-      showLabel:isStart || startCol === 1,
-      cls:isSingle ? 'cal-span-single cal-span-holiday' : `${isStart ? 'cal-span-start' : ''} ${isEnd ? 'cal-span-end' : ''} cal-span-holiday`,
-      style:''
-    });
-  });
-
   weekDates.forEach(dt => {
     proposalMarksOnDay(dt.getFullYear(), dt.getMonth(), dt.getDate()).forEach(p => {
       const col = dt.getDay() + 1;
@@ -3652,8 +3707,12 @@ function renderCalGrid(){
       const isCurrent = dt.getMonth() === curM;
       const dow = dt.getDay();
       const isToday = dt.getFullYear()===today.getFullYear() && dt.getMonth()===today.getMonth() && dt.getDate()===today.getDate();
+      const dayHolidays = holidaysOnDay(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      const firstHoliday = dayHolidays[0];
+      const holidayClass = dayHolidays.length ? 'holiday-day' : '';
+      const holidayLabel = firstHoliday ? `<span class="holiday-label" onclick="event.stopPropagation();showHoliday('${firstHoliday.id}')" title="${escapeHtml(firstHoliday.title || '공휴일')}">${escapeHtml(firstHoliday.title || '공휴일')}</span>` : '';
       const click = isCurrent ? `onclick="dayClick(${dt.getDate()})"` : '';
-      h += `<div class="cal-week-day ${isCurrent?'':'other'} ${isToday?'today':''} ${dow===0?'sun':dow===6?'sat':''}" ${click}><div class="dn">${dt.getDate()}</div></div>`;
+      h += `<div class="cal-week-day ${isCurrent?'':'other'} ${isToday?'today':''} ${holidayClass} ${dow===0?'sun':dow===6?'sat':''}" ${click}><div class="dn">${dt.getDate()}${holidayLabel}</div></div>`;
     });
 
     h += '<div class="cal-week-bars">';
