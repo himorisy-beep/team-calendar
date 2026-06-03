@@ -1277,13 +1277,12 @@ input[type="checkbox"]{
   <button class="filter-toggle" onclick="toggleFilterSection('projects')"><span>사업 필터</span><span id="filter-projects-icon">▸</span></button>
   <div id="filter-projects-body" class="filter-body collapsed"><div id="sb-projects"></div></div>
 </div>
-<div style="margin-top:auto; border-top:.5px solid var(--border); padding-top:12px;">
-  <div class="sb-label" style="margin-bottom:5px">내 계정</div>
-  <div style="display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:var(--r-sm)">
+<div style="margin-top:auto; border-top:.5px solid var(--border); padding-top:8px;">
+  <div style="display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:var(--r-sm)">
     <div class="av" id="self-av"></div>
-    <span style="font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="self-name">—</span>
+    <span style="font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" id="self-name">—</span>
+    <button type="button" onclick="logout()" style="border:none;background:none;color:var(--text3);font-size:11px;cursor:pointer;padding:3px 2px;white-space:nowrap;font-family:inherit">로그아웃</button>
   </div>
-  <button class="btn btn-secondary btn-sm" type="button" onclick="logout()" style="width:100%;margin-top:8px">로그아웃</button>
 </div>
 </div>
 
@@ -1418,7 +1417,7 @@ input[type="checkbox"]{
 
 
 <script>
-console.info("team-calendar build: calendar_v9");
+console.info("team-calendar build: calendar_v10");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
