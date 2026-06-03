@@ -1391,7 +1391,7 @@ input[type="checkbox"]{
   </div>
 </div>
 
-<div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card manager-only" id="setup-member-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list"></div></div><div class="card manager-only" id="setup-project-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
+<div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card manager-only" id="setup-member-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list"></div></div><div class="card manager-only" id="setup-invite-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사용자 초대 관리 <span id="invite-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddInvite()">+ 초대 등록</button></div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">이메일과 팀원을 연결해두면, 사용자가 첫 Google 로그인 시 자동으로 계정이 생성됩니다.</div><div id="invite-manage-list"></div></div><div class="card manager-only" id="setup-project-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
 </div>
 </div>
 
@@ -1438,7 +1438,7 @@ let currentUserProfile = null;
 const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
-let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
+let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [], userInvites = [];
 let holidays = [];
 const holidayYearsLoaded = new Set();
 const holidayYearsLoading = new Set();
@@ -2225,7 +2225,8 @@ function getSyncErrorGuide(collectionName){
     'comments-private': '내 비공개 댓글 정보를 불러오지 못했습니다. 비공개 일정·메모 관련 댓글이 누락될 수 있습니다.',
     'activityLogs-team': '팀 활동 로그를 불러오지 못했습니다. 상세 화면의 변경 이력이 일부 보이지 않을 수 있습니다.',
     'activityLogs-private': '내 비공개 활동 로그를 불러오지 못했습니다. 비공개 항목의 변경 이력이 일부 보이지 않을 수 있습니다.',
-    'notifications': '알림 정보를 불러오지 못했습니다. 상단 알림 숫자와 알림 목록이 정확하지 않을 수 있습니다.'
+    'notifications': '알림 정보를 불러오지 못했습니다. 상단 알림 숫자와 알림 목록이 정확하지 않을 수 있습니다.',
+    'userInvites': '사용자 초대 정보를 불러오지 못했습니다. 설정 화면의 초대 사용자 목록이 비어 보일 수 있습니다.'
   };
   return guides[collectionName] || '일부 정보를 불러오지 못했습니다. 화면에 표시되는 데이터가 최신 상태가 아닐 수 있습니다.';
 }
@@ -2355,6 +2356,17 @@ function startRealtimeListeners() {
       },
       err => handleSnapshotError('notifications', err)
     );
+
+  if(canManageAll()){
+    db.collection("userInvites")
+      .onSnapshot(
+        snap => {
+          userInvites = snap.docs.map(d => ({id: d.id, ...d.data()}));
+          renderInviteManageList();
+        },
+        err => handleSnapshotError('userInvites', err)
+      );
+  }
 }
 
 function applyPermissionUI(){
@@ -2374,7 +2386,7 @@ function applyPermissionUI(){
     document.querySelectorAll(sel).forEach(el=>{ el.style.display = writer ? '' : 'none'; });
   });
 }
-function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderProjectManageList(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderInviteManageList(); renderProjectManageList(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -5125,7 +5137,7 @@ function goPage(p){
   if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
-  if(p==='setup') { renderMemberManageList(); renderProjectManageList(); applyTheme(currentTheme); } 
+  if(p==='setup') { renderMemberManageList(); renderInviteManageList(); renderProjectManageList(); applyTheme(currentTheme); } 
 }
 
 const PALETTE=[{color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},{color:'#D85A30',bg:'#FAECE7'},{color:'#EF9F27',bg:'#FAEEDA'},{color:'#533AB7',bg:'#EEEDFE'},{color:'#993556',bg:'#FBEAF0'},{color:'#3B6D11',bg:'#EAF3DE'},{color:'#185FA5',bg:'#B5D4F4'},{color:'#E91E63',bg:'#FCE4EC'},{color:'#9C27B0',bg:'#F3E5F5'},{color:'#673AB7',bg:'#EDE7F6'},{color:'#3F51B5',bg:'#E8EAF6'},{color:'#03A9F4',bg:'#E1F5FE'},{color:'#00BCD4',bg:'#E0F7FA'},{color:'#009688',bg:'#E0F2F1'},{color:'#4CAF50',bg:'#E8F5E9'},{color:'#8BC34A',bg:'#F1F8E9'},{color:'#CDDC39',bg:'#F9FBE7'},{color:'#FFC107',bg:'#FFFDE7'},{color:'#FF9800',bg:'#FFF3E0'},{color:'#FF5722',bg:'#FBE9E7'},{color:'#795548',bg:'#EFEBE9'},{color:'#9E9E9E',bg:'#FAFAFA'},{color:'#607D8B',bg:'#ECEFF1'}];
@@ -5151,6 +5163,199 @@ function renderMemberManageList(){
   }); 
 
   document.getElementById('member-manage-list').innerHTML=h || '<div class="empty">팀원이 없습니다</div>'; 
+}
+
+
+function inviteRoleOptions(selected){
+  const roles = [
+    ['admin','Admin'],
+    ['team_leader','Team Leader'],
+    ['member','Member'],
+    ['viewer','Viewer']
+  ];
+  const cur = ['admin','team_leader','member','viewer'].includes(selected) ? selected : 'member';
+  return roles.map(([value,label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
+}
+
+function inviteMemberOptions(selected){
+  if(!members.length) return '<option value="">등록된 팀원이 없습니다</option>';
+  return members.map(m => `<option value="${escapeAttr(m.id)}" ${m.id===selected?'selected':''}>${escapeHtml(m.name || '')}${m.role ? ' · ' + escapeHtml(m.role) : ''}</option>`).join('');
+}
+
+function inviteStatusMeta(invite){
+  if(invite?.active === false || invite?.status === 'disabled') return { label:'비활성', cls:'danger' };
+  if(invite?.linkedUid || invite?.status === 'linked') return { label:'연결됨', cls:'ok' };
+  return { label:'대기', cls:'warn' };
+}
+
+function renderInviteManageList(){
+  const countEl = document.getElementById('invite-count');
+  const listEl = document.getElementById('invite-manage-list');
+  if(!countEl || !listEl) return;
+
+  if(!canManageAll()){
+    countEl.textContent = '';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  const sorted = [...userInvites].sort((a,b)=>String(a.email||a.id||'').localeCompare(String(b.email||b.id||'')));
+  countEl.textContent = `(${sorted.length})`;
+
+  if(!sorted.length){
+    listEl.innerHTML = '<div class="empty" style="padding:12px">등록된 초대 사용자가 없습니다</div>';
+    return;
+  }
+
+  listEl.innerHTML = sorted.map(invite => {
+    const member = mb(invite.memberId || '');
+    const status = inviteStatusMeta(invite);
+    const email = normalizeLoginEmail(invite.email || decodeURIComponent(invite.id || ''));
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+          <strong style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${escapeHtml(email || '-')}</strong>
+          <span class="status-chip ${status.cls}">${escapeHtml(status.label)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.45">
+          팀원: ${escapeHtml(member?.name || invite.memberId || '-')} · 권한: ${escapeHtml(roleLabel(invite.role || 'member'))}${invite.linkedAt ? ' · 연결일: ' + fmtDateTimeShort(invite.linkedAt) : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="openEditInvite('${escapeAttr(invite.id)}')">수정</button>
+        <button class="btn-danger-sm" onclick="deleteInvite('${escapeAttr(invite.id)}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getInviteFormHTML(isEdit){
+  return `<input type="hidden" id="invite-original-id">
+    <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"></div></div>
+    <div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div>
+    <div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div><div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div></div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">초대 등록 후 사용자가 같은 Google 이메일로 로그인하면 users/{uid} 계정이 자동 생성됩니다.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>`;
+}
+
+function openAddInvite(){
+  if(!requireManager()) return;
+  document.getElementById('modal-body').innerHTML = getInviteFormHTML(false);
+  openModal('사용자 초대 등록');
+}
+
+function openEditInvite(id){
+  if(!requireManager()) return;
+  const invite = userInvites.find(x => x.id === id);
+  if(!invite) return;
+
+  document.getElementById('modal-body').innerHTML = getInviteFormHTML(true);
+  openModal('사용자 초대 수정');
+
+  const email = normalizeLoginEmail(invite.email || decodeURIComponent(invite.id || ''));
+  document.getElementById('invite-original-id').value = invite.id || '';
+  document.getElementById('invite-email').value = email;
+  document.getElementById('invite-member').innerHTML = inviteMemberOptions(invite.memberId || '');
+  document.getElementById('invite-member').value = invite.memberId || '';
+  document.getElementById('invite-role').value = ['admin','team_leader','member','viewer'].includes(invite.role) ? invite.role : 'member';
+  document.getElementById('invite-active').value = invite.active === false ? 'false' : 'true';
+}
+
+async function submitInvite(){
+  if(!requireManager()) return;
+
+  const originalId = document.getElementById('invite-original-id')?.value || '';
+  const email = normalizeLoginEmail(document.getElementById('invite-email')?.value || '');
+  const memberId = document.getElementById('invite-member')?.value || '';
+  const role = document.getElementById('invite-role')?.value || 'member';
+  const active = document.getElementById('invite-active')?.value !== 'false';
+
+  if(!email || !email.includes('@')){
+    showToast('유효한 이메일을 입력해주세요');
+    return;
+  }
+  if(!memberId){
+    showToast('연결할 팀원을 선택해주세요');
+    return;
+  }
+  if(!['admin','team_leader','member','viewer'].includes(role)){
+    showToast('유효한 권한을 선택해주세요');
+    return;
+  }
+
+  const inviteId = inviteDocIdFromEmail(email);
+  const existing = originalId ? userInvites.find(x => x.id === originalId) : userInvites.find(x => x.id === inviteId);
+  const member = mb(memberId);
+  const now = new Date().toISOString();
+  const payload = {
+    email,
+    memberId,
+    role,
+    active,
+    name:member?.name || existing?.name || '',
+    status: active ? (existing?.linkedUid ? 'linked' : (existing?.status === 'linked' ? 'linked' : 'pending')) : 'disabled',
+    invitedBy: existing?.invitedBy || selfId,
+    invitedAt: existing?.invitedAt || now,
+    updatedBy:selfId,
+    updatedAt:now
+  };
+
+  if(existing?.linkedUid){
+    payload.linkedUid = existing.linkedUid;
+    payload.linkedAt = existing.linkedAt || '';
+  }
+
+  try{
+    const batch = db.batch();
+    const inviteRef = db.collection('userInvites').doc(inviteId);
+    batch.set(inviteRef, payload, { merge:true });
+
+    if(originalId && originalId !== inviteId){
+      batch.delete(db.collection('userInvites').doc(originalId));
+    }
+
+    const linkedUid = existing?.linkedUid || '';
+    if(linkedUid){
+      batch.set(db.collection('users').doc(linkedUid), {
+        email,
+        memberId,
+        role,
+        active,
+        name:payload.name,
+        inviteKey:inviteId,
+        updatedAt:now,
+        updatedBy:selfId
+      }, { merge:true });
+    }
+
+    await batch.commit();
+    showToast(originalId ? '초대 정보를 수정했습니다' : '초대 사용자를 등록했습니다');
+    closeModal();
+    renderInviteManageList();
+  }catch(e){
+    showToast('초대 저장 실패: ' + (e.message || e));
+  }
+}
+
+async function deleteInvite(id){
+  if(!requireManager()) return;
+  const invite = userInvites.find(x => x.id === id);
+  if(!invite) return;
+
+  const msg = invite.linkedUid
+    ? '이 초대는 이미 사용자 계정과 연결되어 있습니다. 초대 기록만 삭제되고 기존 로그인 계정은 유지됩니다. 계속할까요?'
+    : '이 초대 사용자를 삭제할까요?';
+  if(!confirm(msg)) return;
+
+  try{
+    await db.collection('userInvites').doc(id).delete();
+    showToast('초대 정보를 삭제했습니다');
+  }catch(e){
+    showToast('초대 삭제 실패: ' + (e.message || e));
+  }
 }
 
 function renderProjectManageList(){ 
