@@ -1778,6 +1778,89 @@ function logout(){
   auth.signOut();
 }
 
+
+function normalizeLoginEmail(email){
+  return String(email || '').trim().toLowerCase();
+}
+
+function inviteDocIdFromEmail(email){
+  return encodeURIComponent(normalizeLoginEmail(email));
+}
+
+function unregisteredUserMessage(user){
+  const email = normalizeLoginEmail(user?.email || '');
+  return `이 계정은 아직 팀 캘린더에 등록되어 있지 않습니다.<br>` +
+    `관리자에게 아래 이메일로 초대 등록을 요청하세요.<br><br>` +
+    `<strong>로그인한 이메일</strong>: ${escapeHtml(email || '-')}<br>` +
+    `<span style="font-size:11px;color:var(--text3);line-height:1.5;display:block;margin-top:8px">관리자가 이 이메일을 초대 목록에 등록하면, 다음 로그인 시 계정이 자동 연결됩니다.</span>`;
+}
+
+function incompleteInviteMessage(user, reason){
+  const email = normalizeLoginEmail(user?.email || '');
+  return `초대 정보가 있지만 사용자 연결에 필요한 값이 부족합니다.<br>` +
+    `관리자에게 초대 정보를 확인해 달라고 요청하세요.<br><br>` +
+    `<strong>로그인한 이메일</strong>: ${escapeHtml(email || '-')}<br>` +
+    `<span style="font-size:11px;color:var(--text3);line-height:1.5;display:block;margin-top:8px">확인 항목: 이메일, memberId, role, active 상태${reason ? '<br>사유: ' + escapeHtml(reason) : ''}</span>`;
+}
+
+async function buildUserProfileFromInvite(user){
+  const email = normalizeLoginEmail(user?.email || '');
+  if(!email){
+    return { status:'no_email' };
+  }
+
+  const inviteKey = inviteDocIdFromEmail(email);
+  const inviteRef = db.collection('userInvites').doc(inviteKey);
+  const inviteDoc = await inviteRef.get();
+
+  if(!inviteDoc.exists){
+    return { status:'not_invited', email, inviteKey };
+  }
+
+  const invite = inviteDoc.data() || {};
+  const inviteEmail = normalizeLoginEmail(invite.email || email);
+
+  if(inviteEmail !== email){
+    return { status:'email_mismatch', email, inviteKey };
+  }
+
+  if(invite.active === false || invite.status === 'disabled'){
+    return { status:'inactive', email, inviteKey };
+  }
+
+  if(!invite.memberId){
+    return { status:'incomplete', email, inviteKey, reason:'memberId 없음' };
+  }
+
+  const role = ['admin','team_leader','member','viewer'].includes(invite.role) ? invite.role : 'member';
+  const now = new Date().toISOString();
+
+  const profile = {
+    email,
+    memberId:String(invite.memberId),
+    role,
+    active:true,
+    name: invite.name || user.displayName || '',
+    inviteKey,
+    invitedBy: invite.invitedBy || '',
+    uid:user.uid,
+    linkedAt:now,
+    updatedAt:now
+  };
+
+  await db.collection('users').doc(user.uid).set(profile, { merge:true });
+
+  // 초대 문서의 연결 상태 업데이트는 권한 규칙에 따라 실패할 수 있으므로, 사용자 연결 자체는 유지합니다.
+  inviteRef.set({
+    linkedUid:user.uid,
+    linkedAt:now,
+    status:'linked'
+  }, { merge:true }).catch(e => console.warn('invite status update skipped:', e));
+
+  return { status:'linked', profile };
+}
+
+
 async function initAuth(){
   bindLoginButton();
 
@@ -1801,24 +1884,39 @@ async function initAuth(){
 
     try{
       const doc = await db.collection('users').doc(user.uid).get();
+      let profile = null;
 
-      if(!doc.exists){
-        showLoginScreen(
-          `등록되지 않은 사용자입니다.<br>관리자에게 아래 UID 등록을 요청하세요.<br><br>` +
-          `<strong>Email</strong>: ${escapeHtml(user.email || '')}<br>` +
-          `<strong>UID</strong>: ${escapeHtml(user.uid)}`
-        );
-        return;
+      if(doc.exists){
+        profile = doc.data();
+      } else {
+        const linked = await buildUserProfileFromInvite(user);
+
+        if(linked.status === 'linked'){
+          profile = linked.profile;
+        } else if(linked.status === 'inactive'){
+          showLoginScreen('비활성화된 초대 계정입니다. 관리자에게 계정 활성화를 요청하세요.');
+          return;
+        } else if(linked.status === 'incomplete'){
+          showLoginScreen(incompleteInviteMessage(user, linked.reason));
+          return;
+        } else if(linked.status === 'email_mismatch'){
+          showLoginScreen(incompleteInviteMessage(user, '초대 문서의 이메일과 로그인 이메일이 일치하지 않음'));
+          return;
+        } else if(linked.status === 'no_email'){
+          showLoginScreen('Google 계정 이메일을 확인할 수 없습니다. 이메일이 있는 Google 계정으로 로그인하세요.');
+          return;
+        } else {
+          showLoginScreen(unregisteredUserMessage(user));
+          return;
+        }
       }
-
-      const profile = doc.data();
 
       if(profile.active === false){
-        showLoginScreen('비활성화된 계정입니다. 관리자에게 문의하세요.');
+        showLoginScreen('비활성화된 계정입니다. 관리자에게 계정 활성화를 요청하세요.');
         return;
       }
 
-      currentUserProfile = { uid:user.uid, email:user.email, ...profile };
+      currentUserProfile = { uid:user.uid, email:normalizeLoginEmail(user.email), ...profile };
       selfId = currentUserProfile.memberId || '';
       ls('selfId', selfId);
 
@@ -1826,7 +1924,12 @@ async function initAuth(){
       startRealtimeListeners();
 
     }catch(e){
-      showLoginScreen('사용자 정보를 불러오지 못했습니다: ' + escapeHtml(e.message));
+      console.error('auth profile error:', e);
+      showLoginScreen(
+        `사용자 등록 정보를 확인하지 못했습니다.<br>` +
+        `관리자에게 초대 정보와 권한 설정을 확인해 달라고 요청하세요.<br><br>` +
+        `<span style="font-size:11px;color:var(--text3);line-height:1.5;display:block">세부 오류: ${escapeHtml(e.message || String(e))}</span>`
+      );
     }
   });
 }
@@ -2108,9 +2211,27 @@ function checkInitLoad() {
   loadedCols++; 
   if(loadedCols === INITIAL_LISTENER_COUNT) { hideStatus(); refreshAll(); } 
 }
+function getSyncErrorGuide(collectionName){
+  const guides = {
+    'events-public': '팀 공유 일정 정보를 불러오지 못했습니다. 캘린더와 오늘 탭의 공유 일정이 일부 누락될 수 있습니다.',
+    'events-private': '내 비공개 일정 정보를 불러오지 못했습니다. 내 업무와 개인 일정 화면의 비공개 일정이 누락될 수 있습니다.',
+    'members': '팀원 정보를 불러오지 못했습니다. 담당자 이름, 멤버 필터, 권한 표시가 정확하지 않을 수 있습니다.',
+    'projects': '사업 정보를 불러오지 못했습니다. 사업 관리 화면과 사업 필터가 비어 보일 수 있습니다.',
+    'proposals': '제안 정보를 불러오지 못했습니다. 제안 관리와 이번 주 마감 정보가 누락될 수 있습니다.',
+    'tasks': '업무 정보를 불러오지 못했습니다. 오늘 탭, 내 업무, 사업 관리의 업무 항목이 누락될 수 있습니다.',
+    'assigns': '참여인력 정보를 불러오지 못했습니다. 사업별 담당자와 내 맡은 사업 정보가 정확하지 않을 수 있습니다.',
+    'todos': '개인 메모 정보를 불러오지 못했습니다. 업무 매트릭스 하단의 개인 메모가 누락될 수 있습니다.',
+    'comments-team': '팀 공유 댓글 정보를 불러오지 못했습니다. 일부 댓글이 상세 화면에 보이지 않을 수 있습니다.',
+    'comments-private': '내 비공개 댓글 정보를 불러오지 못했습니다. 비공개 일정·메모 관련 댓글이 누락될 수 있습니다.',
+    'activityLogs-team': '팀 활동 로그를 불러오지 못했습니다. 상세 화면의 변경 이력이 일부 보이지 않을 수 있습니다.',
+    'activityLogs-private': '내 비공개 활동 로그를 불러오지 못했습니다. 비공개 항목의 변경 이력이 일부 보이지 않을 수 있습니다.',
+    'notifications': '알림 정보를 불러오지 못했습니다. 상단 알림 숫자와 알림 목록이 정확하지 않을 수 있습니다.'
+  };
+  return guides[collectionName] || '일부 정보를 불러오지 못했습니다. 화면에 표시되는 데이터가 최신 상태가 아닐 수 있습니다.';
+}
 function handleSnapshotError(collectionName, error){
   console.error(collectionName + ' listener error:', error);
-  showStatus(collectionName + ' 동기화 오류: ' + (error.message || error), 'error');
+  showStatus(getSyncErrorGuide(collectionName), 'error');
 }
 function mergeEventsAndRefresh(){
   const map = new Map();
@@ -3598,7 +3719,7 @@ async function loadKoreanHolidays(year){
   }catch(e){
     holidayYearsLoading.delete(year);
     console.error('holiday load error:', e);
-    showStatus('공휴일 동기화 오류: ' + (e.message || e), 'error');
+    showStatus('공휴일 정보를 불러오지 못했습니다. 일정/업무 데이터는 정상 표시됩니다.', 'error');
   }
 }
 
