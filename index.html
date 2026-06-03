@@ -1277,7 +1277,14 @@ input[type="checkbox"]{
   <button class="filter-toggle" onclick="toggleFilterSection('projects')"><span>사업 필터</span><span id="filter-projects-icon">▸</span></button>
   <div id="filter-projects-body" class="filter-body collapsed"><div id="sb-projects"></div></div>
 </div>
-<div style="margin-top:auto; border-top:.5px solid var(--border); padding-top:12px;"><div class="sb-label" style="margin-bottom:5px">내 계정</div><div style="display:flex;align-items:center;gap:7px;padding:5px 6px;cursor:pointer;border-radius:var(--r-sm)" onclick="openChangeSelf()"><div class="av" id="self-av"></div><span style="font-size:13px" id="self-name">—</span><span style="font-size:11px;color:var(--text3);margin-left:auto">변경</span></div></div>
+<div style="margin-top:auto; border-top:.5px solid var(--border); padding-top:12px;">
+  <div class="sb-label" style="margin-bottom:5px">내 계정</div>
+  <div style="display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:var(--r-sm)">
+    <div class="av" id="self-av"></div>
+    <span style="font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="self-name">—</span>
+  </div>
+  <button class="btn btn-secondary btn-sm" type="button" onclick="logout()" style="width:100%;margin-top:8px">로그아웃</button>
+</div>
 </div>
 
 <div class="main">
@@ -1411,6 +1418,7 @@ input[type="checkbox"]{
 
 
 <script>
+console.info("team-calendar build: calendar_v9");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
@@ -2152,9 +2160,16 @@ async function notifyManagerEditOwners(action, id, existingBefore, savedData){
 
 async function logActivity(action, targetType, targetId, title, visibilitySource){
   if(action.includes('Activity')) return;
+
+  const visibility = getTargetVisibility(targetType, targetId, visibilitySource || null);
+
+  // 비공개 개인 일정·개인 메모는 활동 로그를 남기지 않습니다.
+  // 공유 일정·업무·제안처럼 팀 관리가 필요한 항목만 변경 이력을 기록합니다.
+  if(visibility.visibility !== 'team') return;
+
   const who = selfId || 'unknown';
   const id = 'act_' + Date.now() + '_' + Math.random().toString(16).slice(2);
-  const visibility = getTargetVisibility(targetType, targetId, visibilitySource || null);
+
   await db.collection('activityLogs').doc(id).set({
     action,
     targetType,
@@ -2206,7 +2221,7 @@ async function apiSave(payload, onSuccess){
 }
 
 let loadedCols = 0; 
-const INITIAL_LISTENER_COUNT = 13;
+const INITIAL_LISTENER_COUNT = 12;
 function checkInitLoad() { 
   loadedCols++; 
   if(loadedCols === INITIAL_LISTENER_COUNT) { hideStatus(); refreshAll(); } 
@@ -2224,7 +2239,6 @@ function getSyncErrorGuide(collectionName){
     'comments-team': '팀 공유 댓글 정보를 불러오지 못했습니다. 일부 댓글이 상세 화면에 보이지 않을 수 있습니다.',
     'comments-private': '내 비공개 댓글 정보를 불러오지 못했습니다. 비공개 일정·메모 관련 댓글이 누락될 수 있습니다.',
     'activityLogs-team': '팀 활동 로그를 불러오지 못했습니다. 상세 화면의 변경 이력이 일부 보이지 않을 수 있습니다.',
-    'activityLogs-private': '내 비공개 활동 로그를 불러오지 못했습니다. 비공개 항목의 변경 이력이 일부 보이지 않을 수 있습니다.',
     'notifications': '알림 정보를 불러오지 못했습니다. 상단 알림 숫자와 알림 목록이 정확하지 않을 수 있습니다.',
     'userInvites': '사용자 초대 정보를 불러오지 못했습니다. 설정 화면의 초대 사용자 목록이 비어 보일 수 있습니다.'
   };
@@ -2258,7 +2272,7 @@ function mergeCommentsAndRefresh(){
 
 function mergeActivityLogsAndRefresh(){
   const map = new Map();
-  [...publicActivityLogs, ...myScopedActivityLogs].forEach(l => {
+  publicActivityLogs.forEach(l => {
     if(l && l.id) map.set(l.id, l);
   });
   activityLogs = Array.from(map.values());
@@ -2338,15 +2352,6 @@ function startRealtimeListeners() {
       err => handleSnapshotError('activityLogs-team', err)
     );
 
-  db.collection("activityLogs")
-    .where("visibleToKey", "==", selfId)
-    .onSnapshot(
-      snap => {
-        myScopedActivityLogs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        mergeActivityLogsAndRefresh();
-      },
-      err => handleSnapshotError('activityLogs-private', err)
-    );
   db.collection("notifications")
     .where("targetUser", "==", selfId)
     .onSnapshot(
