@@ -1264,6 +1264,37 @@ input[type="checkbox"]{
   }
 }
 
+
+/* UX: prevent non-editable text from showing a blinking caret on click */
+body,
+.layout,
+.modal,
+.detail-panel,
+.login-screen {
+  caret-color: transparent;
+}
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  caret-color: auto;
+  user-select: text;
+}
+button,
+.sb-btn,
+.chip,
+.li,
+.action-item,
+.quick-card,
+.todo-item,
+.proj-card,
+.member-card,
+.search-result,
+.cal-week-day,
+.cal-span-bar {
+  user-select: none;
+}
+
 </style>
 </head>
 <body>
@@ -1415,7 +1446,7 @@ input[type="checkbox"]{
   </div>
 </div>
 
-<div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card manager-only" id="setup-member-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list" class="settings-scroll-list"></div></div><div class="card manager-only" id="setup-invite-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사용자 초대 관리 <span id="invite-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddInvite()">+ 초대 등록</button></div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">이메일과 팀원을 연결해두면, 사용자가 첫 Google 로그인 시 자동으로 계정이 생성됩니다.</div><div id="invite-manage-list"></div></div><div class="card manager-only" id="setup-project-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list" class="settings-scroll-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
+<div id="page-setup" class="page"><div class="page-header"><span class="page-title">설정</span></div><div class="card" style="max-width:580px;margin-bottom:14px"><div class="card-title">화면 테마</div><div style="display:flex;gap:10px;"><button class="btn btn-primary" id="btn-theme-sys" onclick="setTheme('sys')" style="flex:1">시스템 설정</button><button class="btn btn-secondary" id="btn-theme-light" onclick="setTheme('light')" style="flex:1">라이트 모드</button><button class="btn btn-secondary" id="btn-theme-dark" onclick="setTheme('dark')" style="flex:1">다크 모드</button></div></div><div class="card manager-only" id="setup-member-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">팀원 관리 <span id="mb-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddMember()">+ 추가</button></div><div id="member-manage-list" class="settings-scroll-list"></div></div><div class="card manager-only" id="setup-invite-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사용자 초대 관리 <span id="invite-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddInvite()">+ 초대 등록</button></div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">관리자/팀장이 이메일과 팀원을 연결해두면, 사용자가 첫 Google 로그인 시 자동으로 계정이 생성됩니다.</div><div id="invite-manage-list" class="settings-scroll-list"></div></div><div class="card manager-only" id="setup-project-card" style="max-width:580px;margin-bottom:14px;display:none"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button></div><div id="project-manage-list" class="settings-scroll-list"></div></div><div class="card" style="max-width:580px; display:none;"><div class="card-title">Google Sheets 연동</div><div class="setup-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Apps Script 설정</div></div></div><div class="setup-step" style="margin-bottom:0"><div class="step-n">2</div><div class="step-body"><div class="step-title">API URL 입력</div></div></div></div></div>
 </div>
 </div>
 
@@ -1435,7 +1466,7 @@ input[type="checkbox"]{
 
 
 <script>
-console.info("team-calendar build: calendar_v12");
+console.info("team-calendar build: calendar_v13");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
@@ -1483,8 +1514,27 @@ let hidePast = true;
 const mb = id => members.find(m=>m.id===id); 
 const pj = id => projects.find(p=>p.id===id); 
 const getSelfMember = () => mb(selfId)||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
+function normalizeRoleValue(role){
+  const raw = String(role || '').trim();
+  const key = raw.toLowerCase().replace(/[\s-]+/g, '_');
+  const map = {
+    admin:'admin',
+    administrator:'admin',
+    team_leader:'team_leader',
+    teamleader:'team_leader',
+    leader:'team_leader',
+    manager:'team_leader',
+    member:'member',
+    user:'member',
+    viewer:'viewer',
+    view:'viewer',
+    read_only:'viewer',
+    readonly:'viewer'
+  };
+  return map[key] || 'viewer';
+}
 function userRole(){
-  return currentUserProfile?.role || 'viewer';
+  return normalizeRoleValue(currentUserProfile?.role || 'viewer');
 }
 function isAdminUser(){
   return userRole() === 'admin';
@@ -1502,7 +1552,8 @@ function isViewerUser(){
   return ['admin','team_leader','member','viewer'].includes(userRole());
 }
 function roleLabel(role){
-  return ({admin:'Admin',team_leader:'Team Leader',member:'Member',viewer:'Viewer'})[role] || role || 'Viewer';
+  const normalized = normalizeRoleValue(role);
+  return ({admin:'Admin',team_leader:'Team Leader',member:'Member',viewer:'Viewer'})[normalized] || 'Viewer';
 }
 function canManageAll(){
   return isManagerUser();
@@ -5189,13 +5240,16 @@ function renderMemberManageList(){
 
 
 function inviteRoleOptions(selected){
-  const roles = [
+  const allRoles = [
     ['admin','Admin'],
     ['team_leader','Team Leader'],
     ['member','Member'],
     ['viewer','Viewer']
   ];
-  const cur = ['admin','team_leader','member','viewer'].includes(selected) ? selected : 'member';
+  // Team Leader도 초대 관리는 가능하지만, Admin 권한 부여는 Admin에게만 노출합니다.
+  const roles = isAdminUser() ? allRoles : allRoles.filter(([value]) => value !== 'admin');
+  const normalizedSelected = normalizeRoleValue(selected);
+  const cur = roles.some(([value]) => value === normalizedSelected) ? normalizedSelected : 'member';
   return roles.map(([value,label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
 }
 
@@ -5282,7 +5336,7 @@ function openEditInvite(id){
   document.getElementById('invite-email').value = email;
   document.getElementById('invite-member').innerHTML = inviteMemberOptions(invite.memberId || '');
   document.getElementById('invite-member').value = invite.memberId || '';
-  document.getElementById('invite-role').value = ['admin','team_leader','member','viewer'].includes(invite.role) ? invite.role : 'member';
+  document.getElementById('invite-role').value = normalizeRoleValue(invite.role || 'member');
   document.getElementById('invite-active').value = invite.active === false ? 'false' : 'true';
 }
 
@@ -5292,7 +5346,7 @@ async function submitInvite(){
   const originalId = document.getElementById('invite-original-id')?.value || '';
   const email = normalizeLoginEmail(document.getElementById('invite-email')?.value || '');
   const memberId = document.getElementById('invite-member')?.value || '';
-  const role = document.getElementById('invite-role')?.value || 'member';
+  const role = normalizeRoleValue(document.getElementById('invite-role')?.value || 'member');
   const active = document.getElementById('invite-active')?.value !== 'false';
 
   if(!email || !email.includes('@')){
@@ -5305,6 +5359,10 @@ async function submitInvite(){
   }
   if(!['admin','team_leader','member','viewer'].includes(role)){
     showToast('유효한 권한을 선택해주세요');
+    return;
+  }
+  if(role === 'admin' && !isAdminUser()){
+    showToast('Admin 권한 부여는 Admin만 가능합니다.');
     return;
   }
 
@@ -5660,6 +5718,25 @@ function showStatus(m,t){ const el=document.getElementById('status-bar'); el.sty
 function hideStatus(){ document.getElementById('status-bar').style.display='none'; }
 function escapeHtml(str){ return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 function escapeAttr(str){ return escapeHtml(str).replace(/`/g, '&#96;'); }
+
+
+function isEditableTarget(el){
+  return !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
+}
+function clearNonEditableCaret(){
+  const active = document.activeElement;
+  if(isEditableTarget(active)) return;
+  const sel = window.getSelection ? window.getSelection() : null;
+  if(sel && sel.rangeCount && sel.isCollapsed){
+    sel.removeAllRanges();
+  }
+}
+document.addEventListener('mouseup', function(e){
+  if(!isEditableTarget(e.target)) setTimeout(clearNonEditableCaret, 0);
+});
+document.addEventListener('selectionchange', function(){
+  setTimeout(clearNonEditableCaret, 0);
+});
 
 document.getElementById('modal').onclick=function(e){ /* 팝업 외부 클릭 시 닫히지 않게 유지 */ };
 const _mt = document.getElementById('month-title'); if(_mt) _mt.textContent=`${curY}년 ${curM+1}월`;
