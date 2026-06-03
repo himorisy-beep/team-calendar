@@ -724,35 +724,28 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 }
 
 
-/* Proposal card layout on narrow desktop/tablet/mobile */
-@media(max-width:1200px){
+/* Proposal card layout on tablet/mobile */
+@media(max-width:760px){
   #proposal-list{overflow-x:visible}
-  .proposal-db-head{display:none!important}
+  .proposal-db-head{display:none}
   .proposal-db-row{
-    display:block!important;
-    min-width:0!important;
-    padding:12px!important;
-    border-radius:var(--r)!important;
+    display:block;
+    min-width:0;
+    padding:12px;
+    border-radius:var(--r);
   }
   .proposal-db-row>div{
-    white-space:normal!important;
-    overflow:visible!important;
-    text-overflow:clip!important;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
     margin-bottom:6px;
   }
-  .proposal-db-row>div:first-child{
-    margin-bottom:8px;
-  }
-  .proposal-db-title{
-    white-space:normal!important;
-    overflow:visible!important;
-    text-overflow:clip!important;
-    line-height:1.45;
-  }
+  .proposal-db-row>div:first-child{margin-bottom:8px}
+  .proposal-db-title,
   .proposal-db-meta{
-    white-space:normal!important;
-    overflow:visible!important;
-    text-overflow:clip!important;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
     line-height:1.45;
   }
   .proposal-db-row>div:nth-child(3),
@@ -761,100 +754,216 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
     color:var(--text2);
   }
   .proposal-db-actions{
-    justify-content:flex-end!important;
+    justify-content:flex-end;
     margin-top:10px;
     margin-bottom:0;
   }
 }
 
 
-
-/* Mobile header/action layout fix */
+/* Mobile layout normalization */
+input[type="checkbox"]{
+  width:auto;
+  min-width:16px;
+  height:16px;
+  padding:0;
+  margin:0;
+  flex:0 0 auto;
+  vertical-align:middle;
+}
+.header-check{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  max-width:100%;
+  margin:0;
+  padding:3px 0;
+  color:var(--text2);
+  font-size:12px;
+  line-height:1.35;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.header-check-input{
+  appearance:auto;
+  -webkit-appearance:checkbox;
+  width:16px;
+  min-width:16px;
+  height:16px;
+  flex:0 0 16px;
+  display:inline-block;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+.header-check span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.active-filter-bar{
+  display:none;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  padding:9px 12px;
+  margin-bottom:14px;
+  border:.5px solid var(--border);
+  border-radius:var(--r-sm);
+  background:var(--bg);
+  font-size:12px;
+  color:var(--text2);
+}
+.active-filter-bar.show{display:flex}
+.active-filter-label{font-weight:800;color:var(--text)}
+.active-filter-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:var(--bg2);
+  border:.5px solid var(--border);
+  color:var(--text2);
+  max-width:100%;
+}
+.active-filter-reset{
+  margin-left:auto;
+  border:none;
+  background:none;
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+}
+.today-kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+.today-section-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:14px;
+}
+.today-priority-card{margin-bottom:0}
+.today-section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:12px;
+}
+.today-section-title{
+  font-size:12px;
+  font-weight:800;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.today-section-count{
+  min-width:24px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:var(--bg2);
+  color:var(--text2);
+  font-size:11px;
+  font-weight:800;
+  text-align:center;
+}
+.task-status-action-bar{
+  padding:12px;
+  margin-bottom:14px;
+  border:.5px solid var(--border);
+  border-radius:var(--r-sm);
+  background:var(--bg2);
+}
+.task-status-action-title{
+  font-size:11px;
+  font-weight:800;
+  color:var(--text3);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-bottom:8px;
+}
+@media(max-width:900px){
+  .today-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .today-section-grid{grid-template-columns:1fr}
+}
 @media(max-width:680px){
-  .mobile-header{
-    padding:12px 16px;
-  }
-
+  .mobile-header{padding:12px 16px}
+  .main{padding:0;margin-left:0;width:100%}
+  .page{padding:14px 14px 18px}
   .global-actions{
-    padding:12px 16px 0;
-    margin-bottom:10px;
-    justify-content:flex-start!important;
-    flex-wrap:wrap;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
     gap:6px;
+    padding:12px 14px 0;
+    margin-bottom:10px;
+    justify-content:stretch;
   }
   .global-actions .btn{
-    flex:1 1 calc(33.333% - 6px);
+    width:100%;
     min-width:0;
     padding:7px 8px;
     font-size:12px;
     text-align:center;
   }
-
-  .page{
-    padding:14px 14px 18px;
+  .active-filter-bar{
+    margin:0 14px 12px;
+    align-items:flex-start;
   }
-
+  .active-filter-reset{
+    width:100%;
+    margin-left:0;
+    text-align:left;
+  }
   .page-header{
     flex-direction:column;
-    align-items:flex-start;
-    gap:8px;
+    align-items:stretch;
+    gap:10px;
     margin-bottom:14px;
   }
   .page-title{
     font-size:17px;
     line-height:1.35;
   }
-  .page-header > span[style*="font-size:12px"]{
-    display:block;
-    font-size:11px!important;
-    line-height:1.45;
-    white-space:normal!important;
-  }
-
   .page-header > div[style*="margin-left:auto"]{
-    margin-left:0!important;
+    margin-left:0;
     width:100%;
-    display:flex!important;
-    flex-wrap:wrap!important;
-    justify-content:flex-start!important;
-    align-items:center!important;
-    gap:6px!important;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    align-items:stretch;
   }
-  .page-header label{
+  .page-header .chip,
+  .page-header .btn{
     width:100%;
-    margin-right:0!important;
-    padding:3px 0 2px;
-    justify-content:flex-start!important;
-    line-height:1.4;
+    text-align:center;
+    justify-content:center;
   }
-  .page-header label input[type="checkbox"]{
-    flex:0 0 auto;
+  .page-header .header-check{
+    grid-column:1 / -1;
+    width:100%;
   }
-  .page-header .chip{
-    padding:5px 10px;
-    font-size:12px;
-  }
-  .page-header .btn-sm{
-    padding:6px 10px;
-    font-size:12px;
-  }
-
   #page-cal .page-header{
     display:grid;
     grid-template-columns:auto 1fr auto;
     align-items:center;
-    gap:8px;
   }
   #page-cal .page-header #month-title{
     text-align:center;
-    font-size:17px!important;
+    font-size:17px;
   }
   #page-cal .page-header > div[style*="margin-left:auto"]{
     grid-column:1 / -1;
-    width:100%;
-    justify-content:flex-start!important;
+    display:flex;
+    flex-wrap:wrap;
   }
-
   #page-proposals .page-header,
   #page-setup .page-header{
     flex-direction:row;
@@ -862,93 +971,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
     justify-content:space-between;
     flex-wrap:wrap;
   }
-
-  .card{
-    padding:14px;
-  }
+  .card{padding:14px}
+  .today-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .eisenhower-grid{grid-template-columns:1fr;gap:10px}
+  .eisen-card{max-height:none;min-height:auto;padding:12px}
+  .eisen-title{font-size:11px}
+  .eisen-desc{font-size:10px}
+  .eisen-input{font-size:12px;padding:6px 8px}
+  .todo-item{font-size:12px;gap:5px}
+  .todo-del{font-size:11px}
 }
-
-/* Checkbox alignment fix: prevent global input width from pushing label text off-screen */
-input[type="checkbox"]{
-  width:auto!important;
-  min-width:16px;
-  height:16px;
-  padding:0!important;
-  margin:0;
-  flex:0 0 auto;
-  vertical-align:middle;
-}
-
-@media(max-width:680px){
-  .page-header label{
-    display:inline-flex!important;
-    align-items:center!important;
-    gap:6px!important;
-    width:auto!important;
-    max-width:100%;
-    white-space:normal!important;
-    overflow:visible!important;
-  }
-  .page-header label input[type="checkbox"]{
-    width:auto!important;
-    min-width:16px!important;
-    height:16px!important;
-    flex:0 0 auto!important;
-  }
-}
-
-
-/* Hard fix for mobile header checkbox labels */
-.header-check{
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:flex-start!important;
-  gap:6px!important;
-  width:auto!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:3px 0!important;
-  color:var(--text2)!important;
-  font-size:12px!important;
-  line-height:1.35!important;
-  white-space:nowrap!important;
-  cursor:pointer!important;
-}
-.header-check-input{
-  appearance:auto!important;
-  -webkit-appearance:checkbox!important;
-  width:16px!important;
-  min-width:16px!important;
-  max-width:16px!important;
-  height:16px!important;
-  min-height:16px!important;
-  max-height:16px!important;
-  flex:0 0 16px!important;
-  display:inline-block!important;
-  margin:0!important;
-  padding:0!important;
-  box-sizing:border-box!important;
-}
-.header-check span{
-  display:inline-block!important;
-  width:auto!important;
-  min-width:0!important;
-  flex:0 1 auto!important;
-  white-space:nowrap!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
-}
-@media(max-width:680px){
-  .page-header .header-check{
-    flex:0 0 100%!important;
-    width:100%!important;
-  }
-  .page-header .header-check-input{
-    width:16px!important;
-  }
-}
-
-
 
 
 /* Proposal D-day chip styling */
@@ -973,7 +1005,7 @@ input[type="checkbox"]{
 .proposal-dday.done{background:#F3F4F6;color:#6B7280;border-color:#D1D5DB;text-decoration:line-through}
 .proposal-dday.none{background:#F3F4F6;color:#9CA3AF;border-color:#E5E7EB}
 
-/* UX refinement: mobile page controls, proposal status, closed projects */
+/* UX refinement: proposal status, closed projects, notifications */
 .proposal-status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;background:var(--bg2);color:var(--text2);white-space:nowrap}
 .proposal-status-preparing{background:#E6F1FB;color:#185FA5}
 .proposal-status-writing{background:#F3E8FF;color:#7C3AED}
@@ -983,7 +1015,7 @@ input[type="checkbox"]{
 .closed-project-section{margin-top:16px;border-top:.5px solid var(--border);padding-top:14px}
 .closed-project-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text2);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px}
 .closed-project-toggle:hover{background:var(--bg2);color:var(--text)}
-.closed-project-table-row td{background:var(--bg2)!important;color:var(--text2);font-size:12px;font-weight:800}
+.closed-project-table-row td{background:var(--bg2);color:var(--text2);font-size:12px;font-weight:800}
 .project-table tr.is-past{opacity:.55;filter:grayscale(.8)}
 .project-table tr.is-past td:first-child strong{text-decoration:line-through;color:var(--text3)}
 .notification-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
@@ -1010,42 +1042,6 @@ input[type="checkbox"]{
   .quick-status-row .chip{width:100%;text-align:center;padding:5px 4px}
   .proposal-filter-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .proposal-filter-row .chip{width:100%;text-align:center}
-
-  /* Mobile top controls: separate view chips, options, and action buttons visually */
-  #page-personal .page-header > div[style*="margin-left:auto"],
-  #page-overview .page-header > div[style*="margin-left:auto"]{
-    display:flex!important;
-    flex-wrap:wrap!important;
-    align-items:center!important;
-    gap:6px!important;
-  }
-  #page-personal .page-header > div[style*="margin-left:auto"] .chip,
-  #page-overview .page-header > div[style*="margin-left:auto"] .chip{
-    order:1;
-    flex:1 1 calc(50% - 6px)!important;
-  }
-  #page-personal .page-header > div[style*="margin-left:auto"] .header-check,
-  #page-overview .page-header > div[style*="margin-left:auto"] .header-check{
-    order:2;
-    flex:1 1 100%!important;
-    width:100%!important;
-  }
-  #page-personal .page-header > div[style*="margin-left:auto"] .btn,
-  #page-overview .page-header > div[style*="margin-left:auto"] .btn{
-    order:3;
-    flex:1 1 100%!important;
-  }
-}
-
-@media(max-width:680px){
-  .page-header{gap:10px!important}
-  .page-header > div[style*="margin-left:auto"]{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;align-items:stretch!important}
-  .page-header > div[style*="margin-left:auto"] .chip,
-  .page-header > div[style*="margin-left:auto"] .btn{width:100%;text-align:center;justify-content:center}
-  .page-header .header-check{grid-column:1 / -1!important;width:100%!important}
-  #page-cal .page-header > div[style*="margin-left:auto"]{display:flex!important;flex-wrap:wrap!important}
-  #page-personal .page-header > div[style*="margin-left:auto"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  #page-personal .page-header > div[style*="margin-left:auto"] .btn{grid-column:1 / -1}
   .closed-project-toggle{font-size:12px;padding:9px 10px}
 }
 
@@ -1247,6 +1243,7 @@ input[type="checkbox"]{
   <button class="btn btn-secondary btn-sm" onclick="openNotifications()">알림 <span id="notice-count" class="notice-dot" style="display:none">0</span></button>
   <button class="btn btn-primary btn-sm" onclick="openQuickAdd()">+ 새로 만들기</button>
 </div>
+<div id="active-filter-bar" class="active-filter-bar"></div>
 
 <div id="page-home" class="page active">
   <div class="page-header">
@@ -2215,7 +2212,7 @@ function applyPermissionUI(){
     document.querySelectorAll(sel).forEach(el=>{ el.style.display = writer ? '' : 'none'; });
   });
 }
-function refreshAll(){ buildSidebar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderProjectManageList(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderMemberManageList(); renderProjectManageList(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -2233,195 +2230,126 @@ function renderHome(){
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0,0,0,0);
 
+  const todayKey = fmtDateFull(now);
   const homeProposalPool = proposals.filter(p => isMyProposal(p));
+  const myTasks = tasks.filter(t => String(t.assignee) === String(selfId));
+  const activeTasks = myTasks.filter(t => normalizeTaskStatus(t.status) !== '완료');
 
-  const proposalsSoon = homeProposalPool
-    .filter(p => p.deadline)
-    .map(p => ({...p, _d:parseDateSafely(p.deadline)}))
-    .filter(p => p._d >= now && p._d <= weekEnd)
-    .sort((a,b)=>a._d-b._d);
-
-  const myTasks = tasks.filter(t => t.assignee === selfId);
-
-  const overdueTasks = myTasks
-    .filter(t => t.status !== '완료' && isOverdue(t))
+  const overdueTasks = activeTasks
+    .filter(t => isOverdue(t))
     .sort(taskDueSort);
+
+  const todayDueTasks = activeTasks
+    .filter(t => t.end && !isOverdue(t) && fmtDateFull(t.end) === todayKey)
+    .sort(taskDueSort);
+
+  const todayDueProposals = homeProposalPool
+    .filter(p => p.deadline && fmtDateFull(p.deadline) === todayKey)
+    .map(p => ({...p, _d:parseDateSafely(p.deadline)}))
+    .sort((a,b)=>a._d-b._d);
 
   const todayEvents = events
     .filter(e => e.who === selfId)
     .filter(e => inDay(e, now.getFullYear(), now.getMonth(), now.getDate()))
     .sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start));
 
-  const urgentTasks = myTasks
-    .filter(t => t.status !== '완료')
-    .filter(t => getTaskMatrixType(t) === 'urgent-important')
-    .sort(taskDueSort);
+  const weekDueTasks = activeTasks
+    .filter(t => t.end && !isOverdue(t))
+    .map(t => ({...t, _d:parseDateSafely(t.end)}))
+    .filter(t => t._d > now && t._d <= weekEnd)
+    .sort((a,b)=>a._d-b._d);
 
-  const activeTodayTasks = myTasks
-    .filter(t => t.status !== '완료')
-    .filter(t => inDay(t, now.getFullYear(), now.getMonth(), now.getDate()))
-    .sort(taskDueSort);
+  const weekDueProposals = homeProposalPool
+    .filter(p => p.deadline)
+    .map(p => ({...p, _d:parseDateSafely(p.deadline)}))
+    .filter(p => p._d > now && p._d <= weekEnd)
+    .sort((a,b)=>a._d-b._d);
 
-  const todayKey = fmtDateFull(now);
-
-  function dayKey(v){
-    return fmtDateFull(v);
-  }
-
-  function todayPeriodState(item){
-    const s = dayKey(item.start);
-    const e = dayKey(item.end || item.start);
-    if(!s || !e) return '';
-    if(s === todayKey && e === todayKey) return 'single';
-    if(e === todayKey) return 'ending';
-    if(s <= todayKey && e >= todayKey) return 'inside';
-    return '';
-  }
-
-  function todayPriorityOrder(item){
-    const state = todayPeriodState(item);
-    if(state === 'single') return 1;
-    if(state === 'ending') return 2;
-    if(state === 'inside') return 3;
-    return 9;
-  }
-
-  const topTodayTasks = activeTodayTasks
-    .filter(t => ['single','ending'].includes(todayPeriodState(t)))
-    .sort((a,b)=>todayPriorityOrder(a)-todayPriorityOrder(b) || parseDateSafely(a.end)-parseDateSafely(b.end));
-
-  const topTodayEvents = todayEvents
-    .filter(e => ['single','ending'].includes(todayPeriodState(e)))
-    .sort((a,b)=>todayPriorityOrder(a)-todayPriorityOrder(b) || parseDateSafely(a.start)-parseDateSafely(b.start));
-
-  const periodTodayTasks = activeTodayTasks
-    .filter(t => todayPeriodState(t) === 'inside')
-    .sort(taskDueSort);
-
-  const periodTodayEvents = todayEvents
-    .filter(e => todayPeriodState(e) === 'inside')
-    .sort((a,b)=>parseDateSafely(a.end)-parseDateSafely(b.end));
-
-  const todayTopRows = [
-    ...topTodayEvents.map(e => ({
-      title:e.title || '일정',
-      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
-      dot:eventColor(e.type),
-      badge:todayPeriodState(e) === 'ending' ? '종료일' : '오늘',
-      badgeClass:todayPeriodState(e) === 'ending' ? 'orange' : 'green',
-      onClick:`showEv('${e.id}')`
-    })),
-    ...topTodayTasks.map(t => ({
-      title:t.title || '업무',
-      meta:`${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
-      dot:'#475569',
-      badge:todayPeriodState(t) === 'ending' ? '종료일' : '오늘',
-      badgeClass:todayPeriodState(t) === 'ending' ? 'orange' : 'green',
-      onClick:`showTask('${t.id}')`
-    }))
-  ];
-
-  const todayPeriodRows = [
-    ...periodTodayEvents.map(e => ({
-      title:e.title || '일정',
-      meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}`,
-      dot:eventColor(e.type),
-      badge:'',
-      badgeClass:'',
-      onClick:`showEv('${e.id}')`
-    })),
-    ...periodTodayTasks.map(t => ({
-      title:t.title || '업무',
-      meta:`${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
-      dot:'#475569',
-      badge:'',
-      badgeClass:'',
-      onClick:`showTask('${t.id}')`
-    }))
-  ];
-
-  const alertParts = [];
-  const todayWorkCount = topTodayTasks.length;
-
-  // 오늘 탭 상단 요약은 실제 당일 처리 우선순위가 높은 항목만 간단히 표시
-  if(todayEvents.length) alertParts.push(`<strong>오늘 일정 ${todayEvents.length}건</strong>`);
-  if(todayWorkCount) alertParts.push(`<strong>오늘 업무 ${todayWorkCount}건</strong>`);
-  if(overdueTasks.length) alertParts.push(`<strong>지연 업무 ${overdueTasks.length}건</strong>`);
-  if(proposalsSoon.length){
-    const p = proposalsSoon[0];
-    const diff = Math.ceil((p._d - now) / 86400000);
-    alertParts.push(`<strong>제안 제출 ${diff === 0 ? 'D-Day' : 'D-'+diff}</strong><span>${escapeHtml(p.name || '제안')}</span>`);
-  }
-
-  const criticalRows = [
-    ...todayTopRows,
-    ...proposalsSoon.slice(0,3).map(p => {
-      const diff = Math.ceil((p._d - now) / 86400000);
-      return {
-        title:p.name || '제안',
-        meta:`${escapeHtml(p.demandOrg || '-')} · ${fmtDateTimeShort(p.deadline)}`,
-        dot:'#D85A30',
-        badge:diff === 0 ? 'D-Day' : 'D-'+diff,
-        badgeClass:diff <= 3 ? 'red' : 'orange',
-        onClick:`showProposal('${p.id}')`
-      };
-    }),
-    ...overdueTasks.slice(0,4).map(t => ({
-      title:`[지연] ${t.title || '업무'}`,
-      meta:`${escapeHtml(pj(t.project)?.name || '사업 없음')} · ${fmtDate(t.end)}`,
-      dot:'#EF9F27',
-      badge:'지연',
-      badgeClass:'orange',
-      onClick:`showTask('${t.id}')`
-    })),
-    ...todayPeriodRows
-  ].slice(0,9);
-
-  const actionList = criticalRows.map(item => `
-    <div class="action-item" onclick="${item.onClick}">
+  function actionRow(item){
+    return `<div class="action-item" onclick="${item.onClick}">
       <div class="action-dot" style="background:${item.dot}"></div>
       <div class="action-main">
         <div class="action-title">${escapeHtml(item.title)}</div>
-        <div class="action-meta">${item.meta}</div>
+        <div class="action-meta">${escapeHtml(item.meta)}</div>
       </div>
-      ${item.badge ? `<span class="action-badge ${item.badgeClass}">${escapeHtml(item.badge)}</span>` : ''}
-    </div>
-  `).join('');
+      ${item.badge ? `<span class="action-badge ${item.badgeClass || ''}">${escapeHtml(item.badge)}</span>` : ''}
+    </div>`;
+  }
 
-  const todayRelatedTaskIds = new Set([
-    ...topTodayTasks,
-    ...periodTodayTasks,
-    ...overdueTasks
-  ].map(t => t.id));
+  function sectionCard(title, rows, emptyText, toneClass){
+    return `<div class="card today-priority-card ${toneClass || ''}">
+      <div class="today-section-head">
+        <div class="today-section-title">${escapeHtml(title)}</div>
+        <div class="today-section-count">${rows.length}</div>
+      </div>
+      <div class="action-list">${rows.length ? rows.map(actionRow).join('') : `<div class="empty">${escapeHtml(emptyText)}</div>`}</div>
+    </div>`;
+  }
 
-  const upcomingUrgentTasks = urgentTasks
-    .filter(t => !todayRelatedTaskIds.has(t.id))
-    .filter(t => !isOverdue(t))
-    .sort(taskDueSort)
-    .slice(0, 5);
-
-  const upcomingUrgentList = upcomingUrgentTasks.map(t => {
+  const overdueRows = overdueTasks.slice(0,8).map(t => {
     const dday = getDdayInfo(t.end);
-    const project = pj(t.project);
-    const ddayText = dday ? ` · ${dday.label}` : '';
-    return `
-      <div class="action-item" onclick="showTask('${t.id}')">
-        <div class="action-dot" style="background:#D85A30"></div>
-        <div class="action-main">
-          <div class="action-title">${escapeHtml(t.title || '업무')}</div>
-          <div class="action-meta">${escapeHtml(project?.name || '사업 없음')} · ${fmtDate(t.start)}~${fmtDate(t.end)}${ddayText}</div>
-        </div>
-        <span class="action-badge red">긴급</span>
-      </div>
-    `;
-  }).join('');
+    return {
+      title:`[지연] ${t.title || '업무'}`,
+      meta:`${pj(t.project)?.name || '사업 없음'} · ${fmtDate(t.start)}~${fmtDate(t.end)}${dday ? ' · ' + dday.label : ''}`,
+      dot:'#D85A30',
+      badge:'지연',
+      badgeClass:'red',
+      onClick:`showTask('${t.id}')`
+    };
+  });
 
-  const upcomingUrgentCard = upcomingUrgentTasks.length ? `
-      <div class="card">
-        <div class="card-title">다가오는 긴급·중요 업무</div>
-        <div class="action-list">${upcomingUrgentList}</div>
-      </div>
-  ` : '';
+  const todayDueRows = [
+    ...todayDueTasks.map(t => ({
+      title:t.title || '업무',
+      meta:`${pj(t.project)?.name || '사업 없음'} · ${fmtDate(t.start)}~${fmtDate(t.end)}`,
+      dot:'#EF9F27',
+      badge:'오늘 마감',
+      badgeClass:'orange',
+      onClick:`showTask('${t.id}')`
+    })),
+    ...todayDueProposals.map(p => ({
+      title:p.name || '제안',
+      meta:`${p.demandOrg || '-'} · ${fmtDateTimeShort(p.deadline)}`,
+      dot:'#D85A30',
+      badge:'D-Day',
+      badgeClass:'red',
+      onClick:`showProposal('${p.id}')`
+    }))
+  ].slice(0,8);
+
+  const todayEventRows = todayEvents.slice(0,8).map(e => ({
+    title:e.title || '일정',
+    meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · ' + (pj(e.project)?.name || '') : ''}`,
+    dot:eventColor(e.type),
+    badge:TL[e.type] || '일정',
+    badgeClass:e.type === 'meeting' ? 'blue' : 'green',
+    onClick:`showEv('${e.id}')`
+  }));
+
+  const weekDueRows = [
+    ...weekDueTasks.map(t => {
+      const dday = getDdayInfo(t.end);
+      return {
+        title:t.title || '업무',
+        meta:`${pj(t.project)?.name || '사업 없음'} · ${fmtDate(t.end)}`,
+        dot:'#378ADD',
+        badge:dday?.label || '마감',
+        badgeClass:dday && dday.diff <= 3 ? 'orange' : 'blue',
+        onClick:`showTask('${t.id}')`
+      };
+    }),
+    ...weekDueProposals.map(p => {
+      const dday = getDdayInfo(p.deadline);
+      return {
+        title:p.name || '제안',
+        meta:`${p.demandOrg || '-'} · ${fmtDateTimeShort(p.deadline)}`,
+        dot:'#7C3AED',
+        badge:dday?.label || '마감',
+        badgeClass:dday && dday.diff <= 3 ? 'orange' : 'blue',
+        onClick:`showProposal('${p.id}')`
+      };
+    })
+  ].sort((a,b)=>String(a.badge || '').localeCompare(String(b.badge || ''))).slice(0,8);
 
   const weekDates = [];
   for(let i=0;i<7;i++){
@@ -2446,21 +2374,16 @@ function renderHome(){
         onClick:`showEv('${e.id}')`
       }));
 
-    proposals
-      .filter(p => isMyProposal(p))
-      .forEach(p => {
-        if(p.start && fmtDateFull(p.start) === fmtDateFull(day)){
-          dayItems.push({kind:'proposal', id:p.id, title:`제안시작 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
-        }
-        if(p.deadline && fmtDateFull(p.deadline) === fmtDateFull(day)){
-          dayItems.push({kind:'proposal', id:p.id, title:`제출종료 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
-        }
-      });
+    homeProposalPool.forEach(p => {
+      if(p.start && fmtDateFull(p.start) === fmtDateFull(day)){
+        dayItems.push({kind:'proposal', id:p.id, title:`제안시작 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
+      }
+      if(p.deadline && fmtDateFull(p.deadline) === fmtDateFull(day)){
+        dayItems.push({kind:'proposal', id:p.id, title:`제출종료 · ${p.name || '제안'}`, onClick:`showProposal('${p.id}')`});
+      }
+    });
 
-    // 오늘 탭의 주간 캘린더는 '내 이번 주 흐름' 확인용이므로,
-    // 통합 캘린더 표시 여부(showOnCalendar)와 관계없이 내 담당 업무를 표시합니다.
-    tasks
-      .filter(t => String(t.assignee) === String(selfId))
+    myTasks
       .filter(t => t.start && t.end)
       .filter(t => inDayForTodayWeekTask(t, day.getFullYear(), day.getMonth(), day.getDate()))
       .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`}));
@@ -2485,23 +2408,26 @@ function renderHome(){
   }).join('');
 
   container.innerHTML = `
-    ${alertParts.length ? `<div class="today-alert">${alertParts.join('<span>·</span>')}</div>` : ''}
+    <div class="today-kpi-grid">
+      <div class="home-card"><div class="home-label">지연</div><div class="home-value">${overdueTasks.length}</div><div class="home-sub">마감 초과 업무</div></div>
+      <div class="home-card"><div class="home-label">오늘 마감</div><div class="home-value">${todayDueTasks.length + todayDueProposals.length}</div><div class="home-sub">업무·제안 포함</div></div>
+      <div class="home-card"><div class="home-label">오늘 일정</div><div class="home-value">${todayEvents.length}</div><div class="home-sub">내 일정 기준</div></div>
+      <div class="home-card"><div class="home-label">이번 주 마감</div><div class="home-value">${weekDueTasks.length + weekDueProposals.length}</div><div class="home-sub">7일 내 예정</div></div>
+    </div>
 
-    <div class="today-layout">
-      <div class="card">
-        <div class="card-title">오늘 처리 필요</div>
-        <div class="action-list">${actionList || '<div class="empty">오늘 특별히 처리할 항목이 없습니다</div>'}</div>
+    <div class="today-section-grid">
+      ${sectionCard('1. 지연 업무', overdueRows, '지연 업무가 없습니다')}
+      ${sectionCard('2. 오늘 마감', todayDueRows, '오늘 마감인 업무나 제안이 없습니다')}
+      ${sectionCard('3. 오늘 일정', todayEventRows, '오늘 일정이 없습니다')}
+      ${sectionCard('4. 이번 주 마감', weekDueRows, '이번 주 마감 항목이 없습니다')}
+    </div>
+
+    <div class="card">
+      <div class="card-title">이번 주 일정·마감</div>
+      <div class="week-mini">
+        <div class="week-mini-head">${weekMiniHead}</div>
+        <div class="week-mini-grid">${weekMiniDays}</div>
       </div>
-
-      <div class="card">
-        <div class="card-title">이번 주 일정·마감</div>
-        <div class="week-mini">
-          <div class="week-mini-head">${weekMiniHead}</div>
-          <div class="week-mini-grid">${weekMiniDays}</div>
-        </div>
-      </div>
-
-      ${upcomingUrgentCard}
     </div>
   `;
 }
@@ -3501,6 +3427,41 @@ function buildSidebar(){
   syncFilterSections();
 }
 function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; projects.forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
+function renderActiveFilterBar(){
+  const bar = document.getElementById('active-filter-bar');
+  if(!bar) return;
+
+  const parts = [];
+
+  if(selProj !== 'all'){
+    const project = pj(selProj);
+    parts.push(`<span class="active-filter-pill">사업: ${escapeHtml(project?.name || '선택된 사업')}</span>`);
+  }
+
+  if(hiddenMb.size){
+    const hiddenNames = Array.from(hiddenMb).map(id => mb(id)?.name || id).filter(Boolean);
+    const label = hiddenNames.length <= 3
+      ? hiddenNames.join(', ')
+      : `${hiddenNames.slice(0,3).join(', ')} 외 ${hiddenNames.length - 3}명`;
+    parts.push(`<span class="active-filter-pill">숨긴 멤버: ${escapeHtml(label)}</span>`);
+  }
+
+  if(!parts.length){
+    bar.className = 'active-filter-bar';
+    bar.innerHTML = '';
+    return;
+  }
+
+  bar.className = 'active-filter-bar show';
+  bar.innerHTML = `<span class="active-filter-label">필터 적용 중</span>${parts.join('')}<button type="button" class="active-filter-reset" onclick="resetActiveFilters()">초기화</button>`;
+}
+
+function resetActiveFilters(){
+  hiddenMb.clear();
+  selProj = 'all';
+  refreshAll();
+}
+
 function getVisEv(){ return events.filter(e=>{ if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
 
 
@@ -4896,7 +4857,7 @@ function quickTaskStatusButtons(t){
   const buttons = Object.keys(TASK_STATUS_OPTIONS).map(status =>
     `<button class="chip ${cur===status?'active':''}" onclick="event.stopPropagation();quickSetTaskStatus('${t.id}','${status}')">${escapeHtml(status)}</button>`
   ).join('');
-  return `<div class="dr"><span class="dl">빠른 변경</span><span class="quick-status-row">${buttons}</span></div>`;
+  return `<div class="task-status-action-bar"><div class="task-status-action-title">상태 빠른 변경</div><div class="quick-status-row">${buttons}</div></div>`;
 }
 
 window.quickSetTaskStatus = function(id, status){
@@ -4927,11 +4888,11 @@ function showTask(id){
   const p = pj(t.project);
   const canEdit = canEditItem(t);
   const body = `
+    ${quickTaskStatusButtons(t)}
     <div class="dr"><span class="dl">담당</span><span>${escapeHtml(a?.name||'-')}</span></div>
     <div class="dr"><span class="dl">사업</span><span>${escapeHtml(p?.name||'-')}</span></div>
     <div class="dr"><span class="dl">기간</span><span>${fmtDateFull(t.start)} ~ ${fmtDateFull(t.end)}</span></div>
     <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span></div>
-    ${quickTaskStatusButtons(t)}
     ${taskCompletedDate(t)?`<div class="dr"><span class="dl">완료일</span><span>${taskCompletedDate(t)}</span></div>`:''}
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
     <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
