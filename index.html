@@ -1049,6 +1049,12 @@ input[type="checkbox"]{
   .closed-project-toggle{font-size:12px;padding:9px 10px}
 }
 
+
+/* Korean public holidays from Google Calendar */
+.week-mini-item.holiday{background:#FEE2E2;color:#B91C1C}
+.cal-span-holiday{background:#FEE2E2!important;color:#B91C1C!important;border-left:3px solid #EF4444}
+.tag-holiday{background:#FEE2E2;color:#B91C1C}
+
 </style>
 </head>
 <body>
@@ -1100,7 +1106,7 @@ input[type="checkbox"]{
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#DB2777"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#DB2777"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>공휴일</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
@@ -1246,6 +1252,11 @@ const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [];
+let holidays = [];
+const holidayYearsLoaded = new Set();
+const holidayYearsLoading = new Set();
+const HOLIDAY_API_KEY = "AIzaSyBiuAs7Ooj3J4RGMMGECtD07pzWCOw1FQA";
+const HOLIDAY_CALENDAR_ID = "ko.south_korea#holiday@group.v.calendar.google.com";
 let publicEvents = [], myPersonalEvents = [];
 let publicComments = [], myScopedComments = [], publicActivityLogs = [], myScopedActivityLogs = [];
 let hiddenMb = new Set(); 
@@ -2060,6 +2071,7 @@ function refreshAll(){ buildSidebar(); refreshProjSelect(); renderHome(); render
 function renderHome(){
   const container = document.getElementById('home-summary');
   if(!container) return;
+  requestHolidayYearsForCurrentView();
 
   const now = new Date();
   now.setHours(0,0,0,0);
@@ -2072,7 +2084,7 @@ function renderHome(){
   weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0,0,0,0);
 
-  const homeProposalPool = canManageAll() ? proposals : proposals.filter(p => isMyProposal(p));
+  const homeProposalPool = proposals.filter(p => isMyProposal(p));
 
   const proposalsSoon = homeProposalPool
     .filter(p => p.deadline)
@@ -2274,6 +2286,10 @@ function renderHome(){
 
   const weekMiniDays = weekDates.map(day => {
     const dayItems = [];
+
+    holidaysOnDay(day.getFullYear(), day.getMonth(), day.getDate()).forEach(h => {
+      dayItems.push({kind:'holiday', id:h.id, title:h.title || '공휴일', onClick:`showHoliday('${h.id}')`});
+    });
 
     events
       .filter(e => e.who === selfId)
@@ -3332,6 +3348,103 @@ function buildSidebar(){
 function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; projects.forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
 function getVisEv(){ return events.filter(e=>{ if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
 
+
+function holidayKeyFromDateValue(v){
+  return fmtDateFull(v);
+}
+
+function getHolidayEndDate(h){
+  const s = parseDateSafely(h.start);
+  const e = parseDateSafely(h.end || h.start);
+  if(!h.end || e.getTime() === 0 || isNaN(e.getTime())) return s;
+  // Google all-day event end dates are exclusive, so subtract one day for display/spans.
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(h.end || ''))){
+    e.setDate(e.getDate() - 1);
+  }
+  return e < s ? s : e;
+}
+
+function holidaysOnDay(y, m, d){
+  const day = new Date(y, m, d);
+  day.setHours(0,0,0,0);
+  return holidays.filter(h => {
+    const s = parseDateSafely(h.start);
+    const e = getHolidayEndDate(h);
+    if(s.getTime() === 0 || isNaN(s.getTime()) || e.getTime() === 0 || isNaN(e.getTime())) return false;
+    s.setHours(0,0,0,0);
+    e.setHours(23,59,59,999);
+    return day >= s && day <= e;
+  });
+}
+
+function showHoliday(id){
+  const h = holidays.find(x => x.id === id);
+  if(!h) return;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="dr"><span class="dl">구분</span><span class="tag tag-holiday">공휴일</span></div>
+    <div class="dr"><span class="dl">날짜</span><span>${fmtDateFull(h.start)}</span></div>
+    <div class="dr"><span class="dl">이름</span><span>${escapeHtml(h.title || '-')}</span></div>
+  `;
+  openModal(h.title || '공휴일');
+}
+
+function requestHolidayYearsForCurrentView(){
+  const years = new Set([curY, today.getFullYear()]);
+  if(curM === 0) years.add(curY - 1);
+  if(curM === 11) years.add(curY + 1);
+  years.forEach(year => loadKoreanHolidays(year));
+}
+
+async function loadKoreanHolidays(year){
+  if(!HOLIDAY_API_KEY || HOLIDAY_API_KEY.includes('여기에')) return;
+  if(holidayYearsLoaded.has(year) || holidayYearsLoading.has(year)) return;
+
+  holidayYearsLoading.add(year);
+  try{
+    const calendarId = encodeURIComponent(HOLIDAY_CALENDAR_ID);
+    const timeMin = `${year}-01-01T00:00:00Z`;
+    const timeMax = `${year + 1}-01-01T00:00:00Z`;
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events` +
+      `?key=${encodeURIComponent(HOLIDAY_API_KEY)}` +
+      `&timeMin=${encodeURIComponent(timeMin)}` +
+      `&timeMax=${encodeURIComponent(timeMax)}` +
+      `&singleEvents=true` +
+      `&orderBy=startTime` +
+      `&timeZone=Asia/Seoul`;
+
+    const res = await fetch(url);
+    if(!res.ok){
+      const text = await res.text().catch(()=> '');
+      throw new Error(`Google Calendar API 오류 ${res.status}: ${text.slice(0,160)}`);
+    }
+
+    const data = await res.json();
+    const mapped = (data.items || []).map((item, idx) => {
+      const start = item.start?.date || item.start?.dateTime || '';
+      const end = item.end?.date || item.end?.dateTime || start;
+      return {
+        id:`hol_${year}_${idx}_${String(item.id || '').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,24)}`,
+        sourceId:item.id || '',
+        title:item.summary || '공휴일',
+        start,
+        end,
+        type:'holiday'
+      };
+    }).filter(h => h.start);
+
+    const existingOtherYears = holidays.filter(h => String(h.id || '').indexOf(`hol_${year}_`) !== 0);
+    holidays = [...existingOtherYears, ...mapped];
+    holidayYearsLoaded.add(year);
+    holidayYearsLoading.delete(year);
+    renderHome();
+    renderCal();
+  }catch(e){
+    holidayYearsLoading.delete(year);
+    console.error('holiday load error:', e);
+    showStatus('공휴일 동기화 오류: ' + (e.message || e), 'error');
+  }
+}
+
 function proposalMarksOnDay(y,m,d){
   const key = fmtDateFull(new Date(y,m,d));
   const marks = [];
@@ -3426,6 +3539,36 @@ function getWeekEventSegments(weekDates, vis){
     });
   });
 
+  holidays.forEach(h => {
+    const s = normalizeDay(parseDateSafely(h.start));
+    const en = normalizeDay(getHolidayEndDate(h));
+    const sT = s.getTime();
+    const eT = en.getTime();
+    if(!sT || !eT || isNaN(sT) || isNaN(eT)) return;
+    if(eT < weekStart.getTime() || sT > weekEnd.getTime()) return;
+
+    const segStart = sT < weekStart.getTime() ? weekStart : s;
+    const segEnd = eT > weekEnd.getTime() ? weekEnd : en;
+    const startCol = segStart.getDay() + 1;
+    const endCol = segEnd.getDay() + 2;
+    const isStart = sT >= weekStart.getTime();
+    const isEnd = eT <= weekEnd.getTime();
+    const isSingle = startCol + 1 === endCol && isStart && isEnd;
+
+    segments.push({
+      kind:'holiday',
+      id:h.id,
+      startCol,
+      endCol,
+      startT:sT,
+      endT:eT,
+      label:h.title || '공휴일',
+      showLabel:isStart || startCol === 1,
+      cls:isSingle ? 'cal-span-single cal-span-holiday' : `${isStart ? 'cal-span-start' : ''} ${isEnd ? 'cal-span-end' : ''} cal-span-holiday`,
+      style:''
+    });
+  });
+
   weekDates.forEach(dt => {
     proposalMarksOnDay(dt.getFullYear(), dt.getMonth(), dt.getDate()).forEach(p => {
       const col = dt.getDay() + 1;
@@ -3464,7 +3607,7 @@ function getWeekEventSegments(weekDates, vis){
   return { segments, laneCount: laneEnds.length };
 }
 
-function renderCal(){ vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
+function renderCal(){ requestHolidayYearsForCurrentView(); vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
 function renderCalGrid(){
   const first = new Date(curY, curM, 1);
   const last = new Date(curY, curM + 1, 0);
@@ -3502,7 +3645,7 @@ function renderCalGrid(){
     h += '<div class="cal-week-bars">';
     segments.forEach(seg => {
       const label = seg.showLabel ? escapeHtml(seg.label) : '&nbsp;';
-      const onClick = seg.kind === 'proposal' ? `showProposal('${seg.id}')` : (seg.kind === 'task' ? `showTask('${seg.id}')` : `showEv('${seg.id}')`);
+      const onClick = seg.kind === 'proposal' ? `showProposal('${seg.id}')` : (seg.kind === 'task' ? `showTask('${seg.id}')` : (seg.kind === 'holiday' ? `showHoliday('${seg.id}')` : `showEv('${seg.id}')`));
       h += `<div class="cal-span-bar ${seg.cls}" style="grid-column:${seg.startCol}/${seg.endCol};grid-row:${seg.lane};${seg.style}" onclick="event.stopPropagation();${onClick}" title="${escapeHtml(seg.label)}">${label}</div>`;
     });
     h += '</div></div>';
@@ -3587,7 +3730,22 @@ function renderCalList(){
     }
   });
 
-  let items = [...eventItems, ...proposalItems, ...taskItems]
+
+  const holidayItems = holidays.map(h => {
+    const s = parseDateSafely(h.start);
+    const en = getHolidayEndDate(h);
+    return {
+      kind:'holiday',
+      id:h.id,
+      title:h.title || '공휴일',
+      start:s,
+      end:en,
+      type:'holiday',
+      raw:h
+    };
+  });
+
+  let items = [...eventItems, ...proposalItems, ...taskItems, ...holidayItems]
     .filter(x => x.start && !isNaN(x.start.getTime()) && x.start.getTime() > 0)
     .sort((a,b)=>a.start-b.start);
 
@@ -3621,6 +3779,17 @@ function renderCalList(){
   let h=head+'<div class="list-wrap">';
 
   items.forEach(item=>{
+    if(item.kind === 'holiday'){
+      h+=`<div class="li" onclick="showHoliday('${item.id}')">
+          <div class="li-dot" style="background:#EF4444"></div>
+          <div class="li-info">
+            <div class="li-title">${escapeHtml(item.title)}</div>
+            <div class="li-meta">${fmtDateFull(item.start)} · 공휴일</div>
+            <div class="tag-row"><span class="tag tag-holiday">공휴일</span></div>
+          </div>
+        </div>`;
+      return;
+    }
     if(item.kind === 'task'){
       const t = item.raw;
       const p = pj(t.project || '');
@@ -4641,7 +4810,22 @@ function showTask(id){
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
-function dayClick(d){ const marks = proposalMarksOnDay(curY, curM, d); const de=getVisEv().filter(e=>inDay(e,curY,curM,d)); const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d)); if(!de.length && !marks.length && !dtasks.length)return; let h='<div class="list-wrap">'; marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; }); dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(calendarTaskTitle(t))}</div></div></div>`; }); de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; }); document.getElementById('modal-body').innerHTML=h+'</div>'; openModal(`${curM+1}월 ${d}일 일정`); }
+function dayClick(d){
+  const dayHolidays = holidaysOnDay(curY, curM, d);
+  const marks = proposalMarksOnDay(curY, curM, d);
+  const de=getVisEv().filter(e=>inDay(e,curY,curM,d));
+  const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d));
+  if(!dayHolidays.length && !de.length && !marks.length && !dtasks.length)return;
+  let h='<div class="list-wrap">';
+  dayHolidays.forEach(hol=>{
+    h+=`<div class="li" style="padding:8px" onclick="closeModal();showHoliday('${hol.id}')"><div class="li-dot" style="background:#EF4444"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(hol.title || '공휴일')}</div><div class="tag-row"><span class="tag tag-holiday">공휴일</span></div></div></div>`;
+  });
+  marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; });
+  dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(calendarTaskTitle(t))}</div></div></div>`; });
+  de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; });
+  document.getElementById('modal-body').innerHTML=h+'</div>';
+  openModal(`${curM+1}월 ${d}일 일정`);
+}
 
 function syncFilterSections(){
   ['members','projects'].forEach(key => {
