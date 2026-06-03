@@ -1154,21 +1154,11 @@ input[type="checkbox"]{
 }
 
 
-/* Today marker: circle only on the date number + visible cell border */
+/* Today marker: subtle outline-only date + visible cell border */
 .cal-week-day.today{
-  outline:2px solid rgba(0,0,0,.28);
+  outline:2px solid var(--border2);
   outline-offset:-2px;
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
-}
-html[data-theme="dark"] .cal-week-day.today{
-  outline-color:rgba(255,255,255,.35);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
-}
-@media (prefers-color-scheme: dark){
-  html:not([data-theme="light"]) .cal-week-day.today{
-    outline-color:rgba(255,255,255,.35);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
-  }
+  box-shadow:inset 0 0 0 1px var(--border);
 }
 .cal-week-day.today .dn{
   background:transparent!important;
@@ -1185,13 +1175,17 @@ html[data-theme="dark"] .cal-week-day.today{
   width:20px;
   height:20px;
   border-radius:50%;
-  background:var(--text);
-  color:var(--bg);
+  background:transparent!important;
+  border:1.5px solid var(--border2);
+  color:inherit!important;
   flex:0 0 20px;
+  font-weight:800;
 }
-.cal-week-day.today.sun .today-num,
+.cal-week-day.today.sun .today-num{
+  color:#D85A30!important;
+}
 .cal-week-day.today.sat .today-num{
-  color:var(--bg)!important;
+  color:#378ADD!important;
 }
 
 </style>
