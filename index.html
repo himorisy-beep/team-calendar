@@ -841,8 +841,30 @@ input[type="checkbox"]{
 .today-kpi-grid{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:12px;
-  margin-bottom:14px;
+  gap:8px;
+  margin-bottom:10px;
+}
+.today-kpi-grid .home-card{
+  min-height:46px;
+  padding:9px 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.today-kpi-grid .home-label{
+  margin-bottom:0;
+  font-size:11px;
+  line-height:1.2;
+  letter-spacing:0;
+}
+.today-kpi-grid .home-value{
+  flex:0 0 auto;
+  font-size:20px;
+  line-height:1;
+}
+.today-kpi-grid .home-sub{
+  display:none;
 }
 .today-section-grid{
   display:grid;
@@ -891,7 +913,16 @@ input[type="checkbox"]{
   margin-bottom:8px;
 }
 @media(max-width:900px){
-  .today-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .today-kpi-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
+  }
+  .today-kpi-grid .home-card{
+    min-height:40px;
+    padding:8px 9px;
+  }
+  .today-kpi-grid .home-label{font-size:10px}
+  .today-kpi-grid .home-value{font-size:18px}
   .today-section-grid{grid-template-columns:1fr}
 }
 @media(max-width:680px){
@@ -922,6 +953,21 @@ input[type="checkbox"]{
     margin-left:0;
     text-align:left;
   }
+  .today-kpi-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:5px;
+    margin-bottom:8px;
+  }
+  .today-kpi-grid .home-card{
+    min-height:38px;
+    padding:7px 8px;
+    border-radius:var(--r-sm);
+  }
+  .today-kpi-grid .home-label{
+    font-size:10px;
+    white-space:nowrap;
+  }
+  .today-kpi-grid .home-value{font-size:17px}
   .page-header{
     flex-direction:column;
     align-items:stretch;
@@ -1276,18 +1322,13 @@ input[type="checkbox"]{
       <label class="header-check">
         <input class="header-check-input" type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"><span>지난 일정 숨기기</span>
       </label>
-      <button class="chip active" id="pv-today" onclick="setPV('today')">오늘</button>
-      <button class="chip" id="pv-list" onclick="setPV('list')">일정</button>
+      <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
       <button class="chip" id="pv-projects" onclick="setPV('projects')">맡은 사업</button>
       <button class="chip" id="pv-todos" onclick="setPV('todos')">업무 매트릭스</button>
       <button class="btn btn-primary btn-sm" onclick="openAddEvent()">+ 일정 추가</button>
     </div>
   </div>
 
-  <div class="card" id="my-today-wrap">
-    <div class="card-title">오늘 처리할 업무</div>
-    <div id="my-work-overview"></div>
-  </div>
 
   <div class="card" id="personal-list-wrap" style="display:none">
     <div class="card-title">내 일정 목록</div>
@@ -1407,7 +1448,7 @@ let publicEvents = [], myPersonalEvents = [];
 let publicComments = [], myScopedComments = [], publicActivityLogs = [], myScopedActivityLogs = [];
 let hiddenMb = new Set(); 
 let selProj = 'all'; 
-let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'today', calListMode = 'window'; 
+let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'list', calListMode = 'window'; 
 const today = new Date(); 
 let editingEventId = null; 
 let editingProposalId = null;
@@ -4462,28 +4503,25 @@ function setPV(mode){
 }
 
 function renderPersonalCurrentView(){
-  const todayWrap = document.getElementById('my-today-wrap');
+  if(!['list','projects','todos'].includes(pvMode)) pvMode = 'list';
+
   const listWrap = document.getElementById('personal-list-wrap');
   const projectWrap = document.getElementById('my-project-wrap');
   const todoWrap = document.getElementById('my-todo-wrap');
 
-  const todayBtn = document.getElementById('pv-today');
   const listBtn = document.getElementById('pv-list');
   const projectBtn = document.getElementById('pv-projects');
   const todoBtn = document.getElementById('pv-todos');
 
-  if(todayBtn) todayBtn.classList.toggle('active', pvMode === 'today');
   if(listBtn) listBtn.classList.toggle('active', pvMode === 'list');
   if(projectBtn) projectBtn.classList.toggle('active', pvMode === 'projects');
   if(todoBtn) todoBtn.classList.toggle('active', pvMode === 'todos');
 
-  if(todayWrap) todayWrap.style.display = pvMode === 'today' ? 'block' : 'none';
   if(listWrap) listWrap.style.display = pvMode === 'list' ? 'block' : 'none';
   if(projectWrap) projectWrap.style.display = pvMode === 'projects' ? 'block' : 'none';
   if(todoWrap) todoWrap.style.display = pvMode === 'todos' ? 'block' : 'none';
 
-  if(pvMode === 'today') renderMyWorkOverview();
-  else if(pvMode === 'projects') renderMyProjectsList();
+  if(pvMode === 'projects') renderMyProjectsList();
   else if(pvMode === 'todos') renderTodos();
   else renderPersonalList();
 }
