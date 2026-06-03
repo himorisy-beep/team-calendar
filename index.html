@@ -59,7 +59,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);transition:all .12s}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .tag{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
-.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#DBEAFE;color:#1D4ED8} .tag-training{background:#F3E8FF;color:#7C3AED} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFEDD5;color:#F97316} .tag-meeting{background:#FCE7F3;color:#DB2777} .tag-personal{background:#F3F4F6;color:#6B7280} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
+.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#DBEAFE;color:#1D4ED8} .tag-training{background:#F3E8FF;color:#7C3AED} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFEDD5;color:#F97316} .tag-meeting{background:#DBEAFE;color:#1E3A8A} .tag-personal{background:#F3F4F6;color:#6B7280} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .form-row.full{grid-template-columns:1fr}
 .fl{font-size:11px;color:var(--text2);margin-bottom:4px}
@@ -222,7 +222,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .cal-span-end{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:4px}
 .cal-span-single{border-radius:4px;margin-left:4px;margin-right:4px}
 .ep-proposal-start{background:#CFFAFE;color:#0E7490;border-left:3px solid #0891B2}
-.ep-proposal-deadline{background:#FEE2E2;color:#991B1B;border-left:3px solid #DC2626}
+.ep-proposal-deadline{background:#E0E7FF;color:#3730A3;border-left:3px solid #6366F1}
 .list-wrap{display:flex;flex-direction:column;gap:7px}
 .cal-list-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .cal-list-title{font-size:13px;font-weight:700;color:var(--text2)}
@@ -1051,9 +1051,23 @@ input[type="checkbox"]{
 
 
 /* Korean public holidays from Google Calendar */
-.week-mini-item.holiday{background:#FEE2E2;color:#B91C1C}
+.week-mini-item.holiday{background:#E0E7FF;color:#3730A3}
 .cal-span-holiday{background:#FEE2E2!important;color:#B91C1C!important;border-left:3px solid #EF4444}
-.tag-holiday{background:#FEE2E2;color:#B91C1C}
+.tag-holiday{background:#E0E7FF;color:#3730A3}
+
+
+/* Holiday color: distinct from proposal deadline red */
+.week-mini-item.holiday,
+.holiday-chip {
+  background:#E0E7FF!important;
+  color:#3730A3!important;
+}
+.cal-span-bar.holiday,
+.ep-holiday {
+  background:#E0E7FF!important;
+  color:#3730A3!important;
+  border-left:3px solid #6366F1!important;
+}
 
 </style>
 </head>
@@ -1106,7 +1120,7 @@ input[type="checkbox"]{
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#DB2777"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>공휴일</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#EF4444"></div>공휴일</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button></div></div><div id="overview-container"></div></div>
 
@@ -1333,7 +1347,7 @@ function lighten(hex){
     '#1D4ED8':'#DBEAFE',  // 외근
     '#F97316':'#FFEDD5',  // 출장
     '#7C3AED':'#F3E8FF',  // 연수
-    '#DB2777':'#FCE7F3',  // 회의
+    '#1E3A8A':'#DBEAFE',  // 회의
     '#0891B2':'#CFFAFE',  // 제안시작
     '#DC2626':'#FEE2E2',  // 제출종료
     '#455A64':'#ECEFF1',  // 과거 업무 호환
@@ -1397,7 +1411,7 @@ function eventColor(type){
   if(type==='training') return '#7C3AED';      // 보라
   if(type==='work') return '#455A64';          // 청회색(과거 호환)
   if(type==='trip') return '#F97316';          // 주황
-  if(type==='meeting') return '#DB2777';       // 마젠타
+  if(type==='meeting') return '#1E3A8A';       // 남색
   if(type==='personal') return '#6B7280';      // 회색
   return '#888';
 }
