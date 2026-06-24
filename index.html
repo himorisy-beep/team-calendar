@@ -622,7 +622,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .md-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
 .md-value{font-weight:900;white-space:nowrap}
 .md-sub{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:680px){.md-columns{grid-template-columns:1fr}}
+.md-year-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm)}
+.md-year-title{font-size:12px;font-weight:900;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
+.md-year-help{font-size:11px;color:var(--text3);margin-top:2px}
+.md-year-select{width:auto;min-width:128px;font-size:12px;padding:5px 8px;background:var(--bg);color:var(--text);border:.5px solid var(--border2);border-radius:var(--r-sm)}
+#personal-list .li{padding:9px 12px;gap:9px}
+#personal-list .li-title{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.35}
+#personal-list .li-meta{font-size:11px;line-height:1.35}
+#personal-list .tag{font-size:10px;padding:1px 6px}
+@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-select{width:100%}}
 
 /* Proposal table layout fix */
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
@@ -1382,6 +1390,7 @@ button,
 <button class="sb-btn" id="nav-cal" onclick="goPage('cal')"><span class="icon">📅</span>캘린더</button>
 <button class="sb-btn" id="nav-overview" onclick="goPage('overview')"><span class="icon">📊</span>사업 관리</button>
 <button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안 관리</button>
+<button class="sb-btn" id="nav-members" onclick="goPage('members')"><span class="icon">👥</span>멤버 현황</button>
 <button class="sb-btn" id="nav-personal" onclick="goPage('personal')"><span class="icon">✅</span>내 업무</button>
 <button class="sb-btn" id="nav-setup" onclick="goPage('setup')"><span class="icon">⚙️</span>설정</button>
 </div>
@@ -1624,6 +1633,7 @@ let editingEventId = null;
 let editingProposalId = null;
 let curY = today.getFullYear(), curM = today.getMonth(); 
 let hidePast = true;
+let manDayYear = ls('manDayYear') || 'all';
 
 const mb = id => members.find(m=>m.id===id); 
 const pj = id => projects.find(p=>p.id===id); 
@@ -4952,6 +4962,76 @@ function inclusiveCalendarManDays(startValue, endValue){
   return Math.floor((e.getTime() - s.getTime()) / 86400000) + 1;
 }
 
+function manDayYearRange(startValue, endValue){
+  const s = validManDayDate(startValue);
+  const e = validManDayDate(endValue);
+  if(!s || !e || e < s) return [];
+  const years = [];
+  for(let y = s.getFullYear(); y <= e.getFullYear(); y++) years.push(y);
+  return years;
+}
+
+function allManDayRowsForYearOptions(){
+  const rows = [];
+  members.forEach(m => {
+    rows.push(...projectManDayRows(m.id));
+    rows.push(...proposalManDayRows(m.id));
+  });
+  return rows;
+}
+
+function availableManDayYears(){
+  const ys = new Set();
+  allManDayRowsForYearOptions().forEach(r => manDayYearRange(r.start, r.end).forEach(y => ys.add(y)));
+  return Array.from(ys).sort((a,b)=>b-a);
+}
+
+function normalizeManDayYearValue(value){
+  const v = String(value || 'all');
+  return v === 'all' || /^\d{4}$/.test(v) ? v : 'all';
+}
+
+function setManDayYear(year){
+  manDayYear = normalizeManDayYearValue(year);
+  ls('manDayYear', manDayYear);
+  renderOverview();
+  renderMembersPage();
+}
+
+function manDayYearControlHtml(id){
+  const years = availableManDayYears();
+  const opts = [`<option value="all" ${manDayYear === 'all' ? 'selected' : ''}>전체 기간</option>`]
+    .concat(years.map(y => `<option value="${y}" ${String(y) === String(manDayYear) ? 'selected' : ''}>${y}년</option>`))
+    .join('');
+  return `<div class="md-year-toolbar">
+    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">선택한 연도 안에 겹치는 기간만 잘라서 MD를 계산합니다.</div></div>
+    <select id="${escapeAttr(id || 'md-year-select')}" class="md-year-select" onchange="setManDayYear(this.value)">${opts}</select>
+  </div>`;
+}
+
+function rowForSelectedManDayYear(row){
+  if(manDayYear === 'all') return row;
+  const y = parseInt(manDayYear, 10);
+  if(!y) return row;
+  const s = validManDayDate(row.start);
+  const e = validManDayDate(row.end);
+  if(!s || !e || e < s) return null;
+  const ys = new Date(y, 0, 1);
+  const ye = new Date(y, 11, 31);
+  const clippedStart = s > ys ? s : ys;
+  const clippedEnd = e < ye ? e : ye;
+  const days = inclusiveCalendarManDays(clippedStart, clippedEnd);
+  if(!days) return null;
+  return {...row, start:clippedStart, end:clippedEnd, days, fullStart:s, fullEnd:e};
+}
+
+function rowsForSelectedManDayYear(rows){
+  return rows
+    .map(rowForSelectedManDayYear)
+    .filter(Boolean)
+    .sort((a,b)=>b.days-a.days || String(a.name).localeCompare(String(b.name)));
+}
+
 function manDayDateLabel(value){
   return value ? fmtDateFull(value) : '-';
 }
@@ -5034,8 +5114,8 @@ function proposalManDayRows(memberId){
 }
 
 function memberManDayStats(memberId){
-  const projectRows = projectManDayRows(memberId);
-  const proposalRows = proposalManDayRows(memberId);
+  const projectRows = rowsForSelectedManDayYear(projectManDayRows(memberId));
+  const proposalRows = rowsForSelectedManDayYear(proposalManDayRows(memberId));
   const projectTotal = projectRows.reduce((sum, r) => sum + r.days, 0);
   const proposalTotal = proposalRows.reduce((sum, r) => sum + r.days, 0);
   return {
@@ -5080,7 +5160,7 @@ function renderMemberOverview(){
   const vm2=members.filter(m=>!hiddenMb.has(m.id)); 
   if(!vm2.length){target.innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
 
-  let h='<div class="member-overview">'; 
+  let h=manDayYearControlHtml('ov-md-year')+'<div class="member-overview">'; 
   vm2.forEach(m2=>{
     const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); 
     const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
@@ -5122,7 +5202,7 @@ function renderMembersPage(){
   const vm2 = members.filter(m=>!hiddenMb.has(m.id));
   if(!vm2.length){ target.innerHTML='<div class="empty">멤버가 없습니다</div>'; return; }
 
-  let h='<div class="member-overview">';
+  let h=manDayYearControlHtml('members-md-year')+'<div class="member-overview">';
   vm2.forEach(m2=>{
     const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj));
     const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
@@ -5709,12 +5789,13 @@ function openChangeSelf(){
 function changeSelf(){ showToast('로그인 기반에서는 계정을 직접 변경할 수 없습니다.'); }
 
 function goPage(p){ 
-  ['home','cal','overview','proposals','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
+  ['home','cal','overview','proposals','members','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); } 
   if(p==='home') renderHome();
   if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
+  if(p==='members') renderMembersPage();
   if(p==='setup') { renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); applyTheme(currentTheme); } 
 }
 
