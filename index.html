@@ -1564,7 +1564,7 @@ button,
 
 
 <script>
-console.info("team-calendar build: calendar_v19");
+console.info("team-calendar build: calendar_v20");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
@@ -3362,6 +3362,13 @@ function calendarTaskTitle(t){
   const a = mb(t.assignee || '');
   const name = a?.name || '';
   const title = t.title || '업무';
+  return name ? `${name} ${title}` : title;
+}
+
+function calendarEventTitle(e){
+  const m = mb(e?.who || '');
+  const name = m?.name || (e?.who === 'all' ? '전체' : '');
+  const title = e?.title || '일정';
   return name ? `${name} ${title}` : title;
 }
 
@@ -5442,7 +5449,7 @@ function dayClick(d){
   });
   marks.forEach(p=>{ const cls=p.type==='deadline'?'ep-proposal-deadline':'ep-proposal-start'; h+=`<div class="li" style="padding:8px" onclick="closeModal();showProposal('${p.id}')"><div class="li-dot" style="background:${p.type==='deadline'?'#DC2626':'#0891B2'}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(p.label)}</div></div></div>`; });
   dtasks.forEach(t=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showTask('${t.id}')"><div class="li-dot" style="background:#475569"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(calendarTaskTitle(t))}</div></div></div>`; });
-  de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(e.title || '')}</div></div></div>`; });
+  de.forEach(e=>{ h+=`<div class="li" style="padding:8px" onclick="closeModal();showEv('${e.id}')"><div class="li-dot" style="background:${eventColor(e.type)}"></div><div class="li-info"><div class="li-title" style="font-size:13px">${escapeHtml(calendarEventTitle(e))}</div></div></div>`; });
   document.getElementById('modal-body').innerHTML=h+'</div>';
   openModal(`${curM+1}월 ${d}일 일정`);
 }
