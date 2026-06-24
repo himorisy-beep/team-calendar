@@ -244,6 +244,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .proj-color-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0}
 .proj-card-title{font-size:14px;font-weight:600}
 .proj-card-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.project-period-warning{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:800;background:#FAEEDA;color:#854F0B;margin-left:4px;white-space:nowrap}
 .proj-card-body{padding:12px 16px}
 .member-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:12px;margin:2px;border:.5px solid var(--border)}
 .task-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border);font-size:13px}
@@ -1662,9 +1663,9 @@ function taskContextLabel(t, fallback='연결 없음'){
   return proposalTaskLabel(t) || projectTaskLabel(t) || fallback;
 }
 function isActiveMember(m){ return !!m && m.active !== false && m.status !== 'inactive' && m.archived !== true; }
-function isArchivedProject(p){ return !!p && (p.archived === true || p.status === 'archived'); }
+function isArchivedProject(p){ return false; }
 function getActiveMembers(){ return members.filter(isActiveMember); }
-function getActiveProjects(){ return projects.filter(p => !isArchivedProject(p)); }
+function getActiveProjects(){ return projects; }
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
   const raw = String(role || '').trim();
@@ -1875,13 +1876,26 @@ function hasFutureEventForProject(projectId){
   });
 }
 
-function isClosedProject(p){
-  if(isArchivedProject(p)) return true;
+function isProjectPeriodEnded(p){
   if(!p || !p.end) return false;
   const end = parseDateSafely(p.end);
   if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
   end.setHours(23,59,59,999);
-  if(end >= todayStartDate()) return false;
+  return end < todayStartDate();
+}
+
+function hasResidualTaskAfterProjectEnd(p){
+  return !!p && isProjectPeriodEnded(p) && hasOpenTaskForProject(p.id);
+}
+
+function projectPeriodWarningHtml(p){
+  return hasResidualTaskAfterProjectEnd(p) ? '<span class="project-period-warning">기간 종료 · 잔여업무 있음</span>' : '';
+}
+
+function isClosedProject(p){
+  // 사업관리 화면에서는 종료일이 지났더라도 미완료 업무나 미래 일정이 남아 있으면 계속 진행 중으로 둡니다.
+  // 투입공수 계산은 이 분류와 별개로 사업 종료일까지만 계산합니다.
+  if(!isProjectPeriodEnded(p)) return false;
   return !hasOpenTaskForProject(p.id) && !hasFutureEventForProject(p.id);
 }
 
@@ -1903,9 +1917,8 @@ function toggleClosedProjects(){
 
 function getOverviewProjectGroups(){
   const filtered = projects.filter(p => selProj === 'all' || p.id === selProj).sort(sortProjectsBySchedule);
-  if(selProj !== 'all') return { active: filtered.filter(p => !isArchivedProject(p)), closed: filtered.filter(isArchivedProject) };
-  const active = filtered.filter(p => !isClosedProject(p) && !isArchivedProject(p));
-  const closed = filtered.filter(p => isClosedProject(p) || isArchivedProject(p));
+  const active = filtered.filter(p => !isClosedProject(p));
+  const closed = filtered.filter(p => isClosedProject(p));
   return { active, closed };
 }
 
@@ -4525,7 +4538,7 @@ function renderBoardProjectCards(vp){
       })
     ].sort(sortManagementRows).map(r=>r.html).join('');
 
-    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div style="flex:1;min-width:0"><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명${isClosedProject(p)?' · 종료 사업':''}</div></div>${isMemberUser()?`<button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>`:''}</div>${projectSummaryHtml(p)}<div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
+    h+=`<div class="proj-card"><div class="proj-card-header"><div class="proj-color-bar" style="background:${p.color}"></div><div style="flex:1;min-width:0"><div class="proj-card-title">${escapeHtml(p.name || '')}</div><div class="proj-card-sub">${p.start?fmtDateFull(p.start)+'~'+fmtDateFull(p.end):'기간 미정'} · 담당 ${projAssigns.length}명${isClosedProject(p)?' · 완료 사업':''}${projectPeriodWarningHtml(p)}</div></div>${isMemberUser()?`<button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>`:''}</div>${projectSummaryHtml(p)}<div class="proj-card-body">${mt?`<div style="margin-bottom:10px">${mt}</div>`:''}${rows || '<div style="font-size:13px;color:var(--text3)">내역 없음</div>'}</div></div>`;
   });
   return h;
 }
@@ -4547,7 +4560,7 @@ function renderBoard(){
 
   if(!hidePast && closed.length){
     h += `<div class="closed-project-section">
-      <button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>종료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button>
+      <button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button>
       ${closedProjectsOpen ? `<div class="overview-grid">${renderBoardProjectCards(closed)}</div>` : ''}
     </div>`;
   }
@@ -4573,8 +4586,9 @@ function renderProjectTable(){
     const done = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료').length;
     const overdue = projTasks.filter(t=>isOverdue(t)).length;
     const closed = isClosedProject(p);
-    const statusClass = overdue ? 'danger' : closed ? 'ok' : doing ? 'warn' : 'ok';
-    const statusText = overdue ? '지연 있음' : closed ? '종료' : doing ? '진행중' : '정상';
+    const residual = hasResidualTaskAfterProjectEnd(p);
+    const statusClass = residual ? 'warn' : overdue ? 'danger' : closed ? 'ok' : doing ? 'warn' : 'ok';
+    const statusText = residual ? '기간 종료 · 잔여업무 있음' : overdue ? '지연 있음' : closed ? '완료' : doing ? '진행중' : '정상';
 
     const memberAvatars = projAssigns.slice(0,4).map(a=>{
       const m = mb(a.memberId);
@@ -4611,7 +4625,7 @@ function renderProjectTable(){
   h += active.map(rowHtml).join('');
 
   if(!hidePast && closed.length){
-    h += `<tr class="closed-project-table-row"><td colspan="8"><button class="closed-project-toggle" style="margin:0" onclick="toggleClosedProjects()"><span>종료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button></td></tr>`;
+    h += `<tr class="closed-project-table-row"><td colspan="8"><button class="closed-project-toggle" style="margin:0" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button></td></tr>`;
     if(closedProjectsOpen) h += closed.map(rowHtml).join('');
   }
 
@@ -4628,7 +4642,7 @@ function renderGantt() {
   let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
   const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1; 
   const pct = (d) => { const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10)); return Math.max(0, Math.min(100, (diff / totalDays) * 100)); };
-  let h = ''; projects.filter(p => !isArchivedProject(p) && (selProj === 'all' || p.id === selProj)).forEach(p => {
+  let h = ''; projects.filter(p => (selProj === 'all' || p.id === selProj)).forEach(p => {
     const pt = allTasks.filter(t => t.project === p.id); if (!pt.length) return;
     h += `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
     pt.forEach(t => { const a = mb(t.assignee); h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`; });
@@ -5087,7 +5101,7 @@ function manDayYearControlHtml(id){
     .join('');
   const manageBtn = canManageAll() ? `<button class="btn btn-secondary btn-sm" type="button" onclick="openBulkProjectMemberStartManager()">투입 시작일 관리</button>` : '';
   return `<div class="md-year-toolbar">
-    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">사업 관리 &gt; 멤버별 화면에서 사업별·제안별 MD만 계산합니다.</div></div>
+    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">사업 관리 &gt; 멤버별 화면에서 사업별·제안별 MD만 계산합니다. 보드의 종료 분류와 별개로, 사업 MD는 사업 종료일까지 계산합니다.</div></div>
     <div class="md-year-actions">
       <select id="${escapeAttr(id || 'md-year-select')}" class="md-year-select" onchange="setManDayYear(this.value)">${opts}</select>
       ${manageBtn}
@@ -5227,8 +5241,6 @@ function projectManDayRows(memberId){
     .map(a => {
       const project = pj(a.projectId);
       if(!project) return null;
-      if(hidePast && isArchivedProject(project)) return null;
-      if(hidePast && isClosedProject(project)) return null;
       const startDate = assignmentEffectiveStart(a, project);
       const endDate = validManDayDate(project.end);
       const days = inclusiveCalendarManDays(startDate, endDate);
@@ -5306,7 +5318,7 @@ function manDaySummaryHtml(memberId){
       <div class="md-box"><div class="md-box-title"><span>사업별 투입공수</span><span>${stats.projects.length}건</span></div>${rowsHtml(stats.projects, 'project')}</div>
       <div class="md-box"><div class="md-box-title"><span>제안별 투입공수</span><span>${stats.proposals.length}건</span></div>${rowsHtml(stats.proposals, 'proposal')}</div>
     </div>
-    <div style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:8px">계산 기준: 사업은 사업 시작일/참여인력 투입시작일 중 늦은 날짜부터 사업 종료일까지, 제안은 제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜부터 제출 마감일까지 계산합니다. 주말 포함, 양끝 날짜 포함 기준입니다.</div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:8px">계산 기준: 사업 MD는 사업관리 보드의 종료 분류와 별개로 사업 시작일/참여인력 투입시작일 중 늦은 날짜부터 사업 종료일까지 계산합니다. 제안은 제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜부터 제출 마감일까지 계산합니다. 주말 포함, 양끝 날짜 포함 기준입니다.</div>
   </div>`;
 }
 
@@ -5323,7 +5335,7 @@ function allVisibleManDayExportRows(){
       '종료일':manDayDateLabel(r.end),
       'MD':r.days,
       '연도필터':manDayYear === 'all' ? '전체 기간' : `${manDayYear}년`,
-      '계산기준':'사업 시작일/투입 시작일 중 늦은 날짜 ~ 사업 종료일, 주말 포함'
+      '계산기준':'사업 시작일/투입 시작일 중 늦은 날짜 ~ 사업 종료일, 보드 종료 분류와 별개, 주말 포함'
     }));
     stats.proposals.forEach(r => rows.push({
       '구분':'제안',
@@ -6141,15 +6153,19 @@ async function deleteMember(id){ return disableMember(id); }
 
 function renderProjectManageList(){
   const el=document.getElementById('proj-count'); const list=document.getElementById('project-manage-list'); if(!el||!list) return;
-  const sorted=[...projects].sort((a,b)=>{ const aa=isArchivedProject(a), bb=isArchivedProject(b); if(aa!==bb) return aa?1:-1; return String(a.name||'').localeCompare(String(b.name||'')); });
+  const sorted=[...projects].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
   el.textContent=`(${sorted.length})`;
   let h='';
-  sorted.forEach(p=>{ const memberCount=assigns.filter(a=>a.projectId===p.id).length; const archived=isArchivedProject(p); h+=`<div class="user-team-row ${archived?'is-inactive':''}"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(p.name || '')}</div><span class="status-chip ${archived?'neutral':'ok'}">${archived?'보관':'활성'}</span></div><div class="user-team-meta">참여인력 ${memberCount}명${p.start||p.end ? ' · '+fmtDateFull(p.start)+' ~ '+fmtDateFull(p.end) : ''}</div></div><div class="user-team-actions">${canManageAll()?`<button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${escapeAttr(p.id)}')">참여인력</button>`:''}<button class="btn btn-secondary btn-sm" onclick="openEditProject('${escapeAttr(p.id)}')">수정</button>${canManageAll() ? (archived ? `<button class="btn btn-secondary btn-sm" onclick="restoreProject('${escapeAttr(p.id)}')">복원</button>` : `<button class="btn-danger-sm" onclick="archiveProject('${escapeAttr(p.id)}')">보관</button>`) : ''}</div></div>`; });
+  sorted.forEach(p=>{
+    const memberCount=assigns.filter(a=>a.projectId===p.id).length;
+    const closed=isClosedProject(p);
+    h+=`<div class="user-team-row ${closed?'is-inactive':''}"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(p.name || '')}</div><span class="status-chip ${closed?'ok':'warn'}">${closed?'종료':'진행중'}</span></div><div class="user-team-meta">참여인력 ${memberCount}명${p.start||p.end ? ' · '+fmtDateFull(p.start)+' ~ '+fmtDateFull(p.end) : ''}</div></div><div class="user-team-actions">${canManageAll()?`<button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${escapeAttr(p.id)}')">참여인력</button>`:''}<button class="btn btn-secondary btn-sm" onclick="openEditProject('${escapeAttr(p.id)}')">수정</button></div></div>`;
+  });
   list.innerHTML=h || '<div class="empty">사업이 없습니다</div>';
 }
 function openAddProject(){ if(!requireMemberWrite()) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(false); openModal('사업 추가'); }
 function openEditProject(id){ if(!requireMemberWrite()) return; const p=pj(id); if(!p) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(true); openModal('사업 수정'); document.getElementById('project-id').value=p.id; document.getElementById('project-name').value=p.name||''; document.getElementById('project-color').value=p.color||'#3B6D11'; document.getElementById('project-start').value=p.start||''; document.getElementById('project-end').value=p.end||''; }
-function getProjectFormHTML(isEdit){ return `<input type="hidden" id="project-id"><div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div><div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div><div style="display:flex;gap:8px">${isEdit && canManageAll() ? `<button class="btn-danger-sm" onclick="deleteProjectFromEdit()">보관</button>` : ''}<button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
+function getProjectFormHTML(isEdit){ return `<input type="hidden" id="project-id"><div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div><div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
 function submitProject(){
   const id=document.getElementById('project-id').value||'pj_'+Date.now();
   const name=document.getElementById('project-name').value.trim();
@@ -6163,16 +6179,12 @@ function submitProject(){
     start:document.getElementById('project-start').value,
     end:document.getElementById('project-end').value
   };
-  if(!existing){
-    payload.archived=false;
-    payload.status='active';
-  }
   apiSave(payload, ()=>closeModal());
 }
-function deleteProjectFromEdit(){ const id=document.getElementById('project-id').value; if(id) archiveProject(id); }
-async function archiveProject(id){ if(!requireManager()) return; const p=pj(id); if(!p) return; if(!confirm(`${p.name}을(를) 보관할까요? 과거 업무/일정 연결은 유지되고 신규 선택 목록에서 숨겨집니다.`)) return; try{ await db.collection('projects').doc(id).set({archived:true,status:'archived',archivedAt:new Date().toISOString(),archivedBy:selfId},{merge:true}); closeModal(); showToast('사업을 보관했습니다'); }catch(e){ showToast('사업 보관 실패: '+(e.message||e)); } }
-async function restoreProject(id){ if(!requireManager()) return; const p=pj(id); if(!p) return; if(!confirm(`${p.name}을(를) 다시 활성화할까요?`)) return; try{ await db.collection('projects').doc(id).set({archived:false,status:'active',restoredAt:new Date().toISOString(),restoredBy:selfId},{merge:true}); showToast('사업을 복원했습니다'); }catch(e){ showToast('사업 복원 실패: '+(e.message||e)); } }
-async function deleteProject(id){ return archiveProject(id); }
+function deleteProjectFromEdit(){ showToast('이 기능은 사용하지 않습니다'); }
+async function archiveProject(id){ showToast('보관 기능은 사용하지 않습니다. 완료 사업은 과거 숨기기/완료 사업 접기로 관리합니다.'); }
+async function restoreProject(id){ showToast('이 기능은 사용하지 않습니다'); }
+async function deleteProject(id){ showToast('이 기능은 사용하지 않습니다'); }
 
 
 function openManageProjectMembers(projectId){
@@ -6315,7 +6327,7 @@ function downloadTextFile(filename,text,mime){ const blob=new Blob([text],{type:
 function rowsToCSV(rows,headers){ const head=headers.map(csvEscape).join(','); const body=rows.map(row=>headers.map(h=>csvEscape(row[h])).join(',')).join('\n'); return '\ufeff'+head+(body?'\n'+body:''); }
 function exportCSV(type){
   if(!requireMemberWrite()) return; const now=new Date().toISOString().slice(0,10); let rows=[], headers=[];
-  if(type==='projects'){ headers=['id','name','start','end','status','archived','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',archived:isArchivedProject(p),memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
+  if(type==='projects'){ headers=['id','name','start','end','status','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
   else if(type==='tasks'){ headers=['id','title','project','projectName','proposal','proposalName','assignee','assigneeName','start','end','status','priority','showOnCalendar','note']; rows=tasks.map(t=>({id:t.id,title:t.title||'',project:t.project||'',projectName:pj(t.project)?.name||'',proposal:t.proposal||'',proposalName:pr(t.proposal)?.name||'',assignee:t.assignee||'',assigneeName:mb(t.assignee)?.name||'',start:t.start||'',end:t.end||'',status:normalizeTaskStatus(t.status),priority:t.priority||getTaskMatrixType(t),showOnCalendar:t.showOnCalendar===true,note:t.note||''})); }
   else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',public:e.public===true})); }
   else if(type==='proposals'){ headers=['id','name','status','result','start','deadline','demandOrg','participants','participantNames','note']; rows=proposals.map(p=>({id:p.id,name:p.name||'',status:proposalStatusLabel(proposalStatusValue(p)),result:proposalResultLabel(proposalResultValue(p)),start:p.start||'',deadline:p.deadline||'',demandOrg:p.demandOrg||'',participants:p.participants||'',participantNames:proposalParticipantNames(p).join('; '),note:p.note||''})); }
