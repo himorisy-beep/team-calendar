@@ -4571,11 +4571,14 @@ function getProposalDdayText(p){
 
 
 const PROPOSAL_STATUS_LABELS = {
-  preparing:'준비중',
-  writing:'작성중',
-  review:'작성중',
+  preparing:'진행중',
   submitted:'제출완료',
   hold:'보류'
+};
+
+const PROPOSAL_STATUS_ALIASES = {
+  writing:'preparing',
+  review:'preparing'
 };
 
 const PROPOSAL_RESULT_LABELS = {
@@ -4585,11 +4588,12 @@ const PROPOSAL_RESULT_LABELS = {
 };
 
 let proposalStatusFilter = ls('proposalStatusFilter') || 'active';
+if(proposalStatusFilter === 'review') proposalStatusFilter = 'active';
 let proposalResultFilter = ls('proposalResultFilter') || 'all';
 let proposalHidePast = ls('proposalHidePast') === 'Y';
 
 function proposalFilterLabel(filter){
-  return ({active:'진행중', review:'작성중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
+  return ({active:'진행중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
 }
 
 function proposalResultFilterLabel(filter){
@@ -4599,7 +4603,7 @@ function proposalResultFilterLabel(filter){
 function proposalStatusFilterMatches(p){
   const status = proposalStatusValue(p);
   if(proposalStatusFilter === 'all') return true;
-  if(proposalStatusFilter === 'active') return ['preparing','writing'].includes(status);
+  if(proposalStatusFilter === 'active') return status === 'preparing';
   return status === proposalStatusFilter;
 }
 
@@ -4619,7 +4623,7 @@ function isPastProposal(p){
 }
 
 function setProposalStatusFilter(filter){
-  proposalStatusFilter = ['active','review','submitted','hold','all'].includes(filter) ? filter : 'active';
+  proposalStatusFilter = ['active','submitted','hold','all'].includes(filter) ? filter : 'active';
   ls('proposalStatusFilter', proposalStatusFilter);
   renderProposalPage();
 }
@@ -4637,7 +4641,7 @@ function toggleProposalHidePast(checked){
 }
 
 function proposalStatusFilterChips(){
-  const statusFilters = ['active','review','submitted','hold','all'];
+  const statusFilters = ['active','submitted','hold','all'];
   const resultFilters = ['all','pending','won','lost'];
   return `<div class="proposal-filter-panel">
     <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" onclick="setProposalStatusFilter('${f}')">${proposalFilterLabel(f)}</button>`).join('')}</div>
@@ -4646,7 +4650,9 @@ function proposalStatusFilterChips(){
 }
 
 function proposalStatusValue(p){
-  return p?.status && PROPOSAL_STATUS_LABELS[p.status] ? p.status : 'preparing';
+  const raw = p?.status || 'preparing';
+  const normalized = PROPOSAL_STATUS_ALIASES[raw] || raw;
+  return PROPOSAL_STATUS_LABELS[normalized] ? normalized : 'preparing';
 }
 
 function proposalStatusLabel(status){
@@ -4654,8 +4660,10 @@ function proposalStatusLabel(status){
 }
 
 function proposalStatusOptions(selected){
-  const cur = selected && PROPOSAL_STATUS_LABELS[selected] ? selected : 'preparing';
-  return Object.entries(PROPOSAL_STATUS_LABELS).map(([value,label]) => `<option value="${value}" ${value===cur?'selected':''}>${label}</option>`).join('');
+  const raw = selected || 'preparing';
+  const cur = PROPOSAL_STATUS_ALIASES[raw] || raw;
+  const safeCur = PROPOSAL_STATUS_LABELS[cur] ? cur : 'preparing';
+  return Object.entries(PROPOSAL_STATUS_LABELS).map(([value,label]) => `<option value="${value}" ${value===safeCur?'selected':''}>${label}</option>`).join('');
 }
 
 function proposalStatusChip(p){
