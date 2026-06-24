@@ -618,11 +618,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .md-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .md-summary-title{font-size:12px;font-weight:900;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
 .md-summary-note{font-size:11px;color:var(--text3);white-space:nowrap}
-.md-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
-.md-stat-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;min-width:0}
-.md-stat-label{font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.md-stat-value{font-size:20px;font-weight:900;color:var(--text);line-height:1.1;white-space:nowrap}
-.md-stat-value small{font-size:11px;color:var(--text2);font-weight:800;margin-left:3px}
+.md-stat-grid{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.md-stat-card{display:inline-flex;align-items:baseline;gap:5px;background:var(--bg2);border:.5px solid var(--border);border-radius:999px;padding:5px 9px;min-width:0;white-space:nowrap}
+.md-stat-label{font-size:11px;font-weight:800;color:var(--text3);letter-spacing:0;margin:0}
+.md-stat-value{font-size:13px;font-weight:900;color:var(--text);line-height:1;white-space:nowrap}
+.md-stat-value small{font-size:10px;color:var(--text2);font-weight:800;margin-left:2px}
 .md-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .md-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:12px;min-width:0}
 .md-box-title{font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
@@ -644,7 +644,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 #personal-list .li-title{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.35}
 #personal-list .li-meta{font-size:11px;line-height:1.35}
 #personal-list .tag{font-size:10px;padding:1px 6px}
-@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-stat-grid{grid-template-columns:repeat(3,minmax(72px,1fr));gap:6px}.md-stat-card{padding:8px 9px}.md-stat-label{font-size:10px}.md-stat-value{font-size:17px}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-actions{width:100%;display:flex;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:2px}.md-year-actions .btn{width:auto;flex:0 0 auto}.md-year-select{width:auto;min-width:112px;flex:0 0 auto}}
+@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-stat-grid{gap:5px;margin-bottom:9px}.md-stat-card{padding:4px 8px}.md-stat-label{font-size:10px}.md-stat-value{font-size:12px}.md-stat-value small{font-size:9px}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-actions{width:100%;display:flex;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:2px}.md-year-actions .btn{width:auto;flex:0 0 auto}.md-year-select{width:auto;min-width:112px;flex:0 0 auto}}
 
 /* Proposal table layout fix */
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
@@ -5401,9 +5401,9 @@ function manDaySummaryHtml(memberId){
       <div class="md-summary-note">${yearLabel}</div>
     </div>
     <div class="md-stat-grid">
-      <div class="md-stat-card"><div class="md-stat-label">총 MD</div><div class="md-stat-value">${stats.total}<small>MD</small></div></div>
-      <div class="md-stat-card"><div class="md-stat-label">사업 MD</div><div class="md-stat-value">${stats.projectTotal}<small>MD</small></div></div>
-      <div class="md-stat-card"><div class="md-stat-label">제안 MD</div><div class="md-stat-value">${stats.proposalTotal}<small>MD</small></div></div>
+      <div class="md-stat-card"><div class="md-stat-label">총</div><div class="md-stat-value">${stats.total}<small>MD</small></div></div>
+      <div class="md-stat-card"><div class="md-stat-label">사업</div><div class="md-stat-value">${stats.projectTotal}<small>MD</small></div></div>
+      <div class="md-stat-card"><div class="md-stat-label">제안</div><div class="md-stat-value">${stats.proposalTotal}<small>MD</small></div></div>
     </div>
     <div class="md-columns">
       <div class="md-box"><div class="md-box-title"><span>사업별 투입공수</span><span>${stats.projects.length}건</span></div>${rowsHtml(stats.projects, 'project')}</div>
