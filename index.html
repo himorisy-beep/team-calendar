@@ -1564,7 +1564,7 @@ button,
 
 
 <script>
-console.info("team-calendar build: calendar_v18");
+console.info("team-calendar build: calendar_v19");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
 
@@ -4566,7 +4566,7 @@ function getProposalDdayText(p){
 const PROPOSAL_STATUS_LABELS = {
   preparing:'준비중',
   writing:'작성중',
-  review:'검토중',
+  review:'작성중',
   submitted:'제출완료',
   hold:'보류'
 };
@@ -4582,7 +4582,7 @@ let proposalResultFilter = ls('proposalResultFilter') || 'all';
 let proposalHidePast = ls('proposalHidePast') === 'Y';
 
 function proposalFilterLabel(filter){
-  return ({active:'진행중', review:'검토중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
+  return ({active:'진행중', review:'작성중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
 }
 
 function proposalResultFilterLabel(filter){
