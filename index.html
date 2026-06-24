@@ -612,18 +612,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 
 
 /* Member man-day summary */
-.md-summary{margin-top:12px;border-top:.5px solid var(--border);padding-top:12px}
-.md-total-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.md-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--bg2);border:.5px solid var(--border);font-size:12px;color:var(--text2);font-weight:700}
+.member-card-body{padding:14px 16px 16px}
+.md-summary{margin-top:0;padding-top:0}
+.md-summary-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.md-summary-title{font-size:12px;font-weight:900;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
+.md-summary-note{font-size:11px;color:var(--text3);white-space:nowrap}
+.md-total-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.md-pill{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;background:var(--bg2);border:.5px solid var(--border);font-size:12px;color:var(--text2);font-weight:700}
 .md-pill strong{font-size:13px;color:var(--text)}
 .md-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.md-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;min-width:0}
-.md-box-title{font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px;display:flex;justify-content:space-between;gap:8px}
-.md-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px}
-.md-row:last-child{border-bottom:none}
-.md-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
-.md-value{font-weight:900;white-space:nowrap}
-.md-sub{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:12px;min-width:0}
+.md-box-title{font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+.md-list{display:flex;flex-direction:column;gap:0}
+.md-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.md-row:first-child{padding-top:2px}
+.md-row:last-child{border-bottom:none;padding-bottom:2px}
+.md-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text)}
+.md-value{font-weight:900;white-space:nowrap;font-size:13px;color:var(--text)}
+.md-sub{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-empty{font-size:12px;color:var(--text3);padding:8px 0 4px;line-height:1.45}
+.md-footnote{font-size:11px;color:var(--text3);line-height:1.45;margin-top:10px;padding:8px 10px;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm)}
 .md-year-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm)}
 .md-year-title{font-size:12px;font-weight:900;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
 .md-year-help{font-size:11px;color:var(--text3);margin-top:2px}
@@ -5367,7 +5375,8 @@ function memberManDayStats(memberId){
 
 function manDaySummaryHtml(memberId){
   const stats = memberManDayStats(memberId);
-  const rowsHtml = (rows, type) => rows.length ? rows.map(r => `
+  const yearLabel = manDayYear === 'all' ? '전체 기간 기준' : `${manDayYear}년 기준`;
+  const rowsHtml = (rows, type) => rows.length ? `<div class="md-list">${rows.map(r => `
     <div class="md-row" onclick="${type === 'project' ? `goPage('overview');selProj='${escapeAttr(r.id)}';renderActiveFilterBar();renderOverview()` : `showProposal('${escapeAttr(r.id)}')`}" style="cursor:pointer">
       <div>
         <div class="md-name"><span class="dot" style="background:${r.color}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</span></div>
@@ -5375,9 +5384,13 @@ function manDaySummaryHtml(memberId){
       </div>
       <div class="md-value">${r.days} MD</div>
     </div>
-  `).join('') : '<div style="font-size:12px;color:var(--text3);padding:5px 0">계산할 항목이 없습니다</div>';
+  `).join('')}</div>` : '<div class="md-empty">계산할 항목이 없습니다</div>';
 
   return `<div class="md-summary">
+    <div class="md-summary-head">
+      <div class="md-summary-title">투입공수 요약</div>
+      <div class="md-summary-note">${yearLabel}</div>
+    </div>
     <div class="md-total-row">
       <span class="md-pill">총 <strong>${stats.total}</strong> MD</span>
       <span class="md-pill">사업 <strong>${stats.projectTotal}</strong> MD</span>
@@ -5387,7 +5400,7 @@ function manDaySummaryHtml(memberId){
       <div class="md-box"><div class="md-box-title"><span>사업별 투입공수</span><span>${stats.projects.length}건</span></div>${rowsHtml(stats.projects, 'project')}</div>
       <div class="md-box"><div class="md-box-title"><span>제안별 투입공수</span><span>${stats.proposals.length}건</span></div>${rowsHtml(stats.proposals, 'proposal')}</div>
     </div>
-    <div style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:8px">계산 기준: 사업 MD는 사업관리 보드의 종료 분류와 별개로 사업 시작일/참여인력 투입시작일 중 늦은 날짜부터 사업 종료일까지 계산합니다. 제안은 제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜부터 제출 마감일까지 계산합니다. 주말 포함, 양끝 날짜 포함 기준입니다.</div>
+    <div class="md-footnote">계산 기준: 사업 MD는 사업관리 보드의 종료 분류와 별개로 사업 시작일/참여인력 투입시작일 중 늦은 날짜부터 사업 종료일까지 계산합니다. 제안은 제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜부터 제출 마감일까지 계산합니다. 주말 포함, 양끝 날짜 포함 기준입니다.</div>
   </div>`;
 }
 
