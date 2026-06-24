@@ -608,6 +608,22 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   .proposal-actions{width:100%;justify-content:flex-end}
 }
 
+
+/* Member man-day summary */
+.md-summary{margin-top:12px;border-top:.5px solid var(--border);padding-top:12px}
+.md-total-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.md-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--bg2);border:.5px solid var(--border);font-size:12px;color:var(--text2);font-weight:700}
+.md-pill strong{font-size:13px;color:var(--text)}
+.md-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.md-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;min-width:0}
+.md-box-title{font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px;display:flex;justify-content:space-between;gap:8px}
+.md-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.md-row:last-child{border-bottom:none}
+.md-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.md-value{font-weight:900;white-space:nowrap}
+.md-sub{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:680px){.md-columns{grid-template-columns:1fr}}
+
 /* Proposal table layout fix */
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
 #proposal-list{overflow-x:auto;padding-bottom:2px}
@@ -4828,8 +4844,15 @@ function submitProposal(){
 
   if(!name){ showToast('사업명을 입력해주세요'); return; }
   const id = editingProposalId || ('proposal_' + Date.now());
+  const existing = proposals.find(x => x.id === id) || {};
+  const nowIso = new Date().toISOString();
+  const nowDate = fmtDateFull(nowIso);
+  const participantJoinedAt = {...(existing.participantJoinedAt || existing.participantAddedAt || {})};
+  participantIds.forEach(pid => {
+    if(!participantJoinedAt[pid]) participantJoinedAt[pid] = start || nowDate;
+  });
 
-  apiSave({
+  const payload = {
     action: editingProposalId ? 'updateProposal' : 'addProposal',
     id,
     name,
@@ -4842,8 +4865,16 @@ function submitProposal(){
     participants,
     note,
     participantIds,
+    participantJoinedAt,
     fileLinks
-  }, () => { editingProposalId = null; closeModal(); });
+  };
+  if(!editingProposalId){
+    payload.createdAt = nowIso;
+    payload.registeredAt = nowIso;
+    payload.registeredAtDate = nowDate;
+  }
+
+  apiSave(payload, () => { editingProposalId = null; closeModal(); });
 }
 
 function deleteProposal(id){
@@ -4898,6 +4929,150 @@ function fileLinksToTextarea(value){
   return normalizeFileLinks(value).map(f => `${f.name || '첨부파일 다운로드'} | ${f.url}`).join('\n');
 }
 
+
+
+function validManDayDate(value){
+  if(!value) return null;
+  const d = parseDateSafely(value);
+  if(!d || isNaN(d.getTime()) || d.getTime() === 0) return null;
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function laterManDayDate(a, b){
+  if(!a) return b || null;
+  if(!b) return a || null;
+  return a > b ? a : b;
+}
+
+function inclusiveCalendarManDays(startValue, endValue){
+  const s = validManDayDate(startValue);
+  const e = validManDayDate(endValue);
+  if(!s || !e || e < s) return 0;
+  return Math.floor((e.getTime() - s.getTime()) / 86400000) + 1;
+}
+
+function manDayDateLabel(value){
+  return value ? fmtDateFull(value) : '-';
+}
+
+function assignAppliedDateValue(a){
+  if(!a) return '';
+  return a.assignedAtDate || a.appliedAtDate || a.startDate || fmtDateFull(a.assignedAt || a.createdAt || a.appliedAt || a.updatedAt || '');
+}
+
+function assignmentEffectiveStart(a, project){
+  const projectStart = validManDayDate(project?.start || '');
+  const appliedStart = validManDayDate(assignAppliedDateValue(a));
+  return laterManDayDate(projectStart, appliedStart);
+}
+
+function proposalRegisteredDateValue(p){
+  if(!p) return '';
+  return p.registeredAtDate || p.createdAtDate || fmtDateFull(p.registeredAt || p.createdAt || '');
+}
+
+function proposalMemberJoinedDateValue(p, memberId){
+  if(!p || !memberId) return '';
+  const map = p.participantJoinedAt || p.participantAddedAt || {};
+  return map[memberId] || '';
+}
+
+function proposalEffectiveStart(p, memberId){
+  const baseStart = validManDayDate(p?.start || '') || validManDayDate(proposalRegisteredDateValue(p));
+  const memberStart = validManDayDate(proposalMemberJoinedDateValue(p, memberId));
+  return laterManDayDate(baseStart, memberStart);
+}
+
+function projectManDayRows(memberId){
+  return assigns
+    .filter(a => a.memberId === memberId && (selProj === 'all' || a.projectId === selProj))
+    .map(a => {
+      const project = pj(a.projectId);
+      if(!project) return null;
+      if(hidePast && isArchivedProject(project)) return null;
+      if(hidePast && isClosedProject(project)) return null;
+      const startDate = assignmentEffectiveStart(a, project);
+      const endDate = validManDayDate(project.end);
+      const days = inclusiveCalendarManDays(startDate, endDate);
+      if(!days) return null;
+      return {
+        id:project.id,
+        name:project.name || '미등록 사업',
+        color:project.color || '#888',
+        days,
+        start:startDate,
+        end:endDate,
+        type:'project'
+      };
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.days-a.days || String(a.name).localeCompare(String(b.name)));
+}
+
+function proposalManDayRows(memberId){
+  return proposals
+    .filter(p => normalizeIdArray(p.participantIds).includes(memberId))
+    .map(p => {
+      if(hidePast && isPastProposal(p)) return null;
+      const startDate = proposalEffectiveStart(p, memberId);
+      const endDate = validManDayDate(p.deadline);
+      const days = inclusiveCalendarManDays(startDate, endDate);
+      if(!days) return null;
+      return {
+        id:p.id,
+        name:p.name || '미등록 제안',
+        color:p.color || '#7C3AED',
+        days,
+        start:startDate,
+        end:endDate,
+        type:'proposal'
+      };
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.days-a.days || String(a.name).localeCompare(String(b.name)));
+}
+
+function memberManDayStats(memberId){
+  const projectRows = projectManDayRows(memberId);
+  const proposalRows = proposalManDayRows(memberId);
+  const projectTotal = projectRows.reduce((sum, r) => sum + r.days, 0);
+  const proposalTotal = proposalRows.reduce((sum, r) => sum + r.days, 0);
+  return {
+    projects:projectRows,
+    proposals:proposalRows,
+    projectTotal,
+    proposalTotal,
+    total:projectTotal + proposalTotal
+  };
+}
+
+function manDaySummaryHtml(memberId){
+  const stats = memberManDayStats(memberId);
+  const rowsHtml = (rows, type) => rows.length ? rows.map(r => `
+    <div class="md-row" onclick="${type === 'project' ? `goPage('overview');selProj='${escapeAttr(r.id)}';renderActiveFilterBar();renderOverview()` : `showProposal('${escapeAttr(r.id)}')`}" style="cursor:pointer">
+      <div>
+        <div class="md-name"><span class="dot" style="background:${r.color}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</span></div>
+        <div class="md-sub">${manDayDateLabel(r.start)} ~ ${manDayDateLabel(r.end)}</div>
+      </div>
+      <div class="md-value">${r.days} MD</div>
+    </div>
+  `).join('') : '<div style="font-size:12px;color:var(--text3);padding:5px 0">계산할 항목이 없습니다</div>';
+
+  return `<div class="md-summary">
+    <div class="md-total-row">
+      <span class="md-pill">총 <strong>${stats.total}</strong> MD</span>
+      <span class="md-pill">사업 <strong>${stats.projectTotal}</strong> MD</span>
+      <span class="md-pill">제안 <strong>${stats.proposalTotal}</strong> MD</span>
+    </div>
+    <div class="md-columns">
+      <div class="md-box"><div class="md-box-title"><span>사업별 투입공수</span><span>${stats.projects.length}건</span></div>${rowsHtml(stats.projects, 'project')}</div>
+      <div class="md-box"><div class="md-box-title"><span>제안별 투입공수</span><span>${stats.proposals.length}건</span></div>${rowsHtml(stats.proposals, 'proposal')}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:8px">계산 기준: 사업은 사업 시작일/참여인력 투입시작일 중 늦은 날짜부터 사업 종료일까지, 제안은 제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜부터 제출 마감일까지 계산합니다. 주말 포함, 양끝 날짜 포함 기준입니다.</div>
+  </div>`;
+}
+
 function renderMemberOverview(){
   const target = document.getElementById('overview-container');
   if(!target) return;
@@ -4935,7 +5110,7 @@ function renderMemberOverview(){
           <div class="member-card-role">${escapeHtml(m2.role || '-')} · 담당사업 ${ma.length}개</div>
         </div>
       </div>
-      <div class="member-card-body">${pr || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}</div>
+      <div class="member-card-body">${pr || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}${manDaySummaryHtml(m2.id)}</div>
     </div>`;
   });
 
@@ -4943,13 +5118,43 @@ function renderMemberOverview(){
 }
 
 function renderMembersPage(){
-  const vm2=members.filter(m=>!hiddenMb.has(m.id)); if(!vm2.length){document.getElementById('members-container').innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
-  let h='<div class="member-overview">'; vm2.forEach(m2=>{
-    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
-    const pr=ma.map(a=>{const p=pj(a.projectId); if(!p) return ''; const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||t.status!=='완료')); const pe=me.filter(e=>e.project===p.id); return `<div class="proj-row" style="flex-wrap:wrap"><div class="proj-row-name" style="flex:1 1 100%;"><div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="proj-tasks" style="width:100%">${mt.map(t=>`<span class="mini-task ${t.status==='완료'?'done':''}" onclick="showTask('${t.id}')">${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}</div></div>`}).join('');
-    h+=`<div class="member-card"><div class="member-card-header"><div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div><div class="member-card-info"><div class="member-card-name">${escapeHtml(m2.name || '')}</div><div class="member-card-role">${escapeHtml(m2.role || '-')}</div></div></div><div class="member-card-body">${pr}</div></div>`;
+  const target = document.getElementById('members-container');
+  const vm2 = members.filter(m=>!hiddenMb.has(m.id));
+  if(!vm2.length){ target.innerHTML='<div class="empty">멤버가 없습니다</div>'; return; }
+
+  let h='<div class="member-overview">';
+  vm2.forEach(m2=>{
+    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj));
+    const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
+
+    const prRows=ma.map(a=>{
+      const p=pj(a.projectId);
+      if(!p) return '';
+      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||normalizeTaskStatus(t.status)!=='완료'));
+      const pe=me.filter(e=>e.project===p.id);
+      return `<div class="proj-row" style="flex-wrap:wrap">
+        <div class="proj-row-name" style="flex:1 1 100%;"><div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}</div>
+        <div class="proj-tasks" style="width:100%">
+          ${mt.map(t=>`<span class="mini-task ${normalizeTaskStatus(t.status)==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}
+        </div>
+      </div>`;
+    }).join('');
+
+    const proposalTasks = tasks.filter(t=>t.assignee===m2.id&&t.proposal&&(!hidePast||!isPast(t.end)||normalizeTaskStatus(t.status)!=='완료'));
+    const proposalRows = proposalTasks.length ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:6px">담당 제안 업무</div><div class="proj-tasks">${proposalTasks.map(t=>`<span class="mini-task ${normalizeTaskStatus(t.status)==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(pr(t.proposal)?.name || '제안')} · ${escapeHtml(t.title || '')}</span>`).join('')}</div></div>` : '';
+
+    h+=`<div class="member-card">
+      <div class="member-card-header">
+        <div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
+        <div class="member-card-info">
+          <div class="member-card-name">${escapeHtml(m2.name || '')}</div>
+          <div class="member-card-role">${escapeHtml(m2.role || '-')}</div>
+        </div>
+      </div>
+      <div class="member-card-body">${prRows || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}${proposalRows}${manDaySummaryHtml(m2.id)}</div>
+    </div>`;
   });
-  document.getElementById('members-container').innerHTML=h+'</div>';
+  target.innerHTML=h+'</div>';
 }
 
 function setPV(mode){
@@ -5714,13 +5919,19 @@ function openManageProjectMembers(projectId){
 
   const currentRows = projectAssigns.map(a => {
     const m = mb(a.memberId);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border)">
+    const appliedDate = assignAppliedDateValue(a);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap">
       ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:150px">
         <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
         <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')}</div>
       </div>
-      <button class="btn-danger-sm" onclick="deleteProjectMember('${a.id}', '${projectId}')">삭제</button>
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text2)">투입시작</span>
+        <input type="date" id="pm-start-${escapeAttr(a.id)}" value="${escapeAttr(appliedDate)}" style="width:132px;padding:5px 7px;font-size:12px">
+        <button class="btn btn-secondary btn-sm" onclick="updateProjectMemberStart('${escapeAttr(a.id)}', '${escapeAttr(projectId)}')">저장</button>
+        <button class="btn-danger-sm" onclick="deleteProjectMember('${escapeAttr(a.id)}', '${escapeAttr(projectId)}')">삭제</button>
+      </div>
     </div>`;
   }).join('');
 
@@ -5752,6 +5963,14 @@ function openManageProjectMembers(projectId){
       </div>
     </div>
 
+    <div class="form-row full">
+      <div>
+        <div class="fl">투입 시작일</div>
+        <input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}">
+        <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">사업 시작 후 중간에 합류한 경우 이 날짜부터 사업 종료일까지 MD가 계산됩니다.</div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="addProjectMember('${projectId}')">참여인력 추가</button>
       <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
@@ -5764,6 +5983,7 @@ function openManageProjectMembers(projectId){
 function addProjectMember(projectId){
   const memberId = document.getElementById('pm-member-sel').value;
   const role = document.getElementById('pm-role-input').value.trim();
+  const assignedAtDate = document.getElementById('pm-start-input')?.value || fmtDateFull(new Date());
 
   if(!memberId){
     showToast('팀원을 선택해주세요');
@@ -5771,15 +5991,33 @@ function addProjectMember(projectId){
   }
 
   const id = 'as_' + Date.now();
+  const nowIso = new Date().toISOString();
 
   apiSave({
     action:'addAssign',
     id,
     memberId,
     projectId,
-    role
+    role,
+    assignedAtDate,
+    assignedAt: assignedAtDate || nowIso,
+    createdAt: nowIso
   }, () => {
     showToast('참여인력을 추가했습니다');
+    openManageProjectMembers(projectId);
+  });
+}
+
+function updateProjectMemberStart(assignId, projectId){
+  const assignedAtDate = document.getElementById(`pm-start-${assignId}`)?.value || '';
+  apiSave({
+    action:'updateAssign',
+    id:assignId,
+    assignedAtDate,
+    assignedAt:assignedAtDate,
+    updatedAt:new Date().toISOString()
+  }, () => {
+    showToast('투입 시작일을 저장했습니다');
     openManageProjectMembers(projectId);
   });
 }
