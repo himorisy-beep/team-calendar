@@ -625,12 +625,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .md-year-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r-sm)}
 .md-year-title{font-size:12px;font-weight:900;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
 .md-year-help{font-size:11px;color:var(--text3);margin-top:2px}
+.md-year-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .md-year-select{width:auto;min-width:128px;font-size:12px;padding:5px 8px;background:var(--bg);color:var(--text);border:.5px solid var(--border2);border-radius:var(--r-sm)}
 #personal-list .li{padding:9px 12px;gap:9px}
 #personal-list .li-title{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.35}
 #personal-list .li-meta{font-size:11px;line-height:1.35}
 #personal-list .tag{font-size:10px;padding:1px 6px}
-@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-select{width:100%}}
+@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-actions,.md-year-select{width:100%}}
 
 /* Proposal table layout fix */
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
@@ -1370,6 +1371,20 @@ button,
   .export-grid,.diagnostic-grid{grid-template-columns:1fr 1fr}
 }
 
+
+/* Man-day management refinements */
+.proposal-participant-starts{margin-top:8px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);padding:8px;display:flex;flex-direction:column;gap:6px}
+.proposal-participant-start-row{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0}
+.proposal-participant-start-row .member-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.proposal-participant-start-row input{width:130px;padding:5px 7px;font-size:12px;background:var(--bg)}
+.manday-only-note{font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px}
+.bulk-md-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) 132px;gap:8px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)}
+.bulk-md-row:last-child{border-bottom:none}
+.bulk-md-row-title{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-md-row-sub{font-size:11px;color:var(--text2);margin-top:2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-md-row input{padding:5px 7px;font-size:12px}
+@media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
+
 </style>
 </head>
 <body>
@@ -1390,7 +1405,6 @@ button,
 <button class="sb-btn" id="nav-cal" onclick="goPage('cal')"><span class="icon">📅</span>캘린더</button>
 <button class="sb-btn" id="nav-overview" onclick="goPage('overview')"><span class="icon">📊</span>사업 관리</button>
 <button class="sb-btn" id="nav-proposals" onclick="goPage('proposals')"><span class="icon">📄</span>제안 관리</button>
-<button class="sb-btn" id="nav-members" onclick="goPage('members')"><span class="icon">👥</span>멤버 현황</button>
 <button class="sb-btn" id="nav-personal" onclick="goPage('personal')"><span class="icon">✅</span>내 업무</button>
 <button class="sb-btn" id="nav-setup" onclick="goPage('setup')"><span class="icon">⚙️</span>설정</button>
 </div>
@@ -1443,8 +1457,6 @@ button,
     <div id="proposal-list"></div>
   </div>
 </div>
-
-<div id="page-members" class="page"><div class="page-header"><span class="page-title">멤버 현황</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="mb-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label></div></div><div id="members-container"></div></div>
 
 <div id="page-personal" class="page">
   <div class="page-header">
@@ -2595,7 +2607,7 @@ function applyPermissionUI(){
     el.style.display = writer ? '' : 'none';
   });
 }
-function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderMembersPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -2831,21 +2843,89 @@ function normalizeIdArray(value){
   return [];
 }
 
+
+let proposalParticipantStartDraft = {};
+
+function readProposalParticipantStartInputs(){
+  document.querySelectorAll('[data-proposal-participant-start]').forEach(el => {
+    const memberId = el.dataset.memberId;
+    if(memberId) proposalParticipantStartDraft[memberId] = el.value || '';
+  });
+}
+
+function defaultProposalParticipantStartDate(){
+  return document.getElementById('proposal-start')?.value || fmtDateFull(new Date());
+}
+
+function renderProposalParticipantStartRows(){
+  const box = document.getElementById('proposal-participant-starts');
+  if(!box) return;
+  const ids = getSelectedProposalParticipantIds();
+  if(!ids.length){
+    box.innerHTML = '<div style="font-size:12px;color:var(--text3)">참여 멤버를 선택하면 멤버별 투입 시작일을 입력할 수 있습니다.</div>';
+    return;
+  }
+  const defaultDate = defaultProposalParticipantStartDate();
+  box.innerHTML = `<div style="font-size:11px;color:var(--text2);font-weight:800;margin-bottom:2px">제안 참여자별 투입 시작일</div>` + ids.map(id => {
+    const m = mb(id);
+    const val = proposalParticipantStartDraft[id] || defaultDate || '';
+    proposalParticipantStartDraft[id] = val;
+    return `<div class="proposal-participant-start-row">
+      ${m ? `<div class="av" style="width:22px;height:22px;font-size:9px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+      <div class="member-name">${escapeHtml(m?.name || '알 수 없음')}</div>
+      <input type="date" data-proposal-participant-start data-member-id="${escapeAttr(id)}" value="${escapeAttr(val)}" onchange="proposalParticipantStartDraft[this.dataset.memberId]=this.value">
+    </div>`;
+  }).join('') + `<div class="manday-only-note">비워두면 제안 시작일 또는 등록일 기준으로 계산됩니다. 중간 합류자는 해당 투입 시작일부터 제안 마감일까지 MD가 계산됩니다.</div>`;
+}
+
+function syncProposalParticipantDefaultStarts(){
+  readProposalParticipantStartInputs();
+  const defaultDate = defaultProposalParticipantStartDate();
+  getSelectedProposalParticipantIds().forEach(id => {
+    if(!proposalParticipantStartDraft[id]) proposalParticipantStartDraft[id] = defaultDate;
+  });
+  renderProposalParticipantStartRows();
+}
+
+function getProposalParticipantJoinedAtFromForm(participantIds){
+  readProposalParticipantStartInputs();
+  const out = {};
+  normalizeIdArray(participantIds).forEach(pid => {
+    if(proposalParticipantStartDraft[pid]) out[pid] = proposalParticipantStartDraft[pid];
+  });
+  return out;
+}
+
 function getSelectedProposalParticipantIds(){
   const hidden = document.getElementById('proposal-participant-ids');
   return normalizeIdArray(hidden ? hidden.value : '');
 }
 
-function setSelectedProposalParticipantIds(ids){
+function setSelectedProposalParticipantIds(ids, startMap){
+  readProposalParticipantStartInputs();
   const clean = normalizeIdArray(ids);
   const hidden = document.getElementById('proposal-participant-ids');
   if(hidden) hidden.value = clean.join(',');
+
+  if(startMap && typeof startMap === 'object'){
+    Object.keys(startMap).forEach(id => {
+      if(startMap[id]) proposalParticipantStartDraft[id] = startMap[id];
+    });
+  }
+  const defaultDate = defaultProposalParticipantStartDate();
+  clean.forEach(id => {
+    if(!proposalParticipantStartDraft[id]) proposalParticipantStartDraft[id] = defaultDate;
+  });
+  Object.keys(proposalParticipantStartDraft).forEach(id => {
+    if(!clean.includes(id)) delete proposalParticipantStartDraft[id];
+  });
 
   document.querySelectorAll('input[name="proposal-participant"]').forEach(el => {
     el.checked = clean.includes(el.value);
   });
 
   renderProposalParticipantChips();
+  renderProposalParticipantStartRows();
 }
 
 function getProposalParticipantIdsFromForm(){
@@ -4790,7 +4870,7 @@ function getProposalFormHTML(isEdit){
     : '<div style="font-size:12px;color:var(--text3)">등록된 팀원이 없습니다.</div>';
 
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
-    <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
+    <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start" onchange="syncProposalParticipantDefaultStarts()"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
     <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="proposal-status">${proposalStatusOptions('preparing')}</select></div></div>
     <div class="form-row full"><div>
@@ -4800,6 +4880,7 @@ function getProposalFormHTML(isEdit){
       <button type="button" class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;display:flex;justify-content:center;gap:5px" onclick="toggleProposalMemberPicker()"><span>멤버 선택</span><span id="proposal-member-picker-icon">▾</span></button>
       <div id="proposal-member-picker" style="display:none;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;max-height:150px;overflow:auto;background:var(--bg);margin-top:6px">${memberChecks}</div>
       <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">선택된 내부 멤버의 오늘 탭 주간 캘린더에만 해당 제안 시작/마감이 표시됩니다.</div>
+      <div id="proposal-participant-starts" class="proposal-participant-starts"></div>
     </div></div>
     <div class="form-row full"><div><div class="fl">참여자</div><textarea id="proposal-participants" rows="3"></textarea></div></div>
     <div class="form-row full"><div><div class="fl">내용</div><textarea id="proposal-note" rows="3" placeholder="담당 역할, 준비 내용, 특이사항 등을 입력"></textarea></div></div>
@@ -4814,6 +4895,7 @@ function getProposalFormHTML(isEdit){
 function openAddProposal(){
   if(!requireMemberWrite()) return;
   editingProposalId = null;
+  proposalParticipantStartDraft = {};
   document.getElementById('modal-body').innerHTML = getProposalFormHTML(false);
   openModal('제안 추가');
   setSelectedProposalParticipantIds([]);
@@ -4834,7 +4916,8 @@ function openEditProposal(id){
   syncProposalStatusByResult();
   document.getElementById('proposal-participants').value = p.participants || '';
   document.getElementById('proposal-note').value = p.note || '';
-  setSelectedProposalParticipantIds(normalizeIdArray(p.participantIds));
+  proposalParticipantStartDraft = {...(p.participantJoinedAt || p.participantAddedAt || {})};
+  setSelectedProposalParticipantIds(normalizeIdArray(p.participantIds), proposalParticipantStartDraft);
   document.getElementById('proposal-filelinks').value = fileLinksToTextarea(p.fileLinks);
 }
 
@@ -4857,7 +4940,7 @@ function submitProposal(){
   const existing = proposals.find(x => x.id === id) || {};
   const nowIso = new Date().toISOString();
   const nowDate = fmtDateFull(nowIso);
-  const participantJoinedAt = {...(existing.participantJoinedAt || existing.participantAddedAt || {})};
+  let participantJoinedAt = getProposalParticipantJoinedAtFromForm(participantIds);
   participantIds.forEach(pid => {
     if(!participantJoinedAt[pid]) participantJoinedAt[pid] = start || nowDate;
   });
@@ -4995,7 +5078,6 @@ function setManDayYear(year){
   manDayYear = normalizeManDayYearValue(year);
   ls('manDayYear', manDayYear);
   renderOverview();
-  renderMembersPage();
 }
 
 function manDayYearControlHtml(id){
@@ -5003,10 +5085,85 @@ function manDayYearControlHtml(id){
   const opts = [`<option value="all" ${manDayYear === 'all' ? 'selected' : ''}>전체 기간</option>`]
     .concat(years.map(y => `<option value="${y}" ${String(y) === String(manDayYear) ? 'selected' : ''}>${y}년</option>`))
     .join('');
+  const manageBtn = canManageAll() ? `<button class="btn btn-secondary btn-sm" type="button" onclick="openBulkProjectMemberStartManager()">투입 시작일 관리</button>` : '';
   return `<div class="md-year-toolbar">
-    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">선택한 연도 안에 겹치는 기간만 잘라서 MD를 계산합니다.</div></div>
-    <select id="${escapeAttr(id || 'md-year-select')}" class="md-year-select" onchange="setManDayYear(this.value)">${opts}</select>
+    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">사업 관리 &gt; 멤버별 화면에서 사업별·제안별 MD만 계산합니다.</div></div>
+    <div class="md-year-actions">
+      <select id="${escapeAttr(id || 'md-year-select')}" class="md-year-select" onchange="setManDayYear(this.value)">${opts}</select>
+      ${manageBtn}
+      <button class="btn btn-secondary btn-sm writer-only" type="button" onclick="exportManDaysExcel()">엑셀 내보내기</button>
+    </div>
   </div>`;
+}
+
+
+function projectAssignmentDefaultStart(assign, project){
+  return assignAppliedDateValue(assign) || project?.start || fmtDateFull(new Date());
+}
+
+function openBulkProjectMemberStartManager(){
+  if(!requireManager()) return;
+  const rows = assigns
+    .map(a => ({assign:a, project:pj(a.projectId), member:mb(a.memberId)}))
+    .filter(x => x.project && x.member)
+    .sort((a,b)=>String(a.project.name||'').localeCompare(String(b.project.name||'')) || String(a.member.name||'').localeCompare(String(b.member.name||'')));
+
+  if(!rows.length){
+    showToast('관리할 참여인력이 없습니다');
+    return;
+  }
+
+  const rowHtml = rows.map(({assign, project, member}) => {
+    const startVal = projectAssignmentDefaultStart(assign, project);
+    return `<div class="bulk-md-row">
+      <div>
+        <div class="bulk-md-row-title"><span class="dot" style="display:inline-block;background:${project.color || '#888'};margin-right:6px"></span>${escapeHtml(project.name || '미등록 사업')}</div>
+        <div class="bulk-md-row-sub">사업기간 ${project.start ? fmtDateFull(project.start) : '-'} ~ ${project.end ? fmtDateFull(project.end) : '-'}</div>
+      </div>
+      <div>
+        <div class="bulk-md-row-title">${escapeHtml(member.name || '알 수 없음')}</div>
+        <div class="bulk-md-row-sub">${escapeHtml(member.role || assign.role || '-')}</div>
+      </div>
+      <input type="date" data-bulk-assign-start data-assign-id="${escapeAttr(assign.id)}" value="${escapeAttr(startVal)}">
+    </div>`;
+  }).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:10px">
+      기존 사업 참여인력의 투입 시작일을 일괄 입력/수정합니다. 저장 후 사업 관리 &gt; 멤버별 MD 계산에 바로 반영됩니다.
+    </div>
+    <div style="max-height:52vh;overflow:auto;border:.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;background:var(--bg)">${rowHtml}</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveBulkProjectMemberStarts()">전체 저장</button>
+      <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+    </div>
+  `;
+  openModal('투입 시작일 일괄 관리');
+}
+
+async function saveBulkProjectMemberStarts(){
+  if(!requireManager()) return;
+  const inputs = Array.from(document.querySelectorAll('[data-bulk-assign-start]'));
+  if(!inputs.length){ showToast('저장할 항목이 없습니다'); return; }
+  try{
+    const batch = db.batch();
+    const nowIso = new Date().toISOString();
+    inputs.forEach(input => {
+      const assignId = input.dataset.assignId;
+      if(!assignId) return;
+      batch.set(db.collection('assigns').doc(assignId), {
+        assignedAtDate: input.value || '',
+        assignedAt: input.value || '',
+        updatedAt: nowIso,
+        updatedBy: selfId
+      }, {merge:true});
+    });
+    await batch.commit();
+    showToast('투입 시작일을 저장했습니다');
+    closeModal();
+  }catch(e){
+    showToast('저장 실패: ' + (e.message || e));
+  }
 }
 
 function rowForSelectedManDayYear(row){
@@ -5153,50 +5310,79 @@ function manDaySummaryHtml(memberId){
   </div>`;
 }
 
+function allVisibleManDayExportRows(){
+  const rows = [];
+  members.filter(m=>!hiddenMb.has(m.id)).forEach(m2 => {
+    const stats = memberManDayStats(m2.id);
+    stats.projects.forEach(r => rows.push({
+      '구분':'사업',
+      '멤버명':m2.name || '',
+      '역할':m2.role || '',
+      '항목명':r.name || '',
+      '시작일':manDayDateLabel(r.start),
+      '종료일':manDayDateLabel(r.end),
+      'MD':r.days,
+      '연도필터':manDayYear === 'all' ? '전체 기간' : `${manDayYear}년`,
+      '계산기준':'사업 시작일/투입 시작일 중 늦은 날짜 ~ 사업 종료일, 주말 포함'
+    }));
+    stats.proposals.forEach(r => rows.push({
+      '구분':'제안',
+      '멤버명':m2.name || '',
+      '역할':m2.role || '',
+      '항목명':r.name || '',
+      '시작일':manDayDateLabel(r.start),
+      '종료일':manDayDateLabel(r.end),
+      'MD':r.days,
+      '연도필터':manDayYear === 'all' ? '전체 기간' : `${manDayYear}년`,
+      '계산기준':'제안 시작일/등록일/참여멤버 적용일 중 적용 가능한 날짜 ~ 제출 마감일, 주말 포함'
+    }));
+  });
+  return rows;
+}
+
+function exportManDaysExcel(){
+  if(!requireMemberWrite()) return;
+  const rows = allVisibleManDayExportRows();
+  if(!rows.length){ showToast('내보낼 투입공수 데이터가 없습니다'); return; }
+  const headers = ['구분','멤버명','역할','항목명','시작일','종료일','MD','연도필터','계산기준'];
+  const now = new Date().toISOString().slice(0,10);
+  const title = `투입공수_${manDayYear === 'all' ? '전체기간' : manDayYear + '년'}`;
+  const tableRows = rows.map(row => `<tr>${headers.map(h => `<td>${escapeHtml(row[h] ?? '')}</td>`).join('')}</tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>
+    <table border="1">
+      <tr><th colspan="${headers.length}">${escapeHtml(title)}</th></tr>
+      <tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
+      ${tableRows}
+    </table>
+  </body></html>`;
+  downloadTextFile(`calendar_manday_${manDayYear === 'all' ? 'all' : manDayYear}_${now}.xls`, '\ufeff' + html, 'application/vnd.ms-excel;charset=utf-8');
+}
+
 function renderMemberOverview(){
   const target = document.getElementById('overview-container');
   if(!target) return;
 
-  const vm2=members.filter(m=>!hiddenMb.has(m.id)); 
+  const vm2 = members.filter(m=>!hiddenMb.has(m.id));
   if(!vm2.length){target.innerHTML='<div class="empty">멤버가 없습니다</div>';return;}
 
-  let h=manDayYearControlHtml('ov-md-year')+'<div class="member-overview">'; 
+  let h = manDayYearControlHtml('ov-md-year') + '<div class="member-overview">';
   vm2.forEach(m2=>{
-    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj)); 
-    const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
-
-    const pr=ma.map(a=>{
-      const p=pj(a.projectId); 
-      if(!p) return ''; 
-
-      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||t.status!=='완료')); 
-      const pe=me.filter(e=>e.project===p.id); 
-
-      return `<div class="proj-row" style="flex-wrap:wrap">
-        <div class="proj-row-name" style="flex:1 1 100%;">
-          <div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}
-        </div>
-        <div class="proj-tasks" style="width:100%">
-          ${mt.map(t=>`<span class="mini-task ${t.status==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}
-        </div>
-      </div>`;
-    }).join('');
-
-    h+=`<div class="member-card">
+    const ma = assigns.filter(a=>a.memberId===m2.id && (selProj==='all'||a.projectId===selProj));
+    const stats = memberManDayStats(m2.id);
+    h += `<div class="member-card">
       <div class="member-card-header">
         <div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
         <div class="member-card-info">
           <div class="member-card-name">${escapeHtml(m2.name || '')}</div>
-          <div class="member-card-role">${escapeHtml(m2.role || '-')} · 담당사업 ${ma.length}개</div>
+          <div class="member-card-role">${escapeHtml(m2.role || '-')} · 참여사업 ${ma.length}개 · 총 ${stats.total} MD</div>
         </div>
       </div>
-      <div class="member-card-body">${pr || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}${manDaySummaryHtml(m2.id)}</div>
+      <div class="member-card-body">${manDaySummaryHtml(m2.id)}</div>
     </div>`;
   });
 
-  target.innerHTML=h+'</div>';
+  target.innerHTML = h + '</div>';
 }
-
 function renderMembersPage(){
   const target = document.getElementById('members-container');
   const vm2 = members.filter(m=>!hiddenMb.has(m.id));
@@ -5789,13 +5975,12 @@ function openChangeSelf(){
 function changeSelf(){ showToast('로그인 기반에서는 계정을 직접 변경할 수 없습니다.'); }
 
 function goPage(p){ 
-  ['home','cal','overview','proposals','members','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
+  ['home','cal','overview','proposals','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); } 
   if(p==='home') renderHome();
   if(p==='personal') renderPersonalCurrentView(); 
   if(p==='overview') renderOverview(); 
   if(p==='proposals') renderProposalPage();
-  if(p==='members') renderMembersPage();
   if(p==='setup') { renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); applyTheme(currentTheme); } 
 }
 
