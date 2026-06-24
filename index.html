@@ -48,6 +48,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .main{flex:1;padding:24px;overflow:auto;min-width:0;margin-left:220px;width:calc(100% - 220px)}
 .page{display:none}.page.active{display:block}
 .page-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:nowrap;justify-content:space-between}
+.overview-actions{margin-left:auto;display:flex;gap:6px;align-items:center;min-width:0}
 .page-title{font-size:18px;font-weight:700;white-space:nowrap}
 .card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
 .card-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em}
@@ -632,7 +633,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 #personal-list .li-title{font-size:13px;font-weight:600;margin-bottom:2px;line-height:1.35}
 #personal-list .li-meta{font-size:11px;line-height:1.35}
 #personal-list .tag{font-size:10px;padding:1px 6px}
-@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-actions,.md-year-select{width:100%}}
+@media(max-width:680px){.md-columns{grid-template-columns:1fr}.md-year-toolbar{align-items:flex-start;flex-direction:column}.md-year-actions{width:100%;display:flex;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:2px}.md-year-actions .btn{width:auto;flex:0 0 auto}.md-year-select{width:auto;min-width:112px;flex:0 0 auto}}
 
 /* Proposal table layout fix */
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
@@ -1373,6 +1374,43 @@ button,
 }
 
 
+/* Compact mobile actions for project management */
+@media(max-width:680px){
+  #page-overview .page-header{gap:8px}
+  #page-overview .overview-actions{
+    margin-left:0;
+    width:100%;
+    display:flex!important;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    gap:5px;
+    align-items:center;
+    padding-bottom:2px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  #page-overview .overview-actions::-webkit-scrollbar{display:none}
+  #page-overview .overview-actions .chip,
+  #page-overview .overview-actions .btn{
+    width:auto;
+    flex:0 0 auto;
+    min-width:auto;
+    padding:5px 9px;
+    font-size:11px;
+    line-height:1.25;
+  }
+  #page-overview .overview-actions .header-check{
+    grid-column:auto;
+    width:auto;
+    flex:0 0 auto;
+    padding:5px 9px;
+    border:.5px solid var(--border);
+    border-radius:999px;
+    background:var(--bg2);
+    font-size:11px;
+  }
+}
+
 /* Man-day management refinements */
 .proposal-participant-starts{margin-top:8px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);padding:8px;display:flex;flex-direction:column;gap:6px}
 .proposal-participant-start-row{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0}
@@ -1384,7 +1422,11 @@ button,
 .bulk-md-row-title{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bulk-md-row-sub{font-size:11px;color:var(--text2);margin-top:2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bulk-md-row input{padding:5px 7px;font-size:12px}
-@media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
+.bulk-md-tools{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:8px;align-items:center}
+.bulk-md-tools input[type="search"]{padding:6px 8px;font-size:12px}
+.bulk-md-count{font-size:11px;color:var(--text3);margin:6px 0 8px}
+.bulk-md-list{max-height:52vh;overflow:auto;border:.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;background:var(--bg)}
+@media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.bulk-md-tools{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
 
 </style>
 </head>
@@ -1446,7 +1488,7 @@ button,
 
 <div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center;"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>과거 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 사업 추가</button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span>완료 사업 숨기기</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')">테이블</button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')">멤버별</button><button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 사업 추가</button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -5101,11 +5143,11 @@ function manDayYearControlHtml(id){
     .join('');
   const manageBtn = canManageAll() ? `<button class="btn btn-secondary btn-sm" type="button" onclick="openBulkProjectMemberStartManager()">투입 시작일 관리</button>` : '';
   return `<div class="md-year-toolbar">
-    <div><div class="md-year-title">투입공수 연도별 보기</div><div class="md-year-help">사업 관리 &gt; 멤버별 화면에서 사업별·제안별 MD만 계산합니다. 보드의 종료 분류와 별개로, 사업 MD는 사업 종료일까지 계산합니다.</div></div>
+    <div><div class="md-year-title">투입공수</div><div class="md-year-help">사업·제안별 투입공수를 연도 기준으로 확인합니다. 사업 MD는 사업 종료일까지 계산됩니다.</div></div>
     <div class="md-year-actions">
       <select id="${escapeAttr(id || 'md-year-select')}" class="md-year-select" onchange="setManDayYear(this.value)">${opts}</select>
       ${manageBtn}
-      <button class="btn btn-secondary btn-sm writer-only" type="button" onclick="exportManDaysExcel()">엑셀 내보내기</button>
+      <button class="btn btn-secondary btn-sm writer-only" type="button" onclick="exportManDaysExcel()">투입공수 내보내기</button>
     </div>
   </div>`;
 }
@@ -5128,14 +5170,17 @@ function openBulkProjectMemberStartManager(){
   }
 
   const rowHtml = rows.map(({assign, project, member}) => {
+    const savedStart = assignAppliedDateValue(assign);
     const startVal = projectAssignmentDefaultStart(assign, project);
-    return `<div class="bulk-md-row">
+    const projectName = project.name || '미등록 사업';
+    const memberName = member.name || '알 수 없음';
+    return `<div class="bulk-md-row" data-bulk-md-row data-project-name="${escapeAttr(projectName.toLowerCase())}" data-member-name="${escapeAttr(memberName.toLowerCase())}" data-empty-start="${savedStart ? '0' : '1'}">
       <div>
-        <div class="bulk-md-row-title"><span class="dot" style="display:inline-block;background:${project.color || '#888'};margin-right:6px"></span>${escapeHtml(project.name || '미등록 사업')}</div>
-        <div class="bulk-md-row-sub">사업기간 ${project.start ? fmtDateFull(project.start) : '-'} ~ ${project.end ? fmtDateFull(project.end) : '-'}</div>
+        <div class="bulk-md-row-title"><span class="dot" style="display:inline-block;background:${project.color || '#888'};margin-right:6px"></span>${escapeHtml(projectName)}</div>
+        <div class="bulk-md-row-sub">사업기간 ${project.start ? fmtDateFull(project.start) : '-'} ~ ${project.end ? fmtDateFull(project.end) : '-'}${savedStart ? '' : ' · 미저장값은 사업 시작일 기준'}</div>
       </div>
       <div>
-        <div class="bulk-md-row-title">${escapeHtml(member.name || '알 수 없음')}</div>
+        <div class="bulk-md-row-title">${escapeHtml(memberName)}</div>
         <div class="bulk-md-row-sub">${escapeHtml(member.role || assign.role || '-')}</div>
       </div>
       <input type="date" data-bulk-assign-start data-assign-id="${escapeAttr(assign.id)}" value="${escapeAttr(startVal)}">
@@ -5144,15 +5189,39 @@ function openBulkProjectMemberStartManager(){
 
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:10px">
-      기존 사업 참여인력의 투입 시작일을 일괄 입력/수정합니다. 저장 후 사업 관리 &gt; 멤버별 MD 계산에 바로 반영됩니다.
+      기존 사업 참여인력의 투입 시작일을 일괄 입력/수정합니다. 저장 후 멤버별 MD 계산에 바로 반영됩니다.
     </div>
-    <div style="max-height:52vh;overflow:auto;border:.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;background:var(--bg)">${rowHtml}</div>
+    <div class="bulk-md-tools">
+      <input type="search" id="bulk-md-project-search" placeholder="사업명 검색" oninput="filterBulkProjectMemberStarts()">
+      <input type="search" id="bulk-md-member-search" placeholder="멤버명 검색" oninput="filterBulkProjectMemberStarts()">
+      <label class="header-check"><input class="header-check-input" type="checkbox" id="bulk-md-empty-only" onchange="filterBulkProjectMemberStarts()"><span>미입력만</span></label>
+    </div>
+    <div class="bulk-md-count" id="bulk-md-count">전체 ${rows.length}건</div>
+    <div class="bulk-md-list">${rowHtml}</div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-primary" style="flex:1" onclick="saveBulkProjectMemberStarts()">전체 저장</button>
       <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
     </div>
   `;
   openModal('투입 시작일 일괄 관리');
+}
+
+function filterBulkProjectMemberStarts(){
+  const projectQ = (document.getElementById('bulk-md-project-search')?.value || '').trim().toLowerCase();
+  const memberQ = (document.getElementById('bulk-md-member-search')?.value || '').trim().toLowerCase();
+  const emptyOnly = !!document.getElementById('bulk-md-empty-only')?.checked;
+  const rowEls = Array.from(document.querySelectorAll('[data-bulk-md-row]'));
+  let shown = 0;
+  rowEls.forEach(row => {
+    const projectOk = !projectQ || (row.dataset.projectName || '').includes(projectQ);
+    const memberOk = !memberQ || (row.dataset.memberName || '').includes(memberQ);
+    const emptyOk = !emptyOnly || row.dataset.emptyStart === '1';
+    const visible = projectOk && memberOk && emptyOk;
+    row.style.display = visible ? '' : 'none';
+    if(visible) shown += 1;
+  });
+  const countEl = document.getElementById('bulk-md-count');
+  if(countEl) countEl.textContent = `표시 ${shown}건 / 전체 ${rowEls.length}건`;
 }
 
 async function saveBulkProjectMemberStarts(){
@@ -5396,43 +5465,8 @@ function renderMemberOverview(){
   target.innerHTML = h + '</div>';
 }
 function renderMembersPage(){
-  const target = document.getElementById('members-container');
-  const vm2 = members.filter(m=>!hiddenMb.has(m.id));
-  if(!vm2.length){ target.innerHTML='<div class="empty">멤버가 없습니다</div>'; return; }
-
-  let h=manDayYearControlHtml('members-md-year')+'<div class="member-overview">';
-  vm2.forEach(m2=>{
-    const ma=assigns.filter(a=>a.memberId===m2.id&&(selProj==='all'||a.projectId===selProj));
-    const me=events.filter(e=>isProjectScheduleEvent(e)&&(e.who===m2.id||e.who==='all')&&(!hidePast||!isPast(e.end)));
-
-    const prRows=ma.map(a=>{
-      const p=pj(a.projectId);
-      if(!p) return '';
-      const mt=tasks.filter(t=>t.assignee===m2.id&&t.project===p.id&&(!hidePast||!isPast(t.end)||normalizeTaskStatus(t.status)!=='완료'));
-      const pe=me.filter(e=>e.project===p.id);
-      return `<div class="proj-row" style="flex-wrap:wrap">
-        <div class="proj-row-name" style="flex:1 1 100%;"><div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}</div>
-        <div class="proj-tasks" style="width:100%">
-          ${mt.map(t=>`<span class="mini-task ${normalizeTaskStatus(t.status)==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(t.title || '')}</span>`).join('')+pe.map(e=>`<span class="mini-task doing" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</span>`).join('') || '<span style="font-size:12px;color:var(--text3)">없음</span>'}
-        </div>
-      </div>`;
-    }).join('');
-
-    const proposalTasks = tasks.filter(t=>t.assignee===m2.id&&t.proposal&&(!hidePast||!isPast(t.end)||normalizeTaskStatus(t.status)!=='완료'));
-    const proposalRows = proposalTasks.length ? `<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:6px">담당 제안 업무</div><div class="proj-tasks">${proposalTasks.map(t=>`<span class="mini-task ${normalizeTaskStatus(t.status)==='완료'?'done':(isOverdue(t)?'overdue':'doing')}" onclick="showTask('${t.id}')">${isOverdue(t)?'[지연] ':''}${escapeHtml(pr(t.proposal)?.name || '제안')} · ${escapeHtml(t.title || '')}</span>`).join('')}</div></div>` : '';
-
-    h+=`<div class="member-card">
-      <div class="member-card-header">
-        <div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
-        <div class="member-card-info">
-          <div class="member-card-name">${escapeHtml(m2.name || '')}</div>
-          <div class="member-card-role">${escapeHtml(m2.role || '-')}</div>
-        </div>
-      </div>
-      <div class="member-card-body">${prRows || '<div style="font-size:13px;color:var(--text3)">담당 사업이 없습니다</div>'}${proposalRows}${manDaySummaryHtml(m2.id)}</div>
-    </div>`;
-  });
-  target.innerHTML=h+'</div>';
+  // Legacy members page was removed from navigation. Keep this shim so old calls reuse the current member man-day view.
+  renderMemberOverview();
 }
 
 function setPV(mode){
@@ -6182,7 +6216,7 @@ function submitProject(){
   apiSave(payload, ()=>closeModal());
 }
 function deleteProjectFromEdit(){ showToast('이 기능은 사용하지 않습니다'); }
-async function archiveProject(id){ showToast('보관 기능은 사용하지 않습니다. 완료 사업은 과거 숨기기/완료 사업 접기로 관리합니다.'); }
+async function archiveProject(id){ showToast('보관 기능은 사용하지 않습니다. 완료 사업은 완료 사업 숨기기/완료 사업 접기로 관리합니다.'); }
 async function restoreProject(id){ showToast('이 기능은 사용하지 않습니다'); }
 async function deleteProject(id){ showToast('이 기능은 사용하지 않습니다'); }
 
