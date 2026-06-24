@@ -1451,6 +1451,153 @@ button,
 .bulk-md-list{max-height:52vh;overflow:auto;border:.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;background:var(--bg)}
 @media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.bulk-md-tools{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
 
+
+
+/* Mobile compact refinement: calendar/proposal filters/top actions */
+@media(max-width:680px){
+  .label-desktop{display:none!important}
+  .label-mobile{display:inline!important}
+
+  .global-actions{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    padding:12px 14px 0!important;
+    margin-bottom:10px!important;
+    width:100%!important;
+    justify-content:stretch!important;
+  }
+  .global-actions .btn{
+    width:100%!important;
+    min-width:0!important;
+    height:42px!important;
+    padding:0 6px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    font-size:12px!important;
+    line-height:1.2!important;
+    border-radius:8px!important;
+    gap:5px!important;
+  }
+  .global-actions .notice-dot{flex:0 0 auto!important;}
+
+  #page-cal .page-header{
+    display:grid!important;
+    grid-template-columns:44px minmax(0,1fr) 44px!important;
+    gap:8px!important;
+    align-items:center!important;
+    margin-bottom:10px!important;
+  }
+  #page-cal .page-header #month-title{
+    text-align:center!important;
+    font-size:19px!important;
+    font-weight:900!important;
+  }
+  #page-cal .page-header > .btn{
+    width:44px!important;
+    height:36px!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  #page-cal .page-header > div[style*="margin-left:auto"]{
+    grid-column:1 / -1!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+    width:100%!important;
+    margin-left:0!important;
+  }
+  #page-cal .page-header > div[style*="margin-left:auto"] .chip{
+    width:100%!important;
+    min-width:0!important;
+    height:34px!important;
+    padding:0 6px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    font-size:12px!important;
+    border-radius:999px!important;
+  }
+
+  .proposal-filter-panel{gap:7px!important;margin-bottom:10px!important;}
+  .proposal-filter-line{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    align-items:center!important;
+    gap:5px!important;
+    width:100%!important;
+    padding-bottom:1px!important;
+    scrollbar-width:none!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .proposal-filter-line::-webkit-scrollbar{display:none!important}
+  .proposal-filter-label{
+    grid-column:auto!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:0!important;
+    margin-right:1px!important;
+    font-size:10px!important;
+    color:var(--text3)!important;
+    line-height:28px!important;
+    white-space:nowrap!important;
+  }
+  .proposal-filter-line .chip{
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:50px!important;
+    height:28px!important;
+    padding:0 10px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    font-size:11px!important;
+    line-height:1!important;
+    border-radius:999px!important;
+    white-space:nowrap!important;
+  }
+  .proposal-filter-line .header-check{
+    grid-column:auto!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:auto!important;
+    height:28px!important;
+    margin-left:0!important;
+    padding:0 9px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:5px!important;
+    border:.5px solid var(--border)!important;
+    border-radius:999px!important;
+    background:var(--bg2)!important;
+    font-size:11px!important;
+    white-space:nowrap!important;
+  }
+  .proposal-filter-line .header-check-input{width:15px!important;height:15px!important;min-width:15px!important;}
+
+  #page-proposals .page-header{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+    flex-wrap:nowrap!important;
+  }
+  #page-proposals .page-header .btn{
+    width:auto!important;
+    flex:0 0 auto!important;
+    height:32px!important;
+    padding:0 12px!important;
+    font-size:12px!important;
+    border-radius:8px!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -4832,7 +4979,7 @@ function proposalStatusFilterChips(){
   const resultFilters = ['all','pending','won','lost'];
   return `<div class="proposal-filter-panel">
     <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" onclick="setProposalStatusFilter('${f}')">${proposalFilterLabel(f)}</button>`).join('')}</div>
-    <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" onclick="setProposalResultFilter('${f}')">${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span>지난 제안 숨기기</span></label></div>
+    <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" onclick="setProposalResultFilter('${f}')">${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">지난 제안 숨기기</span><span class="label-mobile">지난 숨김</span></label></div>
   </div>`;
 }
 
@@ -6436,149 +6583,3 @@ initAuth();
 </script>
 </body>
 </html>
-
-
-/* Unified compact mobile controls across pages */
-@media(max-width:680px){
-  .label-desktop{display:none!important}
-  .label-mobile{display:inline!important}
-
-  /* 기본: 모바일에서 버튼을 억지로 큰 격자로 키우지 않음 */
-  .chip,.btn.btn-sm{
-    padding:5px 9px;
-    font-size:11px;
-    line-height:1.25;
-    border-radius:999px;
-    white-space:nowrap;
-  }
-  .header-check{
-    width:auto;
-    min-height:0;
-    padding:5px 9px;
-    border:.5px solid var(--border);
-    border-radius:999px;
-    background:var(--bg2);
-    font-size:11px;
-    line-height:1.25;
-    white-space:nowrap;
-  }
-
-  /* 공통 가로 compact bar */
-  #page-cal .page-header > div[style*="margin-left:auto"],
-  #page-personal .personal-actions,
-  #my-todo-wrap .page-header > div[style*="margin-left:auto"],
-  .filter-chips,
-  .proposal-filter-row,
-  .proposal-filter-line,
-  .quick-status-row,
-  .notification-filter-row,
-  .notification-toolbar-left,
-  .user-team-tabs,
-  .export-grid,
-  .modal .filter-chips{
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    overflow-x:auto!important;
-    overflow-y:hidden!important;
-    gap:5px!important;
-    align-items:center!important;
-    justify-content:flex-start!important;
-    width:100%!important;
-    padding-bottom:2px;
-    scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
-  }
-  #page-cal .page-header > div[style*="margin-left:auto"]::-webkit-scrollbar,
-  #page-personal .personal-actions::-webkit-scrollbar,
-  #my-todo-wrap .page-header > div[style*="margin-left:auto"]::-webkit-scrollbar,
-  .filter-chips::-webkit-scrollbar,
-  .proposal-filter-row::-webkit-scrollbar,
-  .proposal-filter-line::-webkit-scrollbar,
-  .quick-status-row::-webkit-scrollbar,
-  .notification-filter-row::-webkit-scrollbar,
-  .notification-toolbar-left::-webkit-scrollbar,
-  .user-team-tabs::-webkit-scrollbar,
-  .export-grid::-webkit-scrollbar{display:none}
-
-  #page-cal .page-header > div[style*="margin-left:auto"] .chip,
-  #page-personal .personal-actions .chip,
-  #page-personal .personal-actions .btn,
-  #my-todo-wrap .page-header > div[style*="margin-left:auto"] .btn,
-  .filter-chips .chip,
-  .proposal-filter-row .chip,
-  .proposal-filter-line .chip,
-  .quick-status-row .chip,
-  .notification-filter-row .chip,
-  .notification-toolbar-left .chip,
-  .notification-toolbar-left .btn,
-  .user-team-tabs .chip,
-  .export-grid .btn{
-    width:auto!important;
-    min-width:auto!important;
-    flex:0 0 auto!important;
-    text-align:center!important;
-    justify-content:center!important;
-    padding:5px 9px!important;
-    font-size:11px!important;
-    line-height:1.25!important;
-    border-radius:999px!important;
-  }
-
-  /* 내 업무: 지난 숨김 + 탭 + 추가 버튼을 사업관리와 같은 한 줄 compact bar로 */
-  #page-personal .personal-header{display:block;margin-bottom:12px!important}
-  #page-personal .personal-actions{margin-left:0!important;margin-top:10px!important}
-  #page-personal .personal-hide-check{display:inline-flex!important;margin:0!important;flex:0 0 auto!important}
-  #page-personal .personal-tab-row{
-    display:flex!important;
-    flex:0 0 auto!important;
-    flex-wrap:nowrap!important;
-    gap:5px!important;
-    width:auto!important;
-  }
-  #page-personal .personal-tab-row .chip,
-  #page-personal .personal-tab-row .btn{width:auto!important;flex:0 0 auto!important}
-
-  /* 업무 매트릭스 내부 헤더도 compact */
-  #my-todo-wrap .page-header{display:block!important;margin-bottom:10px!important}
-  #my-todo-wrap .page-header > div[style*="margin-left:auto"]{margin-left:0!important;margin-top:8px!important}
-  #my-todo-wrap .page-header .header-check{grid-column:auto!important;width:auto!important;flex:0 0 auto!important}
-
-  /* 제안관리 헤더: 추가 버튼을 하단 큰 버튼으로 밀지 않음 */
-  #page-proposals .page-header{
-    display:flex!important;
-    flex-direction:row!important;
-    align-items:center!important;
-    justify-content:space-between!important;
-    gap:8px!important;
-    flex-wrap:nowrap!important;
-  }
-  #page-proposals .page-header .btn{width:auto!important;flex:0 0 auto!important;padding:5px 10px!important}
-
-  /* 캘린더 월 이동/보기 전환 정리 */
-  #page-cal .page-header{gap:6px!important;margin-bottom:10px!important}
-  #page-cal .page-header .btn{width:auto!important;flex:0 0 auto!important;padding:5px 8px!important}
-  #page-cal .page-header > div[style*="margin-left:auto"]{grid-column:1/-1!important;margin-left:0!important}
-
-  /* 알림 모달/제안 필터: 라벨이 있으면 왼쪽 고정 크기 대신 같이 흐르게 */
-  .proposal-filter-label{grid-column:auto!important;flex:0 0 auto!important;margin-right:0!important;align-self:center!important;font-size:10px!important}
-
-  /* 설정/내보내기 버튼도 큰 카드형 버튼으로 늘어나지 않게 */
-  .export-grid{grid-template-columns:none!important}
-  .export-grid .btn{padding:5px 9px!important}
-
-  /* 테마 버튼은 3개 한 줄 compact */
-  #page-setup .card:first-of-type > div[style*="display:flex"]{
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    overflow-x:auto!important;
-    gap:5px!important;
-    scrollbar-width:none;
-  }
-  #page-setup .card:first-of-type > div[style*="display:flex"] .btn{
-    flex:0 0 auto!important;
-    width:auto!important;
-    padding:5px 9px!important;
-    font-size:11px!important;
-    border-radius:999px!important;
-  }
-}
