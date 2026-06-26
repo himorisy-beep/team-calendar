@@ -1462,24 +1462,24 @@ button,
     display:grid!important;
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
     gap:6px!important;
-    padding:12px 14px 0!important;
-    margin-bottom:10px!important;
+    padding:8px 14px 0!important;
+    margin-bottom:8px!important;
     width:100%!important;
     justify-content:stretch!important;
   }
   .global-actions .btn{
     width:100%!important;
     min-width:0!important;
-    height:42px!important;
+    height:34px!important;
     padding:0 6px!important;
     display:flex!important;
     align-items:center!important;
     justify-content:center!important;
     text-align:center!important;
-    font-size:12px!important;
-    line-height:1.2!important;
-    border-radius:8px!important;
-    gap:5px!important;
+    font-size:11px!important;
+    line-height:1.1!important;
+    border-radius:7px!important;
+    gap:4px!important;
   }
   .global-actions .notice-dot{flex:0 0 auto!important;}
 
@@ -1598,6 +1598,33 @@ button,
     border-radius:8px!important;
   }
 }
+
+/* Mobile top action bar: compact equal buttons */
+@media(max-width:680px){
+  .global-actions{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    padding:8px 14px 0!important;
+    margin-bottom:8px!important;
+  }
+  .global-actions .btn{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 6px!important;
+    font-size:11px!important;
+    line-height:1.1!important;
+    border-radius:7px!important;
+  }
+  .global-actions .notice-dot{
+    width:18px!important;
+    height:18px!important;
+    min-width:18px!important;
+    font-size:10px!important;
+    line-height:18px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1676,7 +1703,7 @@ button,
     <span class="page-title">내 업무</span>
     <div class="personal-actions">
       <label class="header-check personal-hide-check">
-        <input class="header-check-input" type="checkbox" id="pf-hide-past" onchange="renderPersonalCurrentView()"><span class="label-desktop">지난 일정 숨기기</span><span class="label-mobile">지난 숨김</span>
+        <input class="header-check-input" type="checkbox" id="pf-hide-past" onchange="togglePersonalHidePast(this.checked)"><span class="label-desktop">지난 일정 숨기기</span><span class="label-mobile">지난 숨김</span>
       </label>
       <div class="personal-tab-row">
         <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
@@ -1852,14 +1879,32 @@ const HOLIDAY_API_KEY = "AIzaSyBiuAs7Ooj3J4RGMMGECtD07pzWCOw1FQA";
 const HOLIDAY_CALENDAR_ID = "ko.south_korea.official#holiday@group.v.calendar.google.com";
 let publicEvents = [], myPersonalEvents = [];
 let publicComments = [], myScopedComments = [], publicActivityLogs = [], myScopedActivityLogs = [];
-let hiddenMb = new Set(); 
-let selProj = 'all'; 
-let vm = 'cal', ovMode = 'board', pFilter = 'all', pvMode = 'list', calListMode = 'window'; 
+function loadJsonArray(key){
+  try{
+    const raw = ls(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(v => String(v || '')).filter(Boolean) : [];
+  }catch(e){
+    return [];
+  }
+}
+function saveJsonArray(key, values){
+  const arr = Array.from(values || []).map(v => String(v || '')).filter(Boolean);
+  arr.length ? ls(key, JSON.stringify(arr)) : ls(key, null);
+}
+
+let hiddenMb = new Set(loadJsonArray('hiddenMembers')); 
+let selProj = ls('selectedProject') || 'all'; 
+let vm = ['cal','list'].includes(ls('calendarView')) ? ls('calendarView') : 'cal',
+    ovMode = ['board','table','gantt','members'].includes(ls('overviewMode')) ? ls('overviewMode') : 'board',
+    pFilter = ['all','public','private'].includes(ls('personalFilter')) ? ls('personalFilter') : 'all',
+    pvMode = 'list',
+    calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window'; 
 const today = new Date(); 
 let editingEventId = null; 
 let editingProposalId = null;
 let curY = today.getFullYear(), curM = today.getMonth(); 
-let hidePast = true;
+let hidePast = ls('hidePast') !== 'N';
 let manDayYear = ls('manDayYear') || 'all';
 
 const mb = id => members.find(m=>m.id===id); 
@@ -2834,7 +2879,43 @@ function applyPermissionUI(){
     el.style.display = writer ? '' : 'none';
   });
 }
-function refreshAll(){ buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
+function prunePersistedFilters(){
+  const activeMemberIds = new Set(getActiveMembers().map(m => String(m.id)));
+  const beforeHidden = hiddenMb.size;
+  hiddenMb = new Set(Array.from(hiddenMb).filter(id => activeMemberIds.has(String(id))));
+  if(beforeHidden !== hiddenMb.size) saveJsonArray('hiddenMembers', hiddenMb);
+
+  const projectExists = selProj === 'all' || getActiveProjects().some(p => String(p.id) === String(selProj));
+  if(!projectExists){
+    selProj = 'all';
+    ls('selectedProject', 'all');
+  }
+}
+
+function syncPersistentControls(){
+  const ovHide = document.getElementById('ov-hide-past');
+  if(ovHide) ovHide.checked = !!hidePast;
+
+  ['board','table','gantt','members'].forEach(k=>{
+    const el = document.getElementById('ov-'+k);
+    if(el) el.classList.toggle('active', k===ovMode);
+  });
+
+  ['cal','list'].forEach(k=>{
+    const el = document.getElementById('vm-'+k);
+    if(el) el.classList.toggle('active', k===vm);
+  });
+
+  ['all','public','private'].forEach(k=>{
+    const el = document.getElementById('pf-'+k);
+    if(el) el.classList.toggle('active', k===pFilter);
+  });
+
+  const pfHide = document.getElementById('pf-hide-past');
+  if(pfHide) pfHide.checked = ls('personalHidePast') === 'Y';
+}
+
+function refreshAll(){ prunePersistedFilters(); syncPersistentControls(); buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -4140,7 +4221,7 @@ function renderTodos() {
 
 function buildSidebar(){
   const mc=document.getElementById('sb-members'); mc.innerHTML=''; getActiveMembers().forEach(m=>{
-    const bg=lighten(m.color); const d=document.createElement('div'); d.className='mb-chip'+(hiddenMb.has(m.id)?' off':''); d.onclick=()=>{hiddenMb.has(m.id)?hiddenMb.delete(m.id):hiddenMb.add(m.id); refreshAll();};
+    const bg=lighten(m.color); const d=document.createElement('div'); d.className='mb-chip'+(hiddenMb.has(m.id)?' off':''); d.onclick=()=>{hiddenMb.has(m.id)?hiddenMb.delete(m.id):hiddenMb.add(m.id); saveJsonArray('hiddenMembers', hiddenMb); refreshAll();};
     d.innerHTML=`<div class="av" style="background:${bg};color:${m.color}">${ini(m.name)}</div><span class="mb-chip-name">${escapeHtml(m.name || '')}</span>`; mc.appendChild(d);
   });
   const pc=document.getElementById('sb-projects'); pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
@@ -4181,6 +4262,8 @@ function renderActiveFilterBar(){
 function resetActiveFilters(){
   hiddenMb.clear();
   selProj = 'all';
+  saveJsonArray('hiddenMembers', hiddenMb);
+  ls('selectedProject', 'all');
   refreshAll();
 }
 
@@ -4484,7 +4567,8 @@ function renderCalGrid(){
 }
 
 function setCalListMode(mode){
-  calListMode = mode;
+  calListMode = ['window','all'].includes(mode) ? mode : 'window';
+  ls('calendarListMode', calListMode);
   if(vm === 'list') renderCalList();
 }
 
@@ -5545,7 +5629,7 @@ function manDaySummaryHtml(memberId){
   const stats = memberManDayStats(memberId);
   const yearLabel = manDayYear === 'all' ? '전체 기간 기준' : `${manDayYear}년 기준`;
   const rowsHtml = (rows, type) => rows.length ? `<div class="md-list">${rows.map(r => `
-    <div class="md-row" onclick="${type === 'project' ? `goPage('overview');selProj='${escapeAttr(r.id)}';renderActiveFilterBar();renderOverview()` : `showProposal('${escapeAttr(r.id)}')`}" style="cursor:pointer">
+    <div class="md-row" onclick="${type === 'project' ? `goPage('overview');selProj='${escapeAttr(r.id)}';ls('selectedProject', selProj);renderActiveFilterBar();renderOverview()` : `showProposal('${escapeAttr(r.id)}')`}" style="cursor:pointer">
       <div>
         <div class="md-name"><span class="dot" style="background:${r.color}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</span></div>
         <div class="md-sub">${manDayDateLabel(r.start)} ~ ${manDayDateLabel(r.end)}</div>
@@ -6182,13 +6266,14 @@ function toggleFilterSection(key){
   ls(`filter_${key}`, willOpen ? 'Y' : 'N');
 }
 
-function toggleHidePast(v){ hidePast=v; refreshAll(); } 
+function toggleHidePast(v){ hidePast=!!v; ls('hidePast', hidePast ? 'Y' : 'N'); refreshAll(); } 
+function togglePersonalHidePast(v){ ls('personalHidePast', v ? 'Y' : 'N'); renderPersonalCurrentView(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); } 
-function toggleProj(id){ selProj=selProj===id?'all':id; buildSidebar(); refreshAll(); } 
+function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', selProj); buildSidebar(); refreshAll(); } 
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
-function setVM(m){ vm=m; ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===m)); renderCal(); } 
-function setOV(m){ ovMode=m; ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===m); }); renderOverview(); } 
-function filterP(f){ pFilter=f; pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===f)); renderPersonalCurrentView(); } 
+function setVM(m){ vm=['cal','list'].includes(m)?m:'cal'; ls('calendarView', vm); ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===vm)); renderCal(); } 
+function setOV(m){ ovMode=['board','table','gantt','members'].includes(m)?m:'board'; ls('overviewMode', ovMode); ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===ovMode); }); renderOverview(); } 
+function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===pFilter)); renderPersonalCurrentView(); } 
 function openChangeSelf(){ 
   const me = getSelfMember();
   document.getElementById('modal-body').innerHTML=`
