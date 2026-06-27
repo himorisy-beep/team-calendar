@@ -1262,50 +1262,82 @@ input[type="checkbox"]{
 }
 
 
-/* Today marker: bold date + subtle cell border, no black fill */
-.cal-week-day.today{
-  outline:2px solid var(--border2);
-  outline-offset:-2px;
-  box-shadow:inset 0 0 0 1px var(--border);
+
+
+/* Today marker contrast variables */
+:root{
+  --today-bg:rgba(0,0,0,.075);
+  --today-border:rgba(0,0,0,.34);
+  --today-num-bg:#4B5563;
+  --today-num-text:#FFFFFF;
 }
-.cal-week-day.today .dn{
-  background:transparent!important;
-  color:inherit!important;
-  border-radius:0!important;
-  width:auto!important;
-  min-width:0!important;
-  justify-content:flex-start!important;
-  font-weight:900!important;
+html[data-theme="dark"]{
+  --today-bg:rgba(255,255,255,.11);
+  --today-border:rgba(255,255,255,.42);
+  --today-num-bg:#D1D5DB;
+  --today-num-text:#111827;
 }
-.cal-week-day.today .today-num{
-  display:inline!important;
-  width:auto!important;
-  height:auto!important;
-  border:none!important;
-  border-radius:0!important;
-  background:transparent!important;
-  color:inherit!important;
-  font-weight:900!important;
-}
-.cal-week-day.today.sun .today-num{
-  color:#D85A30!important;
-}
-.cal-week-day.today.sat .today-num{
-  color:#378ADD!important;
+@media (prefers-color-scheme: dark){
+  html:not([data-theme="light"]){
+    --today-bg:rgba(255,255,255,.11);
+    --today-border:rgba(255,255,255,.42);
+    --today-num-bg:#D1D5DB;
+    --today-num-text:#111827;
+  }
 }
 
-/* Today tab weekly mini-calendar: same style as calendar cells */
+/* Today marker: darker gray cell + strong date badge */
+.cal-day.today,
+.cal-week-day.today{
+  background:var(--today-bg)!important;
+  outline:none!important;
+  box-shadow:inset 0 0 0 2px var(--today-border)!important;
+}
+.cal-day.today .dn,
+.cal-week-day.today .dn{
+  background:var(--today-num-bg)!important;
+  color:var(--today-num-text)!important;
+  border-radius:999px!important;
+  width:22px!important;
+  height:22px!important;
+  min-width:22px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-weight:900!important;
+  margin-bottom:4px!important;
+}
+.cal-week-day.today .today-num{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:22px!important;
+  height:22px!important;
+  border-radius:999px!important;
+  background:var(--today-num-bg)!important;
+  color:var(--today-num-text)!important;
+  font-weight:900!important;
+}
+.cal-week-day.today.sun .today-num,
+.cal-week-day.today.sat .today-num{
+  color:var(--today-num-text)!important;
+}
+
+/* Today tab weekly mini-calendar: match calendar today marker */
 .week-mini-day.today{
-  outline:2px solid var(--border2);
-  outline-offset:-2px;
-  box-shadow:inset 0 0 0 1px var(--border);
+  background:var(--today-bg)!important;
+  outline:none!important;
+  box-shadow:inset 0 0 0 2px var(--today-border)!important;
 }
 .week-mini-day.today .week-mini-date{
-  background:transparent!important;
-  color:var(--text)!important;
-  border-radius:0!important;
-  width:auto!important;
-  height:auto!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:var(--today-num-bg)!important;
+  color:var(--today-num-text)!important;
+  border-radius:999px!important;
+  width:22px!important;
+  height:22px!important;
   font-weight:900!important;
 }
 .week-mini-day.today .week-mini-date-row{
