@@ -1660,6 +1660,20 @@ button,
   .proposal-db-actions .btn-sm,.proposal-db-actions .btn-danger-sm{height:27px!important;width:44px!important;flex:0 0 44px!important;font-size:11px!important}
 }
 
+
+.project-member-edit-section{border-top:.5px solid var(--border);padding-top:14px}
+.project-member-edit-row{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap}
+.project-member-edit-main{flex:1;min-width:180px}
+.project-member-edit-fields{display:grid;grid-template-columns:minmax(120px,1fr) 132px;gap:6px;margin-top:6px}
+.project-member-edit-fields label{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--text3);font-weight:700}
+.project-member-edit-fields input{padding:5px 7px;font-size:12px}
+.project-member-edit-actions{display:flex;gap:5px;align-items:center;margin-left:auto}
+.project-member-add-box{margin-top:12px;padding:12px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2)}
+@media(max-width:680px){
+  .project-member-edit-fields{grid-template-columns:1fr 1fr}
+  .project-member-edit-actions{width:100%;justify-content:flex-end}
+}
+
 </style>
 </head>
 <body>
@@ -4943,7 +4957,7 @@ function renderProjectTable(){
       <td>${doing}</td>
       <td style="color:${overdue?'#D85A30':'inherit'};font-weight:${overdue?'700':'400'}">${overdue}</td>
       <td>${done}</td>
-      <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button>${canManageAll()?`<button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${p.id}')">참여인력</button>`:''}</div></td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" onclick="openEditProject('${p.id}')">수정</button></div></td>
     </tr>`;
   };
 
@@ -6524,13 +6538,40 @@ function renderProjectManageList(){
   sorted.forEach(p=>{
     const memberCount=assigns.filter(a=>a.projectId===p.id).length;
     const closed=isClosedProject(p);
-    h+=`<div class="user-team-row ${closed?'is-inactive':''}"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(p.name || '')}</div><span class="status-chip ${closed?'ok':'warn'}">${closed?'종료':'진행중'}</span></div><div class="user-team-meta">참여인력 ${memberCount}명${p.start||p.end ? ' · '+fmtDateFull(p.start)+' ~ '+fmtDateFull(p.end) : ''}</div></div><div class="user-team-actions">${canManageAll()?`<button class="btn btn-secondary btn-sm" onclick="openManageProjectMembers('${escapeAttr(p.id)}')">참여인력</button>`:''}<button class="btn btn-secondary btn-sm" onclick="openEditProject('${escapeAttr(p.id)}')">수정</button></div></div>`;
+    h+=`<div class="user-team-row ${closed?'is-inactive':''}"><div style="width:30px;height:30px;border-radius:var(--r-sm);background:${lighten(p.color)};display:flex;align-items:center;justify-content:center;"><div class="dot" style="background:${p.color}"></div></div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(p.name || '')}</div><span class="status-chip ${closed?'ok':'warn'}">${closed?'종료':'진행중'}</span></div><div class="user-team-meta">참여인력 ${memberCount}명${p.start||p.end ? ' · '+fmtDateFull(p.start)+' ~ '+fmtDateFull(p.end) : ''}</div></div><div class="user-team-actions"><button class="btn btn-secondary btn-sm" onclick="openEditProject('${escapeAttr(p.id)}')">수정</button></div></div>`;
   });
   list.innerHTML=h || '<div class="empty">사업이 없습니다</div>';
 }
-function openAddProject(){ if(!requireMemberWrite()) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(false); openModal('사업 추가'); }
-function openEditProject(id){ if(!requireMemberWrite()) return; const p=pj(id); if(!p) return; document.getElementById('modal-body').innerHTML=getProjectFormHTML(true); openModal('사업 수정'); document.getElementById('project-id').value=p.id; document.getElementById('project-name').value=p.name||''; document.getElementById('project-color').value=p.color||'#3B6D11'; document.getElementById('project-start').value=p.start||''; document.getElementById('project-end').value=p.end||''; }
-function getProjectFormHTML(isEdit){ return `<input type="hidden" id="project-id"><div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div><div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div><div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; }
+function openAddProject(){
+  if(!requireMemberWrite()) return;
+  document.getElementById('modal-body').innerHTML=getProjectFormHTML(false);
+  openModal('사업 추가');
+}
+
+function openEditProject(id){
+  if(!requireMemberWrite()) return;
+  const p=pj(id);
+  if(!p) return;
+  document.getElementById('modal-body').innerHTML=getProjectFormHTML(true, p);
+  openModal('사업 수정');
+  document.getElementById('project-id').value=p.id;
+  document.getElementById('project-name').value=p.name||'';
+  document.getElementById('project-color').value=p.color||'#3B6D11';
+  document.getElementById('project-start').value=p.start||'';
+  document.getElementById('project-end').value=p.end||'';
+}
+
+function getProjectFormHTML(isEdit, project){
+  const projectId = project?.id || '';
+  const memberSection = isEdit ? projectMemberManagerHtml(projectId) : '';
+  return `<input type="hidden" id="project-id">
+    <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
+    <div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div>
+    <div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div>
+    <div style="display:flex;gap:8px;margin-bottom:${isEdit?'18px':'0'}"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'사업 정보 저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
+    ${memberSection}`;
+}
+
 function submitProject(){
   const id=document.getElementById('project-id').value||'pj_'+Date.now();
   const name=document.getElementById('project-name').value.trim();
@@ -6544,7 +6585,11 @@ function submitProject(){
     start:document.getElementById('project-start').value,
     end:document.getElementById('project-end').value
   };
-  apiSave(payload, ()=>closeModal());
+  apiSave(payload, ()=>{
+    showToast(existing?'사업 정보를 저장했습니다':'사업을 추가했습니다');
+    if(existing) openEditProject(id);
+    else closeModal();
+  });
 }
 function deleteProjectFromEdit(){ showToast('이 기능은 사용하지 않습니다'); }
 async function archiveProject(id){ showToast('보관 기능은 사용하지 않습니다. 완료 사업은 완료 사업 숨기기/완료 사업 접기로 관리합니다.'); }
@@ -6552,10 +6597,29 @@ async function restoreProject(id){ showToast('이 기능은 사용하지 않습�
 async function deleteProject(id){ showToast('이 기능은 사용하지 않습니다'); }
 
 
-function openManageProjectMembers(projectId){
-  if(!requireManager()) return;
+function projectMemberManagerHtml(projectId){
   const p = pj(projectId);
-  if(!p) return;
+  if(!p) return '';
+
+  if(!canManageAll()){
+    const projectAssigns = assigns.filter(a => a.projectId === projectId);
+    const currentRows = projectAssigns.map(a => {
+      const m = mb(a.memberId);
+      const appliedDate = assignAppliedDateValue(a);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border)">
+        ${m ? `<div class="av" style="width:22px;height:22px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
+          <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')} · 투입시작 ${appliedDate || '-'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="detail-section" style="margin-top:18px">
+      <div class="detail-section-title">참여인력</div>
+      ${currentRows || '<div class="empty" style="padding:12px">등록된 참여인력이 없습니다</div>'}
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:8px">참여인력 추가·수정은 관리자/팀장만 가능합니다.</div>
+    </div>`;
+  }
 
   const projectAssigns = assigns.filter(a => a.projectId === projectId);
   const assignedIds = new Set(projectAssigns.map(a => a.memberId));
@@ -6563,16 +6627,17 @@ function openManageProjectMembers(projectId){
   const currentRows = projectAssigns.map(a => {
     const m = mb(a.memberId);
     const appliedDate = assignAppliedDateValue(a);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--border);flex-wrap:wrap">
+    return `<div class="project-member-edit-row">
       ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
-      <div style="flex:1;min-width:150px">
-        <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
-        <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')}</div>
+      <div class="project-member-edit-main">
+        <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')}</div>
+        <div class="project-member-edit-fields">
+          <label><span>역할</span><input type="text" id="pm-role-${escapeAttr(a.id)}" value="${escapeAttr(a.role || '')}" placeholder="역할"></label>
+          <label><span>투입시작</span><input type="date" id="pm-start-${escapeAttr(a.id)}" value="${escapeAttr(appliedDate)}"></label>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--text2)">투입시작</span>
-        <input type="date" id="pm-start-${escapeAttr(a.id)}" value="${escapeAttr(appliedDate)}" style="width:132px;padding:5px 7px;font-size:12px">
-        <button class="btn btn-secondary btn-sm" onclick="updateProjectMemberStart('${escapeAttr(a.id)}', '${escapeAttr(projectId)}')">저장</button>
+      <div class="project-member-edit-actions">
+        <button class="btn btn-secondary btn-sm" onclick="updateProjectMember('${escapeAttr(a.id)}', '${escapeAttr(projectId)}')">저장</button>
         <button class="btn-danger-sm" onclick="deleteProjectMember('${escapeAttr(a.id)}', '${escapeAttr(projectId)}')">삭제</button>
       </div>
     </div>`;
@@ -6583,47 +6648,29 @@ function openManageProjectMembers(projectId){
     .map(m => `<option value="${m.id}">${escapeHtml(m.name || '')}</option>`)
     .join('');
 
-  document.getElementById('modal-body').innerHTML = `
-    <div style="margin-bottom:14px">
-      <div class="fl">현재 참여인력</div>
-      ${currentRows || '<div class="empty" style="padding:12px">등록된 참여인력이 없습니다</div>'}
-    </div>
+  return `<div class="detail-section project-member-edit-section" style="margin-top:18px">
+    <div class="detail-section-title">참여인력 관리</div>
+    ${currentRows || '<div class="empty" style="padding:12px">등록된 참여인력이 없습니다</div>'}
 
-    <div class="form-row full">
-      <div>
-        <div class="fl">추가할 팀원</div>
-        <select id="pm-member-sel">
-          <option value="">— 팀원 선택</option>
-          ${memberOptions}
-        </select>
-      </div>
+    <div class="project-member-add-box">
+      <div class="form-row full"><div><div class="fl">추가할 팀원</div><select id="pm-member-sel"><option value="">— 팀원 선택</option>${memberOptions}</select></div></div>
+      <div class="form-row"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div></div>
+      <button class="btn btn-secondary" style="width:100%" onclick="addProjectMember('${escapeAttr(projectId)}')">참여인력 추가</button>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:6px">사업 시작 후 중간에 합류한 경우 이 날짜부터 사업 종료일까지 MD가 계산됩니다.</div>
     </div>
+  </div>`;
+}
 
-    <div class="form-row full">
-      <div>
-        <div class="fl">역할</div>
-        <input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발, 보조 등">
-      </div>
-    </div>
-
-    <div class="form-row full">
-      <div>
-        <div class="fl">투입 시작일</div>
-        <input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}">
-        <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">사업 시작 후 중간에 합류한 경우 이 날짜부터 사업 종료일까지 MD가 계산됩니다.</div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="addProjectMember('${projectId}')">참여인력 추가</button>
-      <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
-    </div>
-  `;
-
+function openManageProjectMembers(projectId){
+  if(!requireManager()) return;
+  const p = pj(projectId);
+  if(!p) return;
+  document.getElementById('modal-body').innerHTML = projectMemberManagerHtml(projectId) + `<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-secondary" style="flex:1" onclick="closeModal()">닫기</button></div>`;
   openModal(`${p.name} 참여인력 관리`);
 }
 
 function addProjectMember(projectId){
+  if(!requireManager()) return;
   const memberId = document.getElementById('pm-member-sel').value;
   const role = document.getElementById('pm-role-input').value.trim();
   const assignedAtDate = document.getElementById('pm-start-input')?.value || fmtDateFull(new Date());
@@ -6647,25 +6694,33 @@ function addProjectMember(projectId){
     createdAt: nowIso
   }, () => {
     showToast('참여인력을 추가했습니다');
-    openManageProjectMembers(projectId);
+    openEditProject(projectId);
   });
 }
 
-function updateProjectMemberStart(assignId, projectId){
+function updateProjectMember(assignId, projectId){
+  if(!requireManager()) return;
   const assignedAtDate = document.getElementById(`pm-start-${assignId}`)?.value || '';
+  const role = document.getElementById(`pm-role-${assignId}`)?.value?.trim() || '';
   apiSave({
     action:'updateAssign',
     id:assignId,
+    role,
     assignedAtDate,
     assignedAt:assignedAtDate,
     updatedAt:new Date().toISOString()
   }, () => {
-    showToast('투입 시작일을 저장했습니다');
-    openManageProjectMembers(projectId);
+    showToast('참여인력을 저장했습니다');
+    openEditProject(projectId);
   });
 }
 
+function updateProjectMemberStart(assignId, projectId){
+  updateProjectMember(assignId, projectId);
+}
+
 function deleteProjectMember(assignId, projectId){
+  if(!requireManager()) return;
   if(!confirm('이 참여인력을 삭제할까요?')) return;
 
   apiSave({
@@ -6673,10 +6728,9 @@ function deleteProjectMember(assignId, projectId){
     id:assignId
   }, () => {
     showToast('참여인력을 삭제했습니다');
-    openManageProjectMembers(projectId);
+    openEditProject(projectId);
   });
 }
-
 
 function renderSettingsDiagnostics(){
   const box=document.getElementById('settings-diagnostics'); if(!box) return;
