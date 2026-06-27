@@ -1625,6 +1625,41 @@ button,
   }
 }
 
+
+
+/* Simplified mobile pass: compact top actions and collapsed proposal filters */
+.filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 5px;border-radius:999px;background:var(--accent);color:white;font-size:10px;font-weight:800;line-height:1;margin-left:3px}
+.proposal-filter-toggle{display:none;margin-bottom:8px}
+@media(max-width:680px){
+  .global-actions{padding:6px 14px 0!important;margin-bottom:7px!important;gap:5px!important}
+  .global-actions .btn{height:30px!important;padding:0 5px!important;font-size:11px!important;border-radius:7px!important;min-height:30px!important}
+  .global-actions .notice-dot{min-width:15px!important;height:15px!important;font-size:9px!important;padding:0 4px!important}
+  #page-proposals .page-header{display:grid!important;grid-template-columns:1fr auto!important;align-items:center!important;gap:8px!important;margin-bottom:10px!important}
+  #page-proposals .page-header .btn{height:30px!important;padding:0 9px!important;font-size:11px!important;white-space:nowrap!important}
+  .proposal-filter-toggle{display:inline-flex!important;width:auto!important;height:30px!important;padding:0 10px!important;font-size:11px!important;align-items:center!important;justify-content:center!important;margin-bottom:8px!important}
+  .proposal-filter-shell:not(.open) .proposal-filter-panel{display:none!important}
+  .proposal-filter-shell.open .proposal-filter-panel{display:flex!important}
+  .proposal-filter-panel{gap:7px!important;margin-bottom:10px!important;background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:8px!important}
+  .proposal-filter-line{display:flex!important;gap:5px!important;overflow-x:auto!important;flex-wrap:nowrap!important;align-items:center!important;padding-bottom:2px!important}
+  .proposal-filter-line::-webkit-scrollbar{display:none!important}
+  .proposal-filter-label{flex:0 0 auto!important;min-width:auto!important;margin-right:1px!important;font-size:10px!important;white-space:nowrap!important}
+  .proposal-filter-line .chip{flex:0 0 auto!important;width:auto!important;min-width:42px!important;padding:5px 8px!important;font-size:11px!important;white-space:nowrap!important}
+  .proposal-filter-line .header-check{flex:0 0 auto!important;height:27px!important;padding:0 8px!important;font-size:11px!important;white-space:nowrap!important;margin-left:0!important}
+  #proposal-list{overflow-x:visible!important}
+  .proposal-db-head{display:none!important}
+  .proposal-db-row{display:block!important;min-width:0!important;padding:11px 12px!important;border-radius:12px!important}
+  .proposal-db-row>div{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;margin-bottom:5px!important}
+  .proposal-db-title{font-size:13.5px!important;line-height:1.35!important;white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important}
+  .proposal-db-meta{font-size:11px!important;margin-top:5px!important;white-space:normal!important}
+  .proposal-mobile-extra{display:none!important}
+  .proposal-db-row>div:nth-child(3),
+  .proposal-db-row>div:nth-child(4){font-size:12px!important;color:var(--text2)!important;margin-bottom:3px!important}
+  .proposal-db-row>div:nth-child(3)::before{content:'수요기관 ';font-size:10px;font-weight:800;color:var(--text3);margin-right:4px}
+  .proposal-db-row>div:nth-child(4)::before{content:'마감 ';font-size:10px;font-weight:800;color:var(--text3);margin-right:4px}
+  .proposal-db-actions{justify-content:flex-end!important;margin-top:8px!important;margin-bottom:0!important;gap:5px!important}
+  .proposal-db-actions .btn-sm,.proposal-db-actions .btn-danger-sm{height:27px!important;width:44px!important;flex:0 0 44px!important;font-size:11px!important}
+}
+
 </style>
 </head>
 <body>
@@ -1672,7 +1707,7 @@ button,
 <div class="global-actions">
   <button class="btn btn-secondary btn-sm" onclick="openGlobalSearch()">검색</button>
   <button class="btn btn-secondary btn-sm" onclick="openNotifications()">알림 <span id="notice-count" class="notice-dot" style="display:none">0</span></button>
-  <button class="btn btn-primary btn-sm" onclick="openQuickAdd()"><span class="label-desktop">+ 새로 만들기</span><span class="label-mobile">+ 새로</span></button>
+  <button class="btn btn-primary btn-sm" onclick="openQuickAdd()"><span class="label-desktop">+ 새로 만들기</span><span class="label-mobile">+</span></button>
 </div>
 <div id="active-filter-bar" class="active-filter-bar"></div>
 
@@ -1846,6 +1881,7 @@ button,
 console.info("team-calendar build: calendar_v20");
 const SK = 'tc2_';
 function ls(k,v){if(v===undefined)return localStorage.getItem(SK+k);v===null?localStorage.removeItem(SK+k):localStorage.setItem(SK+k,v);}
+function ss(k,v){if(v===undefined)return sessionStorage.getItem(SK+k);v===null?sessionStorage.removeItem(SK+k):sessionStorage.setItem(SK+k,v);}
 
 let currentTheme = ls('theme') || 'sys';
 function applyTheme(theme) {
@@ -1905,7 +1941,9 @@ let editingEventId = null;
 let editingProposalId = null;
 let curY = today.getFullYear(), curM = today.getMonth(); 
 let hidePast = ls('hidePast') !== 'N';
-let manDayYear = ls('manDayYear') || 'all';
+const currentManDayYear = String(today.getFullYear());
+let storedManDayYear = ss('manDayYear');
+let manDayYear = (storedManDayYear === 'all' || /^\d{4}$/.test(String(storedManDayYear || ''))) ? String(storedManDayYear) : currentManDayYear;
 
 const mb = id => members.find(m=>m.id===id); 
 const pj = id => projects.find(p=>p.id===id); 
@@ -2276,6 +2314,7 @@ function bindLoginButton(){
 }
 
 function logout(){
+  ss('manDayYear', null);
   auth.signOut();
 }
 
@@ -2377,6 +2416,8 @@ async function initAuth(){
     if(!user){
       currentUser = null;
       currentUserProfile = null;
+      ss('manDayYear', null);
+      manDayYear = currentManDayYear;
       showLoginScreen('');
       return;
     }
@@ -5058,12 +5099,23 @@ function toggleProposalHidePast(checked){
   renderProposalPage();
 }
 
+let proposalMobileFilterOpen = false;
+function toggleProposalMobileFilters(){
+  proposalMobileFilterOpen = !proposalMobileFilterOpen;
+  renderProposalPage();
+}
+
 function proposalStatusFilterChips(){
   const statusFilters = ['active','submitted','hold','all'];
   const resultFilters = ['all','pending','won','lost'];
-  return `<div class="proposal-filter-panel">
-    <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" onclick="setProposalStatusFilter('${f}')">${proposalFilterLabel(f)}</button>`).join('')}</div>
-    <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" onclick="setProposalResultFilter('${f}')">${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">지난 제안 숨기기</span><span class="label-mobile">지난 숨김</span></label></div>
+  const appliedCount = (proposalStatusFilter !== 'active' ? 1 : 0) + (proposalResultFilter !== 'all' ? 1 : 0) + (proposalHidePast ? 1 : 0);
+  const filterBadge = appliedCount ? ` <span class="filter-count">${appliedCount}</span>` : '';
+  return `<div class="proposal-filter-shell ${proposalMobileFilterOpen ? 'open' : ''}">
+    <button class="btn btn-secondary btn-sm proposal-filter-toggle" onclick="toggleProposalMobileFilters()">필터${filterBadge}</button>
+    <div class="proposal-filter-panel">
+      <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" onclick="setProposalStatusFilter('${f}')">${proposalFilterLabel(f)}</button>`).join('')}</div>
+      <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" onclick="setProposalResultFilter('${f}')">${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">지난 제안 숨기기</span><span class="label-mobile">지난 숨김</span></label></div>
+    </div>
   </div>`;
 }
 
@@ -5161,7 +5213,7 @@ function renderProposalPage(){
       <div><span class="proposal-dday ${ddayClass}">${ddayText}</span></div>
       <div title="${escapeHtml(p.name || '제안명 없음')}">
         <div class="proposal-db-title">${escapeHtml(p.name || '제안명 없음')}</div>
-        <div class="proposal-db-meta">${proposalStatusChip(p)} · ${proposalResultChip(p)} · 제안시작: ${p.start ? fmtDateFull(p.start) : '-'} · 첨부 ${fileCount}개${participantNames.length ? ' · '+escapeHtml(participantNames.join(', ')) : ''}</div>
+        <div class="proposal-db-meta"><span class="proposal-mobile-core">${proposalStatusChip(p)} · ${proposalResultChip(p)}</span><span class="proposal-mobile-extra"> · 제안시작: ${p.start ? fmtDateFull(p.start) : '-'} · 첨부 ${fileCount}개${participantNames.length ? ' · '+escapeHtml(participantNames.join(', ')) : ''}</span></div>
       </div>
       <div title="${escapeHtml(p.demandOrg || '-')}">${escapeHtml(p.demandOrg || '-')}</div>
       <div title="${deadlineText}">${deadlineText}</div>
@@ -5382,13 +5434,13 @@ function availableManDayYears(){
 }
 
 function normalizeManDayYearValue(value){
-  const v = String(value || 'all');
-  return v === 'all' || /^\d{4}$/.test(v) ? v : 'all';
+  const v = String(value || currentManDayYear);
+  return v === 'all' || /^\d{4}$/.test(v) ? v : currentManDayYear;
 }
 
 function setManDayYear(year){
   manDayYear = normalizeManDayYearValue(year);
-  ls('manDayYear', manDayYear);
+  ss('manDayYear', manDayYear);
   renderOverview();
 }
 
