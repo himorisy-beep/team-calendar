@@ -864,6 +864,24 @@ input[type="checkbox"]{
   color:var(--text2);
 }
 .active-filter-bar.show{display:flex}
+
+.today-title-wrap{display:flex;align-items:center;gap:9px;min-width:0;max-width:100%}
+.today-kpi-inline{display:flex;align-items:center;gap:5px;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.today-kpi-inline::-webkit-scrollbar{display:none}
+.today-mini-badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:999px;border:.5px solid var(--border);background:var(--bg2);color:var(--text2);font-size:11px;line-height:1;flex:0 0 auto}
+.today-mini-badge b{font-weight:800;color:var(--text2)}
+.today-mini-badge strong{font-size:12px;font-weight:900;color:var(--text)}
+.today-mini-badge.danger{background:#FAECE7;border-color:#F09595;color:#A32D2D}
+.today-mini-badge.danger b,.today-mini-badge.danger strong{color:#A32D2D}
+@media(max-width:680px){
+  #page-home .page-header{display:flex;flex-direction:row;align-items:center;margin-bottom:10px;overflow:hidden}
+  .today-title-wrap{width:100%;gap:8px;overflow:hidden}
+  .today-title-wrap .page-title{flex:0 0 auto}
+  .today-kpi-inline{flex:1 1 auto}
+  .today-mini-badge{height:20px;padding:0 6px;font-size:10px}
+  .today-mini-badge strong{font-size:11px}
+}
+
 .active-filter-label{font-weight:800;color:var(--text)}
 .active-filter-pill{
   display:inline-flex;
@@ -1796,8 +1814,8 @@ button,
 <div id="active-filter-bar" class="active-filter-bar"></div>
 
 <div id="page-home" class="page active">
-  <div class="page-header">
-    <span class="page-title">오늘</span>
+  <div class="page-header today-page-header">
+    <div class="today-title-wrap"><span class="page-title">오늘</span><div id="today-kpi-inline" class="today-kpi-inline" aria-label="오늘 요약"></div></div>
   </div>
   <div id="home-summary"></div>
 </div>
@@ -3236,14 +3254,18 @@ function renderHome(){
     </div>`;
   }).join('');
 
-  container.innerHTML = `
-    <div class="today-kpi-grid">
-      <div class="home-card"><div class="home-label">지연</div><div class="home-value">${overdueTasks.length}</div><div class="home-sub">마감 초과 업무</div></div>
-      <div class="home-card"><div class="home-label">오늘 마감</div><div class="home-value">${todayDueTasks.length + todayDueProposals.length}</div><div class="home-sub">업무·제안 포함</div></div>
-      <div class="home-card"><div class="home-label">오늘 일정</div><div class="home-value">${todayEvents.length}</div><div class="home-sub">내 일정 기준</div></div>
-      <div class="home-card"><div class="home-label">이번 주 마감</div><div class="home-value">${weekDueTasks.length + weekDueProposals.length}</div><div class="home-sub">7일 내 예정</div></div>
-    </div>
+  const todayKpiEl = document.getElementById('today-kpi-inline');
+  if(todayKpiEl){
+    const kpis = [
+      {label:'지연', value:overdueTasks.length, danger:overdueTasks.length>0, title:'마감 초과 업무'},
+      {label:'마감', value:todayDueTasks.length + todayDueProposals.length, title:'오늘 마감 업무·제안'},
+      {label:'일정', value:todayEvents.length, title:'오늘 일정'},
+      {label:'주간', value:weekDueTasks.length + weekDueProposals.length, title:'이번 주 마감'}
+    ];
+    todayKpiEl.innerHTML = kpis.map(k => `<span class="today-mini-badge ${k.danger?'danger':''}" title="${escapeAttr(k.title)}"><b>${escapeHtml(k.label)}</b><strong>${k.value}</strong></span>`).join('');
+  }
 
+  container.innerHTML = `
     <div class="today-section-grid">
       ${sectionCard('1. 지연 업무', overdueRows, '지연 업무가 없습니다')}
       ${sectionCard('2. 오늘 마감', todayDueRows, '오늘 마감인 업무나 제안이 없습니다')}
