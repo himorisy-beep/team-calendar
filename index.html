@@ -1722,6 +1722,13 @@ button,
 .cal-nav-inline{display:flex;align-items:center;gap:6px;flex:0 0 auto;min-width:0}
 .cal-nav-inline #month-title{white-space:nowrap}
 .cal-view-tabs{display:flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:0}
+
+.cal-scope-tabs{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:2px;padding-left:6px;border-left:.5px solid var(--border)}
+.cal-scope-tabs .chip{font-size:11px;padding:4px 9px}
+@media(max-width:680px){
+  .cal-scope-tabs{gap:3px;padding-left:4px;margin-left:0}
+  .cal-scope-tabs .chip{font-size:10.5px;padding:4px 7px}
+}
 .cal-inline-legend{display:flex;align-items:center;gap:7px;flex:1 1 auto;min-width:0;overflow-x:auto;white-space:nowrap;padding:1px 0;scrollbar-width:none}
 .cal-inline-legend::-webkit-scrollbar{display:none}
 .cal-inline-legend .legend-item{font-size:11px;gap:4px;flex:0 0 auto;color:var(--text2)}
@@ -1795,7 +1802,7 @@ button,
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div class="cal-view-tabs"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div class="cal-view-tabs"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button><div class="cal-scope-tabs" aria-label="캘린더 표시 범위"><button class="chip active" id="cal-scope-all" onclick="setCalendarScope('all')">전체</button><button class="chip" id="cal-scope-mine" onclick="setCalendarScope('mine')">내 것만</button></div></div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check ov-mobile-hide"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span class="label-desktop">완료 사업 숨기기</span><span class="label-mobile">완료 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
 
@@ -2003,6 +2010,7 @@ let vm = ['cal','list'].includes(ls('calendarView')) ? ls('calendarView') : 'cal
     pFilter = ['all','public','private'].includes(ls('personalFilter')) ? ls('personalFilter') : 'all',
     pvMode = 'list',
     calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window'; 
+let calScope = ['all','mine'].includes(ls('calendarScope')) ? ls('calendarScope') : 'all';
 const today = new Date(); 
 let editingEventId = null; 
 let editingProposalId = null;
@@ -3017,6 +3025,8 @@ function syncPersistentControls(){
     if(el) el.classList.toggle('active', k===vm);
   });
 
+  syncCalendarScopeButtons();
+
   ['all','public','private'].forEach(k=>{
     const el = document.getElementById('pf-'+k);
     if(el) el.classList.toggle('active', k===pFilter);
@@ -3877,6 +3887,7 @@ function isProjectScheduleEvent(e){
 function getCalendarTasks(){
   return tasks.filter(t => {
     if(!(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true')) return false;
+    if(isCalendarMineScope() && !isMyCalendarTask(t)) return false;
     if(t.assignee && hiddenMb.has(t.assignee)) return false;
     if(selProj !== 'all' && t.project !== selProj) return false;
     return t.start && t.end;
@@ -4378,7 +4389,7 @@ function resetActiveFilters(){
   refreshAll();
 }
 
-function getVisEv(){ return events.filter(e=>{ if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
+function getVisEv(){ return events.filter(e=>{ if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(isCalendarMineScope()&&!isMyCalendarEvent(e))return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
 
 
 function holidayKeyFromDateValue(v){
@@ -4480,7 +4491,7 @@ async function loadKoreanHolidays(year){
 function proposalMarksOnDay(y,m,d){
   const key = fmtDateFull(new Date(y,m,d));
   const marks = [];
-  proposals.forEach(p=>{
+  getCalendarProposals().forEach(p=>{
     if(p.start && fmtDateFull(p.start) === key){
       marks.push({ id:p.id, type:'start', label:`제안시작 · ${p.name || '제안'}` });
     }
@@ -4649,7 +4660,7 @@ function syncLegendState(){
   if(text) text.textContent = '범례 보기';
 }
 
-function renderCal(){ requestHolidayYearsForCurrentView(); vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
+function renderCal(){ requestHolidayYearsForCurrentView(); vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; syncCalendarScopeButtons(); }
 function renderCalGrid(){
   const first = new Date(curY, curM, 1);
   const last = new Date(curY, curM + 1, 0);
@@ -4700,6 +4711,37 @@ function renderCalGrid(){
 
   h += '</div>';
   document.getElementById('cal-container').innerHTML = h;
+}
+
+
+function isCalendarMineScope(){
+  return calScope === 'mine';
+}
+
+function syncCalendarScopeButtons(){
+  ['all','mine'].forEach(k => {
+    const el = document.getElementById('cal-scope-' + k);
+    if(el) el.classList.toggle('active', k === calScope);
+  });
+}
+
+function setCalendarScope(scope){
+  calScope = scope === 'mine' ? 'mine' : 'all';
+  ls('calendarScope', calScope);
+  syncCalendarScopeButtons();
+  renderCal();
+}
+
+function isMyCalendarEvent(e){
+  return !!(e && e.who === selfId);
+}
+
+function isMyCalendarTask(t){
+  return !!(t && t.assignee === selfId);
+}
+
+function getCalendarProposals(){
+  return proposals.filter(p => !isCalendarMineScope() || isMyProposal(p));
 }
 
 function setCalListMode(mode){
@@ -4753,7 +4795,7 @@ function renderCalList(){
   });
 
   const proposalItems = [];
-  proposals.forEach(p => {
+  getCalendarProposals().forEach(p => {
     if(p.start){
       proposalItems.push({
         kind:'proposal',
@@ -4779,7 +4821,7 @@ function renderCalList(){
   });
 
 
-  const holidayItems = holidays.map(h => {
+  const holidayItems = isCalendarMineScope() ? [] : holidays.map(h => {
     const s = parseDateSafely(h.start);
     const en = getHolidayEndDate(h);
     return {
@@ -4806,10 +4848,11 @@ function renderCalList(){
     });
   }
 
+  const scopeLabel = isCalendarMineScope() ? '내 것만' : '전체';
   const head = `
     <div class="cal-list-head">
       <div>
-        <div class="cal-list-title">${calListMode === 'window' ? '최근·예정 일정' : '전체 일정'}</div>
+        <div class="cal-list-title">${scopeLabel} · ${calListMode === 'window' ? '최근·예정 일정' : '전체 일정'}</div>
         <div class="cal-list-meta">${calListMode === 'window' ? `${fmtDateFull(from)} ~ ${fmtDateFull(to)} · ${items.length}/${totalCount}건 표시` : `${totalCount}건 전체 표시`}</div>
       </div>
       <div class="cal-list-controls">
