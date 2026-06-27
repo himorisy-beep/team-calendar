@@ -192,7 +192,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   #page-personal .personal-header{display:block;margin-bottom:18px}
   #page-personal .personal-actions{margin-left:0;width:100%;display:block}
   #page-personal .personal-hide-check{display:inline-flex;margin:16px 0 10px}
-  #page-personal .personal-tab-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%}
+  #page-personal .personal-tab-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
   #page-personal .personal-tab-row .chip,
   #page-personal .personal-tab-row .btn{width:100%;min-width:0;padding:7px 4px;font-size:12px;line-height:1.2;border-radius:12px;white-space:nowrap;text-align:center;justify-content:center}
 }
@@ -1674,6 +1674,19 @@ button,
   .project-member-edit-actions{width:100%;justify-content:flex-end}
 }
 
+
+/* Simplified management controls */
+.legend-shell{margin-bottom:12px}
+.legend-toggle{margin-bottom:8px}
+.legend.collapsed{display:none}
+@media(max-width:680px){
+  #page-overview .ov-mobile-hide{display:none!important}
+  #page-overview .overview-actions{justify-content:flex-start}
+  #page-overview .overview-actions #ov-board,
+  #page-overview .overview-actions #ov-members,
+  #page-overview .overview-actions .btn{flex:1 1 0;min-width:0;text-align:center;justify-content:center}
+}
+
 </style>
 </head>
 <body>
@@ -1732,9 +1745,9 @@ button,
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button><div style="margin-left:auto;display:flex;gap:6px"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div></div><div class="legend-shell" id="legend-shell"><button class="btn btn-secondary btn-sm legend-toggle" type="button" onclick="toggleLegend()"><span id="legend-toggle-text">범례 보기</span></button><div class="legend collapsed" id="calendar-legend"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span class="label-desktop">완료 사업 숨기기</span><span class="label-mobile">완료 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check ov-mobile-hide"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span class="label-desktop">완료 사업 숨기기</span><span class="label-mobile">완료 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -1758,7 +1771,6 @@ button,
         <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
         <button class="chip" id="pv-projects" onclick="setPV('projects')"><span class="label-desktop">맡은 사업/제안</span><span class="label-mobile">사업/제안</span></button>
         <button class="chip" id="pv-todos" onclick="setPV('todos')"><span class="label-desktop">업무 매트릭스</span><span class="label-mobile">매트릭스</span></button>
-        <button class="btn btn-primary btn-sm" onclick="openAddEvent()"><span class="label-desktop">+ 일정 추가</span><span class="label-mobile">+ 추가</span></button>
       </div>
     </div>
   </div>
@@ -1848,14 +1860,6 @@ button,
     <div style="font-size:12px;color:var(--text2);line-height:1.5;margin:-4px 0 12px">팀원 프로필, 로그인 계정, 이메일 초대 상태를 한 화면에서 관리합니다.</div>
     <div class="user-team-tabs" id="user-team-tabs"></div>
     <div id="user-team-manage-list" class="settings-scroll-list user-team-list"></div>
-  </div>
-
-  <div class="card writer-only" id="setup-project-card" style="max-width:760px;margin-bottom:14px;display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
-      <div class="card-title" style="margin:0">사업 관리 <span id="proj-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
-      <button class="btn btn-primary btn-sm" onclick="openAddProject()">+ 추가</button>
-    </div>
-    <div id="project-manage-list" class="settings-scroll-list"></div>
   </div>
 
   <div class="card manager-only" id="setup-export-card" style="max-width:760px;margin-bottom:14px;display:none">
@@ -2954,8 +2958,10 @@ function syncPersistentControls(){
 
   ['board','table','gantt','members'].forEach(k=>{
     const el = document.getElementById('ov-'+k);
-    if(el) el.classList.toggle('active', k===ovMode);
+    if(el) el.classList.toggle('active', k===effectiveOverviewMode());
   });
+
+  syncLegendState();
 
   ['cal','list'].forEach(k=>{
     const el = document.getElementById('vm-'+k);
@@ -4569,6 +4575,31 @@ function getWeekEventSegments(weekDates, vis){
   return { segments:visibleSegments, laneCount:visibleLaneCount };
 }
 
+
+function isMobileCompactView(){
+  return window.matchMedia && window.matchMedia('(max-width:680px)').matches;
+}
+
+function effectiveOverviewMode(){
+  return isMobileCompactView() && ['table','gantt'].includes(ovMode) ? 'board' : ovMode;
+}
+
+function toggleLegend(){
+  const legend = document.getElementById('calendar-legend');
+  const text = document.getElementById('legend-toggle-text');
+  if(!legend) return;
+  const open = legend.classList.toggle('collapsed') === false;
+  if(text) text.textContent = open ? '범례 접기' : '범례 보기';
+}
+
+function syncLegendState(){
+  const legend = document.getElementById('calendar-legend');
+  const text = document.getElementById('legend-toggle-text');
+  if(!legend) return;
+  legend.classList.add('collapsed');
+  if(text) text.textContent = '범례 보기';
+}
+
 function renderCal(){ requestHolidayYearsForCurrentView(); vm==='cal'?renderCalGrid():renderCalList(); const mt=document.getElementById('month-title'); if(mt) mt.textContent=`${curY}년 ${curM+1}월`; }
 function renderCalGrid(){
   const first = new Date(curY, curM, 1);
@@ -4816,7 +4847,7 @@ function renderCalList(){
   document.getElementById('cal-container').innerHTML=h+'</div>';
 }
 
-function renderOverview(){ if(ovMode==='board') renderBoard(); else if(ovMode==='table') renderProjectTable(); else if(ovMode==='gantt') renderGantt(); else renderMemberOverview(); }
+function renderOverview(){ const mode=effectiveOverviewMode(); syncPersistentControls(); if(mode==='board') renderBoard(); else if(mode==='table') renderProjectTable(); else if(mode==='gantt') renderGantt(); else renderMemberOverview(); }
 
 function projectSummaryStats(p){
   const projTasks = tasks.filter(t=>t.project===p.id && !hiddenMb.has(t.assignee));
@@ -5468,7 +5499,7 @@ function manDayYearControlHtml(id){
   const opts = [`<option value="all" ${manDayYear === 'all' ? 'selected' : ''}>전체 기간</option>`]
     .concat(years.map(y => `<option value="${y}" ${String(y) === String(manDayYear) ? 'selected' : ''}>${y}년</option>`))
     .join('');
-  const manageBtn = canManageAll() ? `<button class="btn btn-secondary btn-sm" type="button" onclick="openBulkProjectMemberStartManager()">투입 시작일 관리</button>` : '';
+  const manageBtn = canManageAll() ? `<button class="btn btn-secondary btn-sm" type="button" onclick="openBulkProjectMemberStartManager()">일괄 관리</button>` : '';
   return `<div class="md-year-toolbar">
     <div><div class="md-year-title">투입공수</div><div class="md-year-help">사업·제안별 MD를 연도 기준으로 확인합니다.</div></div>
     <div class="md-year-actions">
@@ -6351,7 +6382,7 @@ function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('s
 function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', selProj); buildSidebar(); refreshAll(); } 
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
 function setVM(m){ vm=['cal','list'].includes(m)?m:'cal'; ls('calendarView', vm); ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===vm)); renderCal(); } 
-function setOV(m){ ovMode=['board','table','gantt','members'].includes(m)?m:'board'; ls('overviewMode', ovMode); ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===ovMode); }); renderOverview(); } 
+function setOV(m){ ovMode=['board','table','gantt','members'].includes(m)?m:'board'; if(isMobileCompactView() && ['table','gantt'].includes(ovMode)) ovMode='board'; ls('overviewMode', ovMode); ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===effectiveOverviewMode()); }); renderOverview(); } 
 function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===pFilter)); renderPersonalCurrentView(); } 
 function openChangeSelf(){ 
   const me = getSelfMember();
