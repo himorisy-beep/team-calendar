@@ -5681,7 +5681,7 @@ function manDaySummaryHtml(memberId){
   const stats = memberManDayStats(memberId);
   const yearLabel = manDayYear === 'all' ? '전체 기간 기준' : `${manDayYear}년 기준`;
   const rowsHtml = (rows, type) => rows.length ? `<div class="md-list">${rows.map(r => `
-    <div class="md-row" onclick="${type === 'project' ? `goPage('overview');selProj='${escapeAttr(r.id)}';ls('selectedProject', selProj);renderActiveFilterBar();renderOverview()` : `showProposal('${escapeAttr(r.id)}')`}" style="cursor:pointer">
+    <div class="md-row"${type === 'proposal' ? ` onclick="showProposal('${escapeAttr(r.id)}')" style="cursor:pointer"` : ''}>
       <div>
         <div class="md-name"><span class="dot" style="background:${r.color}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</span></div>
         <div class="md-sub">${manDayDateLabel(r.start)} ~ ${manDayDateLabel(r.end)}</div>
