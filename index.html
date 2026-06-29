@@ -1762,6 +1762,12 @@ button,
   .cal-inline-legend .legend-item{font-size:10.5px}
 }
 
+
+/* Settings sections */
+.settings-section-title{max-width:760px;margin:18px 0 8px;font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.07em;text-transform:uppercase}
+.settings-section-title:first-child{margin-top:0}
+@media(max-width:680px){.settings-section-title{margin:14px 0 7px;padding:0 2px;font-size:10px}}
+
 </style>
 </head>
 <body>
@@ -1915,6 +1921,7 @@ button,
 <div id="page-setup" class="page">
   <div class="page-header"><span class="page-title">설정</span></div>
 
+  <div class="settings-section-title">내 설정</div>
   <div class="card" style="max-width:760px;margin-bottom:14px">
     <div class="card-title">화면 테마</div>
     <div style="display:flex;gap:10px;">
@@ -1924,6 +1931,8 @@ button,
     </div>
   </div>
 
+
+  <div class="settings-section-title manager-only">팀 관리</div>
   <div class="card manager-only" id="setup-user-team-card" style="max-width:760px;margin-bottom:14px;display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
       <div class="card-title" style="margin:0">사용자·팀원 관리 <span id="user-team-count" style="font-size:11px;font-weight:400;color:var(--text3)"></span></div>
@@ -1936,6 +1945,8 @@ button,
     <div id="user-team-manage-list" class="settings-scroll-list user-team-list"></div>
   </div>
 
+
+  <div class="settings-section-title manager-only">데이터 관리</div>
   <div class="card manager-only" id="setup-export-card" style="max-width:760px;margin-bottom:14px;display:none">
     <div class="card-title">CSV 내보내기</div>
     <div class="export-grid">
@@ -1996,6 +2007,7 @@ const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','대기':'tag-t
 
 let currentUser = null;
 let currentUserProfile = null;
+let currentPage = 'home';
 const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
 let selfId = ls('selfId')||''; 
@@ -2657,6 +2669,7 @@ function getTargetItem(targetType, targetId){
   if(targetType === 'event') return events.find(e => e.id === targetId) || null;
   if(targetType === 'task') return tasks.find(t => t.id === targetId) || null;
   if(targetType === 'proposal') return proposals.find(p => p.id === targetId) || null;
+  if(targetType === 'project') return projects.find(p => p.id === targetId) || null;
   if(targetType === 'todo') return todos.find(t => t.id === targetId) || null;
   return null;
 }
@@ -2709,13 +2722,14 @@ function getTargetVisibility(targetType, targetId, fallbackData){
 }
 
 function targetTypeLabel(targetType){
-  return ({event:'일정', task:'업무', proposal:'제안', todo:'메모'})[targetType] || '항목';
+  return ({event:'일정', task:'업무', proposal:'제안', project:'사업', todo:'메모'})[targetType] || '항목';
 }
 
 function getTargetTitle(targetType, targetId, fallbackData){
   const item = (targetType === 'event' ? events.find(e => e.id === targetId)
     : targetType === 'task' ? tasks.find(t => t.id === targetId)
     : targetType === 'proposal' ? proposals.find(p => p.id === targetId)
+    : targetType === 'project' ? projects.find(p => p.id === targetId)
     : targetType === 'todo' ? todos.find(t => t.id === targetId)
     : null) || fallbackData || {};
   return item.title || item.name || item.text || targetId || targetTypeLabel(targetType);
@@ -3262,7 +3276,10 @@ function renderHome(){
       {label:'일정', value:todayEvents.length, title:'오늘 일정'},
       {label:'주간', value:weekDueTasks.length + weekDueProposals.length, title:'이번 주 마감'}
     ];
-    todayKpiEl.innerHTML = kpis.map(k => `<span class="today-mini-badge ${k.danger?'danger':''}" title="${escapeAttr(k.title)}"><b>${escapeHtml(k.label)}</b><strong>${k.value}</strong></span>`).join('');
+    todayKpiEl.innerHTML = kpis
+      .filter(k => Number(k.value) > 0)
+      .map(k => `<span class="today-mini-badge ${k.danger?'danger':''}" title="${escapeAttr(k.title)}"><b>${escapeHtml(k.label)}</b><strong>${k.value}</strong></span>`)
+      .join('');
   }
 
   container.innerHTML = `
@@ -3658,7 +3675,7 @@ function renderNotificationBadge(){
 }
 
 function dynamicNotificationRow(n){
-  const action = n.type === 'proposal' ? `closeModal();showProposal('${n.targetId}')` : `closeModal();showTask('${n.targetId}')`;
+  const action = `openNotificationTarget('${n.type === 'proposal' ? 'proposal' : 'task'}','${n.targetId}')`;
   const typeLabel = n.type === 'proposal' ? '제안' : '업무';
   const badgeHtml = n.badge ? `<span class="action-badge ${n.badgeClass || 'blue'}" style="margin-left:6px">${escapeHtml(n.badge)}</span>` : '';
   return `<div class="search-result" onclick="${action}">
@@ -3684,6 +3701,22 @@ function storedNotificationRow(n){
   </div>`;
 }
 
+function openNotificationTarget(targetType, targetId){
+  closeModal();
+  if(targetType === 'event') showEv(targetId);
+  else if(targetType === 'task') showTask(targetId);
+  else if(targetType === 'proposal') showProposal(targetId);
+  else if(targetType === 'project'){
+    selProj = targetId || 'all';
+    ls('selectedProject', selProj);
+    buildSidebar();
+    goPage('overview');
+  } else if(targetType === 'todo'){
+    goPage('personal');
+    setPV('todos');
+  }
+}
+
 function openStoredNotification(id){
   const n = notifications.find(x => x.id === id);
   if(!n) return;
@@ -3693,10 +3726,7 @@ function openStoredNotification(id){
     readAt:new Date().toISOString()
   }, { merge:true }).catch(()=>{});
 
-  closeModal();
-  if(n.targetType === 'event') showEv(n.targetId);
-  else if(n.targetType === 'task') showTask(n.targetId);
-  else if(n.targetType === 'proposal') showProposal(n.targetId);
+  openNotificationTarget(n.targetType, n.targetId);
 }
 
 
@@ -4393,14 +4423,34 @@ function renderActiveFilterBar(){
     parts.push(`<span class="active-filter-pill">숨긴 멤버: ${escapeHtml(label)}</span>`);
   }
 
+  if(currentPage === 'cal' && isCalendarMineScope()){
+    parts.push('<span class="active-filter-pill">캘린더: 내 것만</span>');
+  }
+
+  if(currentPage === 'proposals'){
+    if(proposalStatusFilter !== 'active') parts.push(`<span class="active-filter-pill">제안 상태: ${escapeHtml(proposalFilterLabel(proposalStatusFilter))}</span>`);
+    if(proposalResultFilter !== 'all') parts.push(`<span class="active-filter-pill">수주 여부: ${escapeHtml(proposalResultFilterLabel(proposalResultFilter))}</span>`);
+    if(proposalHidePast) parts.push('<span class="active-filter-pill">지난 제안 숨김</span>');
+  }
+
+  if(currentPage === 'personal'){
+    if(pFilter !== 'all') parts.push(`<span class="active-filter-pill">내 업무: ${escapeHtml(pFilter === 'public' ? '공유됨' : '비공개')}</span>`);
+    if(ls('personalHidePast') === 'Y') parts.push('<span class="active-filter-pill">지난 일정 숨김</span>');
+  }
+
+  if(currentPage === 'setup' && userTeamFilter !== 'all'){
+    parts.push(`<span class="active-filter-pill">팀원: ${escapeHtml(userTeamFilterLabel(userTeamFilter))}</span>`);
+  }
+
   if(!parts.length){
     bar.className = 'active-filter-bar';
     bar.innerHTML = '';
     return;
   }
 
+  const count = parts.length;
   bar.className = 'active-filter-bar show';
-  bar.innerHTML = `<span class="active-filter-label">필터 적용 중</span>${parts.join('')}<button type="button" class="active-filter-reset" onclick="resetActiveFilters()">초기화</button>`;
+  bar.innerHTML = `<span class="active-filter-label">필터 ${count}</span>${parts.join('')}<button type="button" class="active-filter-reset" onclick="resetActiveFilters()">초기화</button>`;
 }
 
 function resetActiveFilters(){
@@ -4408,6 +4458,32 @@ function resetActiveFilters(){
   selProj = 'all';
   saveJsonArray('hiddenMembers', hiddenMb);
   ls('selectedProject', 'all');
+
+  if(currentPage === 'cal'){
+    calScope = 'all';
+    ls('calendarScope', 'all');
+  }
+
+  if(currentPage === 'proposals'){
+    proposalStatusFilter = 'active';
+    proposalResultFilter = 'all';
+    proposalHidePast = false;
+    ls('proposalStatusFilter', 'active');
+    ls('proposalResultFilter', 'all');
+    ls('proposalHidePast', null);
+  }
+
+  if(currentPage === 'personal'){
+    pFilter = 'all';
+    ls('personalFilter', 'all');
+    ls('personalHidePast', 'N');
+  }
+
+  if(currentPage === 'setup'){
+    userTeamFilter = 'all';
+    ls('userTeamFilter', 'all');
+  }
+
   refreshAll();
 }
 
@@ -4752,6 +4828,7 @@ function setCalendarScope(scope){
   ls('calendarScope', calScope);
   syncCalendarScopeButtons();
   renderCal();
+  renderActiveFilterBar();
 }
 
 function isMyCalendarEvent(e){
@@ -5245,18 +5322,21 @@ function setProposalStatusFilter(filter){
   proposalStatusFilter = ['active','submitted','hold','all'].includes(filter) ? filter : 'active';
   ls('proposalStatusFilter', proposalStatusFilter);
   renderProposalPage();
+  renderActiveFilterBar();
 }
 
 function setProposalResultFilter(filter){
   proposalResultFilter = ['all','pending','won','lost'].includes(filter) ? filter : 'all';
   ls('proposalResultFilter', proposalResultFilter);
   renderProposalPage();
+  renderActiveFilterBar();
 }
 
 function toggleProposalHidePast(checked){
   proposalHidePast = !!checked;
   ls('proposalHidePast', proposalHidePast ? 'Y' : null);
   renderProposalPage();
+  renderActiveFilterBar();
 }
 
 let proposalMobileFilterOpen = false;
@@ -6491,13 +6571,13 @@ function toggleFilterSection(key){
 }
 
 function toggleHidePast(v){ hidePast=!!v; ls('hidePast', hidePast ? 'Y' : 'N'); refreshAll(); } 
-function togglePersonalHidePast(v){ ls('personalHidePast', v ? 'Y' : 'N'); renderPersonalCurrentView(); }
+function togglePersonalHidePast(v){ ls('personalHidePast', v ? 'Y' : 'N'); renderPersonalCurrentView(); renderActiveFilterBar(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); } 
 function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', selProj); buildSidebar(); refreshAll(); } 
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
 function setVM(m){ vm=['cal','list'].includes(m)?m:'cal'; ls('calendarView', vm); ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===vm)); renderCal(); } 
 function setOV(m){ ovMode=['board','table','gantt','members'].includes(m)?m:'board'; if(isMobileCompactView() && ['table','gantt'].includes(ovMode)) ovMode='board'; ls('overviewMode', ovMode); ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===effectiveOverviewMode()); }); renderOverview(); } 
-function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===pFilter)); renderPersonalCurrentView(); } 
+function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===pFilter)); renderPersonalCurrentView(); renderActiveFilterBar(); } 
 function openChangeSelf(){ 
   const me = getSelfMember();
   document.getElementById('modal-body').innerHTML=`
@@ -6511,13 +6591,16 @@ function openChangeSelf(){
 function changeSelf(){ showToast('로그인 기반에서는 계정을 직접 변경할 수 없습니다.'); }
 
 function goPage(p){ 
-  ['home','cal','overview','proposals','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===p); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===p); }); 
+  currentPage = ['home','cal','overview','proposals','personal','setup'].includes(p) ? p : 'home';
+  ['home','cal','overview','proposals','personal','setup'].forEach(id=>{ const pg=document.getElementById('page-'+id); if(pg) pg.classList.toggle('active',id===currentPage); const nav=document.getElementById('nav-'+id); if(nav) nav.classList.toggle('active',id===currentPage); }); 
   if(window.innerWidth<=680){ document.querySelector('.sidebar').classList.remove('show'); document.getElementById('sidebar-overlay').classList.remove('show'); } 
-  if(p==='home') renderHome();
-  if(p==='personal') renderPersonalCurrentView(); 
-  if(p==='overview') renderOverview(); 
-  if(p==='proposals') renderProposalPage();
-  if(p==='setup') { renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); applyTheme(currentTheme); } 
+  if(currentPage==='home') renderHome();
+  if(currentPage==='cal') renderCal();
+  if(currentPage==='personal') renderPersonalCurrentView(); 
+  if(currentPage==='overview') renderOverview(); 
+  if(currentPage==='proposals') renderProposalPage();
+  if(currentPage==='setup') { renderUserTeamManageList(); renderSettingsDiagnostics(); applyTheme(currentTheme); } 
+  renderActiveFilterBar();
 }
 
 const PALETTE=[{color:'#378ADD',bg:'#E6F1FB'},{color:'#1D9E75',bg:'#E1F5EE'},{color:'#D85A30',bg:'#FAECE7'},{color:'#EF9F27',bg:'#FAEEDA'},{color:'#533AB7',bg:'#EEEDFE'},{color:'#993556',bg:'#FBEAF0'},{color:'#3B6D11',bg:'#EAF3DE'},{color:'#185FA5',bg:'#B5D4F4'},{color:'#E91E63',bg:'#FCE4EC'},{color:'#9C27B0',bg:'#F3E5F5'},{color:'#673AB7',bg:'#EDE7F6'},{color:'#3F51B5',bg:'#E8EAF6'},{color:'#03A9F4',bg:'#E1F5FE'},{color:'#00BCD4',bg:'#E0F7FA'},{color:'#009688',bg:'#E0F2F1'},{color:'#4CAF50',bg:'#E8F5E9'},{color:'#8BC34A',bg:'#F1F8E9'},{color:'#CDDC39',bg:'#F9FBE7'},{color:'#FFC107',bg:'#FFFDE7'},{color:'#FF9800',bg:'#FFF3E0'},{color:'#FF5722',bg:'#FBE9E7'},{color:'#795548',bg:'#EFEBE9'},{color:'#9E9E9E',bg:'#FAFAFA'},{color:'#607D8B',bg:'#ECEFF1'}];
@@ -6528,6 +6611,7 @@ function setUserTeamFilter(filter){
   userTeamFilter = ['all','linked','pending','profile_only','inactive','broken'].includes(filter) ? filter : 'all';
   ls('userTeamFilter', userTeamFilter);
   renderUserTeamManageList();
+  renderActiveFilterBar();
 }
 
 function userTeamFilterLabel(filter){
@@ -7059,6 +7143,12 @@ initAuth();
   .modal-bg.show {
     backdrop-filter: blur(1px);
   }
+
+/* Settings sections */
+.settings-section-title{max-width:760px;margin:18px 0 8px;font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.07em;text-transform:uppercase}
+.settings-section-title:first-child{margin-top:0}
+@media(max-width:680px){.settings-section-title{margin:14px 0 7px;padding:0 2px;font-size:10px}}
+
 </style>
 
 <script>
