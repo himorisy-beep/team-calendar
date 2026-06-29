@@ -6725,7 +6725,10 @@ function inviteMemberOptions(selected){
 }
 function inviteStatusMeta(invite){ if(invite?.active === false || invite?.status === 'disabled') return { label:'비활성', cls:'danger' }; if(invite?.linkedUid || invite?.status === 'linked') return { label:'연결됨', cls:'ok' }; return { label:'대기', cls:'warn' }; }
 function getInviteFormHTML(isEdit){
-  return `<input type="hidden" id="invite-original-id"><div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"></div></div><div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div><div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div><div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div></div><div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">초대 등록 후 사용자가 같은 Google 이메일로 로그인하면 users/{uid} 계정이 자동 생성됩니다.</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
+  const statusField = isEdit
+    ? `<div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div>`
+    : `<div><div class="fl">상태</div><input id="invite-active" type="hidden" value="true"><div style="padding:7px 10px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);font-size:13px;color:var(--text2)">활성</div></div>`;
+  return `<input type="hidden" id="invite-original-id"><input type="hidden" id="invite-linked" value="false"><div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"><div id="invite-email-help" style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px"></div></div></div><div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div><div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div>${statusField}</div><div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">신규 초대는 활성 대기 상태로 등록됩니다. 이미 로그인 연결이 완료된 계정은 이메일을 직접 변경할 수 없습니다.</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
 function openAddInvite(){ if(!requireManager()) return; document.getElementById('modal-body').innerHTML = getInviteFormHTML(false); openModal('사용자 초대 등록'); }
 function openAddInviteForMember(memberId){ if(!requireManager()) return; openAddInvite(); const sel=document.getElementById('invite-member'); if(sel) sel.value=memberId; }
@@ -6742,6 +6745,13 @@ function openEditInvite(id){
   document.getElementById('invite-member').value = invite.memberId || '';
   document.getElementById('invite-role').value = normalizeRoleValue(invite.role || 'member');
   document.getElementById('invite-active').value = invite.active === false ? 'false' : 'true';
+  const linked = !!(invite.linkedUid || invite.status === 'linked' || users.some(u => u.memberId === invite.memberId));
+  const linkedEl = document.getElementById('invite-linked');
+  const emailEl = document.getElementById('invite-email');
+  const helpEl = document.getElementById('invite-email-help');
+  if(linkedEl) linkedEl.value = linked ? 'true' : 'false';
+  if(linked && emailEl){ emailEl.readOnly = true; emailEl.style.background = 'var(--bg2)'; }
+  if(helpEl) helpEl.textContent = linked ? '이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 변경이 필요하면 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결하세요.' : '';
 }
 async function submitInvite(){
   if(!requireManager()) return;
@@ -6749,7 +6759,8 @@ async function submitInvite(){
   const email = normalizeLoginEmail(document.getElementById('invite-email')?.value || '');
   const memberId = document.getElementById('invite-member')?.value || '';
   const role = normalizeRoleValue(document.getElementById('invite-role')?.value || 'member');
-  const active = document.getElementById('invite-active')?.value !== 'false';
+  const active = originalId ? document.getElementById('invite-active')?.value !== 'false' : true;
+  const linkedAlready = document.getElementById('invite-linked')?.value === 'true';
   if(!email || !email.includes('@')){ showToast('유효한 이메일을 입력해주세요'); return; }
   if(!memberId){ showToast('연결할 팀원을 선택해주세요'); return; }
   if(!['admin','team_leader','member','viewer'].includes(role)){ showToast('유효한 권한을 선택해주세요'); return; }
@@ -6758,14 +6769,17 @@ async function submitInvite(){
   const existing = originalId ? userInvites.find(x => x.id === originalId) : userInvites.find(x => x.id === inviteId);
   const member = mb(memberId);
   const now = new Date().toISOString();
-  const payload = { email, memberId, role, active, name:member?.name || existing?.name || '', status: active ? (existing?.linkedUid ? 'linked' : (existing?.status === 'linked' ? 'linked' : 'pending')) : 'disabled', invitedBy: existing?.invitedBy || selfId, invitedAt: existing?.invitedAt || now, updatedBy:selfId, updatedAt:now };
-  if(existing?.linkedUid){ payload.linkedUid = existing.linkedUid; payload.linkedAt = existing.linkedAt || ''; }
+  const existingEmail = normalizeLoginEmail(existing?.email || decodeURIComponent(existing?.id || '') || '');
+  const actuallyLinked = linkedAlready || !!(existing?.linkedUid || existing?.status === 'linked' || users.some(u => u.memberId === memberId));
+  if(actuallyLinked && existingEmail && email !== existingEmail){ showToast('이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결해주세요.'); return; }
+  const payload = { email, memberId, role, active, name:member?.name || existing?.name || '', status: active ? (actuallyLinked ? 'linked' : 'pending') : 'disabled', invitedBy: existing?.invitedBy || selfId, invitedAt: existing?.invitedAt || now, updatedBy:selfId, updatedAt:now };
   try{
     const batch = db.batch();
     batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
     if(originalId && originalId !== inviteId) batch.delete(db.collection('userInvites').doc(originalId));
-    const linkedUid = existing?.linkedUid || users.find(u => u.memberId === memberId)?.uid || '';
-    if(linkedUid){ batch.set(db.collection('users').doc(linkedUid), { email, memberId, role, active, name:payload.name, inviteKey:inviteId, updatedAt:now, updatedBy:selfId }, { merge:true }); }
+    const linkedUser = users.find(u => u.memberId === memberId) || null;
+    const linkedUid = existing?.linkedUid || linkedUser?.uid || linkedUser?.id || '';
+    if(linkedUid){ batch.set(db.collection('users').doc(linkedUid), { memberId, role, active, name:payload.name, updatedAt:now, updatedBy:selfId }, { merge:true }); }
     await batch.commit();
     showToast(originalId ? '초대 정보를 수정했습니다' : '초대 사용자를 등록했습니다');
     closeModal(); renderUserTeamManageList();
@@ -6818,20 +6832,30 @@ function openEditMember(id){
   document.getElementById('member-login-email').value = user?.email || invite?.email || '';
   document.getElementById('member-login-role').value = normalizeRoleValue(user?.role || invite?.role || 'member');
   document.getElementById('member-login-active').value = (m.active === false || user?.active === false || invite?.active === false) ? 'false' : 'true';
+  const linked = !!(user || invite?.linkedUid || invite?.status === 'linked');
+  const linkedEl = document.getElementById('member-login-linked');
+  const emailEl = document.getElementById('member-login-email');
+  const helpEl = document.getElementById('member-login-email-help');
+  if(linkedEl) linkedEl.value = linked ? 'true' : 'false';
+  if(linked && emailEl){ emailEl.readOnly = true; emailEl.style.background = 'var(--bg2)'; }
+  if(helpEl) helpEl.textContent = linked ? '이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 변경이 필요하면 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결하세요.' : '';
   toggleMemberLoginFields();
 }
 
 function getMemberFormHTML(isEdit){
-  return `<input type="hidden" id="member-id"><input type="hidden" id="member-invite-original-id">
+  const statusField = isEdit
+    ? `<div><div class="fl">계정 상태</div><select id="member-login-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div>`
+    : `<div><div class="fl">계정 상태</div><input id="member-login-active" type="hidden" value="true"><div style="padding:7px 10px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);font-size:13px;color:var(--text2)">활성</div></div>`;
+  return `<input type="hidden" id="member-id"><input type="hidden" id="member-invite-original-id"><input type="hidden" id="member-login-linked" value="false">
     <div class="form-row full"><div><div class="fl">이름</div><input id="member-name" type="text"></div></div>
     <div class="form-row full"><div><div class="fl">역할/직급</div><input id="member-role" type="text" placeholder="예: PM, 연구원, 팀장"></div></div>
     <div class="form-row full"><div><div class="fl">색상</div><input id="member-color" type="color" value="#378ADD"></div></div>
     <div class="task-option-box" style="margin:12px 0">
       <label class="task-check-row"><input type="checkbox" id="member-login-enabled" onchange="toggleMemberLoginFields()"><span>로그인 계정도 연결하기</span></label>
-      <div class="task-form-help">체크하면 해당 이메일로 로그인할 수 있는 초대 정보를 함께 저장합니다.</div>
+      <div class="task-form-help">체크하면 해당 이메일로 로그인할 수 있는 초대 정보를 함께 저장합니다. 신규 초대는 활성 대기 상태로만 등록됩니다.</div>
       <div id="member-login-box" style="display:none;margin-top:10px">
-        <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="member-login-email" type="email" placeholder="user@example.com"></div></div>
-        <div class="form-row"><div><div class="fl">접속 권한</div><select id="member-login-role">${inviteRoleOptions('member')}</select></div><div><div class="fl">계정 상태</div><select id="member-login-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div></div>
+        <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="member-login-email" type="email" placeholder="user@example.com"><div id="member-login-email-help" style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px"></div></div></div>
+        <div class="form-row"><div><div class="fl">접속 권한</div><select id="member-login-role">${inviteRoleOptions('member')}</select></div>${statusField}</div>
       </div>
     </div>
     <div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitMember()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
@@ -6859,28 +6883,31 @@ async function submitMember(){
     if(loginEnabled){
       const email = normalizeLoginEmail(document.getElementById('member-login-email')?.value || '');
       const loginRole = normalizeRoleValue(document.getElementById('member-login-role')?.value || 'member');
-      const active = document.getElementById('member-login-active')?.value !== 'false';
+      const active = isEdit ? document.getElementById('member-login-active')?.value !== 'false' : true;
+      const linkedAlready = document.getElementById('member-login-linked')?.value === 'true';
       if(!email || !email.includes('@')){ showToast('로그인 이메일을 확인해주세요'); return; }
       if(loginRole === 'admin' && !isAdminUser()){ showToast('Admin 권한 부여는 Admin만 가능합니다.'); return; }
       const inviteId = inviteDocIdFromEmail(email);
+      const existingEmail = normalizeLoginEmail(existingInvite?.email || memberUsers[0]?.email || decodeURIComponent(existingInvite?.id || '') || '');
+      const actuallyLinked = linkedAlready || !!(existingInvite?.linkedUid || existingInvite?.status === 'linked' || memberUsers.length);
+      if(actuallyLinked && existingEmail && email !== existingEmail){ showToast('이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결해주세요.'); return; }
       const payload = {
         email,
         memberId:id,
         role:loginRole,
         active,
         name,
-        status: active ? (existingInvite?.linkedUid ? 'linked' : (existingInvite?.status === 'linked' ? 'linked' : 'pending')) : 'disabled',
+        status: active ? (actuallyLinked ? 'linked' : 'pending') : 'disabled',
         invitedBy: existingInvite?.invitedBy || selfId,
         invitedAt: existingInvite?.invitedAt || now,
         updatedBy:selfId,
         updatedAt:now
       };
-      if(existingInvite?.linkedUid){ payload.linkedUid = existingInvite.linkedUid; payload.linkedAt = existingInvite.linkedAt || ''; }
       batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
       if(originalInviteId && originalInviteId !== inviteId){ batch.delete(db.collection('userInvites').doc(originalInviteId)); }
       const linkedUid = existingInvite?.linkedUid || memberUsers[0]?.uid || memberUsers[0]?.id || '';
       if(linkedUid){
-        batch.set(db.collection('users').doc(linkedUid), { email, memberId:id, role:loginRole, active, name, inviteKey:inviteId, updatedAt:now, updatedBy:selfId }, { merge:true });
+        batch.set(db.collection('users').doc(linkedUid), { memberId:id, role:loginRole, active, name, updatedAt:now, updatedBy:selfId }, { merge:true });
       }
     } else if(isEdit){
       // 기존 팀원의 로그인 연결을 해제하면 초대와 연결 계정을 비활성화합니다. 업무 배정용 팀원 프로필은 유지됩니다.
