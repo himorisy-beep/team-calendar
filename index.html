@@ -1490,16 +1490,16 @@ button,
 .proposal-participant-start-row .member-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .proposal-participant-start-row input{width:130px;padding:5px 7px;font-size:12px;background:var(--bg)}
 .manday-only-note{font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px}
-.bulk-md-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) 132px;gap:8px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)}
+.bulk-md-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(210px,.8fr);gap:8px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)}
 .bulk-md-row:last-child{border-bottom:none}
 .bulk-md-row-title{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bulk-md-row-sub{font-size:11px;color:var(--text2);margin-top:2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bulk-md-row input{padding:5px 7px;font-size:12px}
+.bulk-md-row input{padding:5px 7px;font-size:12px}.bulk-md-date-pair{display:grid;grid-template-columns:1fr 1fr;gap:6px}.bulk-md-date-pair label{font-size:10px;color:var(--text3);font-weight:800;display:block}.bulk-md-date-pair input{margin-top:3px}
 .bulk-md-tools{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:8px;align-items:center}
 .bulk-md-tools input[type="search"]{padding:6px 8px;font-size:12px}
 .bulk-md-count{font-size:11px;color:var(--text3);margin:6px 0 8px}
 .bulk-md-list{max-height:52vh;overflow:auto;border:.5px solid var(--border);border-radius:var(--r-sm);padding:0 10px;background:var(--bg)}
-@media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.bulk-md-tools{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
+@media(max-width:520px){.bulk-md-row{grid-template-columns:1fr}.bulk-md-date-pair{grid-template-columns:1fr 1fr}.bulk-md-tools{grid-template-columns:1fr}.proposal-participant-start-row{align-items:flex-start;flex-direction:column}.proposal-participant-start-row input{width:100%}}
 
 
 
@@ -5709,6 +5709,10 @@ function projectAssignmentDefaultStart(assign, project){
   return assignAppliedDateValue(assign) || project?.start || fmtDateFull(new Date());
 }
 
+function projectAssignmentDefaultEnd(assign, project){
+  return assignEndDateValue(assign) || '';
+}
+
 function openBulkProjectMemberStartManager(){
   if(!requireManager()) return;
   const rows = assigns
@@ -5723,30 +5727,35 @@ function openBulkProjectMemberStartManager(){
 
   const rowHtml = rows.map(({assign, project, member}) => {
     const savedStart = assignAppliedDateValue(assign);
+    const savedEnd = assignEndDateValue(assign);
     const startVal = projectAssignmentDefaultStart(assign, project);
+    const endVal = projectAssignmentDefaultEnd(assign, project);
     const projectName = project.name || '미등록 사업';
     const memberName = member.name || '알 수 없음';
     return `<div class="bulk-md-row" data-bulk-md-row data-project-name="${escapeAttr(projectName.toLowerCase())}" data-member-name="${escapeAttr(memberName.toLowerCase())}" data-empty-start="${savedStart ? '0' : '1'}">
       <div>
         <div class="bulk-md-row-title"><span class="dot" style="display:inline-block;background:${project.color || '#888'};margin-right:6px"></span>${escapeHtml(projectName)}</div>
-        <div class="bulk-md-row-sub">사업기간 ${project.start ? fmtDateFull(project.start) : '-'} ~ ${project.end ? fmtDateFull(project.end) : '-'}${savedStart ? '' : ' · 미저장값은 사업 시작일 기준'}</div>
+        <div class="bulk-md-row-sub">사업기간 ${project.start ? fmtDateFull(project.start) : '-'} ~ ${project.end ? fmtDateFull(project.end) : '-'}${savedStart ? '' : ' · 시작일 미저장 시 사업 시작일 기준'}${savedEnd ? '' : ' · 종료일 미입력 시 사업 종료일 기준'}</div>
       </div>
       <div>
         <div class="bulk-md-row-title">${escapeHtml(memberName)}</div>
         <div class="bulk-md-row-sub">${escapeHtml(member.role || assign.role || '-')}</div>
       </div>
-      <input type="date" data-bulk-assign-start data-assign-id="${escapeAttr(assign.id)}" value="${escapeAttr(startVal)}">
+      <div class="bulk-md-date-pair">
+        <label>투입시작<input type="date" data-bulk-assign-start data-assign-id="${escapeAttr(assign.id)}" value="${escapeAttr(startVal)}"></label>
+        <label>투입종료<input type="date" data-bulk-assign-end data-assign-id="${escapeAttr(assign.id)}" value="${escapeAttr(endVal)}"></label>
+      </div>
     </div>`;
   }).join('');
 
   document.getElementById('modal-body').innerHTML = `
     <div style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:10px">
-      기존 사업 참여인력의 투입 시작일을 일괄 입력/수정합니다. 저장 후 멤버별 MD 계산에 바로 반영됩니다.
+      기존 사업 참여인력의 투입 시작일과 종료일을 일괄 입력/수정합니다. 종료일을 비워두면 사업 종료일까지 MD가 계산됩니다.
     </div>
     <div class="bulk-md-tools">
       <input type="search" id="bulk-md-project-search" placeholder="사업명 검색" oninput="filterBulkProjectMemberStarts()">
       <input type="search" id="bulk-md-member-search" placeholder="멤버명 검색" oninput="filterBulkProjectMemberStarts()">
-      <label class="header-check"><input class="header-check-input" type="checkbox" id="bulk-md-empty-only" onchange="filterBulkProjectMemberStarts()"><span>미입력만</span></label>
+      <label class="header-check"><input class="header-check-input" type="checkbox" id="bulk-md-empty-only" onchange="filterBulkProjectMemberStarts()"><span>시작 미입력만</span></label>
     </div>
     <div class="bulk-md-count" id="bulk-md-count">전체 ${rows.length}건</div>
     <div class="bulk-md-list">${rowHtml}</div>
@@ -5755,7 +5764,7 @@ function openBulkProjectMemberStartManager(){
       <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
     </div>
   `;
-  openModal('투입 시작일 일괄 관리');
+  openModal('투입기간 일괄 관리');
 }
 
 function filterBulkProjectMemberStarts(){
@@ -5778,23 +5787,29 @@ function filterBulkProjectMemberStarts(){
 
 async function saveBulkProjectMemberStarts(){
   if(!requireManager()) return;
-  const inputs = Array.from(document.querySelectorAll('[data-bulk-assign-start]'));
-  if(!inputs.length){ showToast('저장할 항목이 없습니다'); return; }
+  const startInputs = Array.from(document.querySelectorAll('[data-bulk-assign-start]'));
+  if(!startInputs.length){ showToast('저장할 항목이 없습니다'); return; }
   try{
     const batch = db.batch();
     const nowIso = new Date().toISOString();
-    inputs.forEach(input => {
+    const endInputByAssignId = new Map(Array.from(document.querySelectorAll('[data-bulk-assign-end]')).map(input => [input.dataset.assignId, input]));
+    startInputs.forEach(input => {
       const assignId = input.dataset.assignId;
       if(!assignId) return;
+      const endInput = endInputByAssignId.get(assignId);
+      const startValue = input.value || '';
+      const endValue = endInput?.value || '';
       batch.set(db.collection('assigns').doc(assignId), {
-        assignedAtDate: input.value || '',
-        assignedAt: input.value || '',
+        assignedAtDate: startValue,
+        assignedAt: startValue,
+        assignedEndDate: endValue,
+        endedAtDate: endValue,
         updatedAt: nowIso,
         updatedBy: selfId
       }, {merge:true});
     });
     await batch.commit();
-    showToast('투입 시작일을 저장했습니다');
+    showToast('투입기간을 저장했습니다');
     closeModal();
   }catch(e){
     showToast('저장 실패: ' + (e.message || e));
@@ -5845,10 +5860,27 @@ function assignAppliedDateValue(a){
   return a.assignedAtDate || a.appliedAtDate || a.startDate || fmtDateFull(a.assignedAt || a.createdAt || a.appliedAt || a.updatedAt || '');
 }
 
+function assignEndDateValue(a){
+  if(!a) return '';
+  return a.assignedEndDate || a.endedAtDate || a.endDate || fmtDateFull(a.assignedEndAt || a.endedAt || '');
+}
+
+function earlierManDayDate(a, b){
+  if(!a) return b || null;
+  if(!b) return a || null;
+  return a < b ? a : b;
+}
+
 function assignmentEffectiveStart(a, project){
   const projectStart = validManDayDate(project?.start || '');
   const appliedStart = validManDayDate(assignAppliedDateValue(a));
   return laterManDayDate(projectStart, appliedStart);
+}
+
+function assignmentEffectiveEnd(a, project){
+  const projectEnd = validManDayDate(project?.end || '');
+  const assignedEnd = validManDayDate(assignEndDateValue(a));
+  return earlierManDayDate(projectEnd, assignedEnd);
 }
 
 function proposalRegisteredDateValue(p){
@@ -5875,7 +5907,7 @@ function projectManDayRows(memberId){
       const project = pj(a.projectId);
       if(!project) return null;
       const startDate = assignmentEffectiveStart(a, project);
-      const endDate = validManDayDate(project.end);
+      const endDate = assignmentEffectiveEnd(a, project);
       const days = inclusiveCalendarManDays(startDate, endDate);
       if(!days) return null;
       return {
@@ -5956,7 +5988,7 @@ function manDaySummaryHtml(memberId){
       <div class="md-box"><div class="md-box-title"><span>사업별 투입공수</span><span>${stats.projects.length}건</span></div>${rowsHtml(stats.projects, 'project')}</div>
       <div class="md-box"><div class="md-box-title"><span>제안별 투입공수</span><span>${stats.proposals.length}건</span></div>${rowsHtml(stats.proposals, 'proposal')}</div>
     </div>
-    <div class="md-footnote">계산 기준: 사업은 시작일/투입일 중 늦은 날~종료일, 제안은 시작일/참여일~마감일 기준이며 주말과 시작·종료일을 포함합니다.</div>
+    <div class="md-footnote">계산 기준: 사업은 시작일/투입시작일 중 늦은 날~사업종료일/투입종료일 중 이른 날, 제안은 시작일/참여일~마감일 기준이며 주말과 시작·종료일을 포함합니다.</div>
   </div>`;
 }
 
@@ -6945,11 +6977,12 @@ function projectMemberManagerHtml(projectId){
     const currentRows = projectAssigns.map(a => {
       const m = mb(a.memberId);
       const appliedDate = assignAppliedDateValue(a);
+      const endDate = assignEndDateValue(a);
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border)">
         ${m ? `<div class="av" style="width:22px;height:22px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
-          <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')} · 투입시작 ${appliedDate || '-'}</div>
+          <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')} · 투입시작 ${appliedDate || '-'} · 투입종료 ${endDate || '사업 종료일'}</div>
         </div>
       </div>`;
     }).join('');
@@ -6966,6 +6999,7 @@ function projectMemberManagerHtml(projectId){
   const currentRows = projectAssigns.map(a => {
     const m = mb(a.memberId);
     const appliedDate = assignAppliedDateValue(a);
+    const endDate = assignEndDateValue(a);
     return `<div class="project-member-edit-row">
       ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
       <div class="project-member-edit-main">
@@ -6973,6 +7007,7 @@ function projectMemberManagerHtml(projectId){
         <div class="project-member-edit-fields">
           <label><span>역할</span><input type="text" id="pm-role-${escapeAttr(a.id)}" value="${escapeAttr(a.role || '')}" placeholder="역할"></label>
           <label><span>투입시작</span><input type="date" id="pm-start-${escapeAttr(a.id)}" value="${escapeAttr(appliedDate)}"></label>
+          <label><span>투입종료</span><input type="date" id="pm-end-${escapeAttr(a.id)}" value="${escapeAttr(endDate)}"></label>
         </div>
       </div>
       <div class="project-member-edit-actions">
@@ -6993,9 +7028,10 @@ function projectMemberManagerHtml(projectId){
 
     <div class="project-member-add-box">
       <div class="form-row full"><div><div class="fl">추가할 팀원</div><select id="pm-member-sel"><option value="">— 팀원 선택</option>${memberOptions}</select></div></div>
-      <div class="form-row"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div></div>
+      <div class="form-row full"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div></div>
+      <div class="form-row"><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div><div><div class="fl">투입 종료일</div><input type="date" id="pm-end-input" placeholder="미입력 시 사업 종료일"></div></div>
       <button class="btn btn-secondary" style="width:100%" onclick="addProjectMember('${escapeAttr(projectId)}')">참여인력 추가</button>
-      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:6px">사업 시작 후 중간에 합류한 경우 이 날짜부터 사업 종료일까지 MD가 계산됩니다.</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:6px">중간 합류·중도 종료가 있으면 투입 시작일과 종료일을 입력합니다. 종료일을 비워두면 사업 종료일까지 MD가 계산됩니다.</div>
     </div>
   </div>`;
 }
@@ -7013,6 +7049,7 @@ function addProjectMember(projectId){
   const memberId = document.getElementById('pm-member-sel').value;
   const role = document.getElementById('pm-role-input').value.trim();
   const assignedAtDate = document.getElementById('pm-start-input')?.value || fmtDateFull(new Date());
+  const assignedEndDate = document.getElementById('pm-end-input')?.value || '';
 
   if(!memberId){
     showToast('팀원을 선택해주세요');
@@ -7030,6 +7067,8 @@ function addProjectMember(projectId){
     role,
     assignedAtDate,
     assignedAt: assignedAtDate || nowIso,
+    assignedEndDate,
+    endedAtDate: assignedEndDate,
     createdAt: nowIso
   }, () => {
     showToast('참여인력을 추가했습니다');
@@ -7040,6 +7079,7 @@ function addProjectMember(projectId){
 function updateProjectMember(assignId, projectId){
   if(!requireManager()) return;
   const assignedAtDate = document.getElementById(`pm-start-${assignId}`)?.value || '';
+  const assignedEndDate = document.getElementById(`pm-end-${assignId}`)?.value || '';
   const role = document.getElementById(`pm-role-${assignId}`)?.value?.trim() || '';
   apiSave({
     action:'updateAssign',
@@ -7047,6 +7087,8 @@ function updateProjectMember(assignId, projectId){
     role,
     assignedAtDate,
     assignedAt:assignedAtDate,
+    assignedEndDate,
+    endedAtDate:assignedEndDate,
     updatedAt:new Date().toISOString()
   }, () => {
     showToast('참여인력을 저장했습니다');
