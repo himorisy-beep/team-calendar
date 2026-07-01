@@ -1768,6 +1768,16 @@ button,
 .settings-section-title:first-child{margin-top:0}
 @media(max-width:680px){.settings-section-title{margin:14px 0 7px;padding:0 2px;font-size:10px}}
 
+
+/* Project delete danger zone */
+.project-danger-zone{margin-top:16px;padding:12px;border:.5px solid rgba(163,45,45,.28);border-radius:var(--r-sm);background:rgba(216,90,48,.05);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.project-danger-title{font-size:12px;font-weight:900;color:#A32D2D;margin-bottom:3px}
+.project-danger-desc{font-size:11px;color:var(--text2);line-height:1.45}
+.project-danger-zone .btn-danger-sm{height:30px;padding:0 12px;font-size:12px;white-space:nowrap;background:#fff}
+html[data-theme="dark"] .project-danger-zone{background:rgba(216,90,48,.08)}
+html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transparent}
+@media(max-width:680px){.project-danger-zone{align-items:flex-start;flex-direction:column}.project-danger-zone .btn-danger-sm{width:100%;height:34px}}
+
 </style>
 </head>
 <body>
@@ -2065,9 +2075,14 @@ function taskContextLabel(t, fallback='연결 없음'){
   return proposalTaskLabel(t) || projectTaskLabel(t) || fallback;
 }
 function isActiveMember(m){ return !!m && m.active !== false && m.status !== 'inactive' && m.archived !== true; }
-function isArchivedProject(p){ return false; }
+function isDeletedProject(p){ return !!p && (p.deleted === true || p.status === 'deleted' || p.archived === true); }
+function isArchivedProject(p){ return isDeletedProject(p); }
+function isProjectDeletedById(id){ const p = pj(id || ''); return !!p && isDeletedProject(p); }
+function isTaskForDeletedProject(t){ return !!(t && t.project && isProjectDeletedById(t.project)); }
+function isEventForDeletedProject(e){ return !!(e && e.project && isProjectDeletedById(e.project)); }
+function isAssignForDeletedProject(a){ return !!(a && a.projectId && isProjectDeletedById(a.projectId)); }
 function getActiveMembers(){ return members.filter(isActiveMember); }
-function getActiveProjects(){ return projects; }
+function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p)); }
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
   const raw = String(role || '').trim();
@@ -2318,7 +2333,7 @@ function toggleClosedProjects(){
 }
 
 function getOverviewProjectGroups(){
-  const filtered = projects.filter(p => selProj === 'all' || p.id === selProj).sort(sortProjectsBySchedule);
+  const filtered = getActiveProjects().filter(p => selProj === 'all' || p.id === selProj).sort(sortProjectsBySchedule);
   const active = filtered.filter(p => !isClosedProject(p));
   const closed = filtered.filter(p => isClosedProject(p));
   return { active, closed };
@@ -3088,7 +3103,7 @@ function renderHome(){
 
   const todayKey = fmtDateFull(now);
   const homeProposalPool = proposals.filter(p => isMyProposal(p));
-  const myTasks = tasks.filter(t => String(t.assignee) === String(selfId));
+  const myTasks = tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t));
   const activeTasks = myTasks.filter(t => normalizeTaskStatus(t.status) !== '완료');
 
   const overdueTasks = activeTasks
@@ -3105,7 +3120,7 @@ function renderHome(){
     .sort((a,b)=>a._d-b._d);
 
   const todayEvents = events
-    .filter(e => e.who === selfId)
+    .filter(e => e.who === selfId && !isEventForDeletedProject(e))
     .filter(e => inDay(e, now.getFullYear(), now.getMonth(), now.getDate()))
     .sort((a,b)=>parseDateSafely(a.start)-parseDateSafely(b.start));
 
@@ -3563,7 +3578,7 @@ function getMyDynamicNotifications(){
     });
   });
 
-  tasks.filter(t => String(t.assignee) === String(selfId)).forEach(t=>{
+  tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t)).forEach(t=>{
     if(normalizeTaskStatus(t.status) === '완료') return;
 
     const project = pj(t.project);
@@ -3605,7 +3620,7 @@ function getMyDynamicNotifications(){
 function getManagerDynamicNotifications(){
   const items = [];
 
-  tasks.filter(t => isPublicTask(t)).forEach(t=>{
+  tasks.filter(t => isPublicTask(t) && !isTaskForDeletedProject(t)).forEach(t=>{
     if(normalizeTaskStatus(t.status) === '완료') return;
 
     const assignee = mb(t.assignee);
@@ -3939,6 +3954,7 @@ function isProjectScheduleEvent(e){
 function getCalendarTasks(){
   return tasks.filter(t => {
     if(!(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true')) return false;
+    if(isTaskForDeletedProject(t)) return false;
     if(isCalendarMineScope() && !isMyCalendarTask(t)) return false;
     if(t.assignee && hiddenMb.has(t.assignee)) return false;
     if(selProj !== 'all' && t.project !== selProj) return false;
@@ -4333,7 +4349,7 @@ function renderTaskMatrix(){
     'backlog': ''
   };
 
-  let myTasks = tasks.filter(t => String(t.assignee) === String(selfId));
+  let myTasks = tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t));
   if(hideDone) myTasks = myTasks.filter(t => t.status !== '완료');
 
   myTasks.sort(taskDueSort);
@@ -4487,7 +4503,7 @@ function resetActiveFilters(){
   refreshAll();
 }
 
-function getVisEv(){ return events.filter(e=>{ if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(isCalendarMineScope()&&!isMyCalendarEvent(e))return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
+function getVisEv(){ return events.filter(e=>{ if(isEventForDeletedProject(e)) return false; if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(isCalendarMineScope()&&!isMyCalendarEvent(e))return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
 
 
 function holidayKeyFromDateValue(v){
@@ -5210,7 +5226,7 @@ function renderProjectTable(){
 }
 
 function renderGantt() {
-  const mappedEvents = events.filter(e => isProjectScheduleEvent(e)).map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
+  const mappedEvents = events.filter(e => isProjectScheduleEvent(e) && !isEventForDeletedProject(e)).map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
   const allTasks = [...tasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
   if (!allTasks.length) { document.getElementById('overview-container').innerHTML = '<div class="empty">내역이 없습니다</div>'; return; }
   const dates = allTasks.flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()]).filter(v=>!isNaN(v) && v>0); 
@@ -5218,7 +5234,7 @@ function renderGantt() {
   let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
   const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1; 
   const pct = (d) => { const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10)); return Math.max(0, Math.min(100, (diff / totalDays) * 100)); };
-  let h = ''; projects.filter(p => (selProj === 'all' || p.id === selProj)).forEach(p => {
+  let h = ''; getActiveProjects().filter(p => (selProj === 'all' || p.id === selProj)).forEach(p => {
     const pt = allTasks.filter(t => t.project === p.id); if (!pt.length) return;
     h += `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
     pt.forEach(t => { const a = mb(t.assignee); h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`; });
@@ -6049,7 +6065,7 @@ function renderMemberOverview(){
 
   let h = manDayYearControlHtml('ov-md-year') + '<div class="member-overview">';
   vm2.forEach(m2=>{
-    const ma = assigns.filter(a=>a.memberId===m2.id && (selProj==='all'||a.projectId===selProj));
+    const ma = assigns.filter(a=>a.memberId===m2.id && !isAssignForDeletedProject(a) && (selProj==='all'||a.projectId===selProj));
     const stats = memberManDayStats(m2.id);
     h += `<div class="member-card">
       <div class="member-card-header">
@@ -6203,7 +6219,7 @@ function renderMyProjectsList(){
 
   const groups = [];
 
-  assigns.filter(a => a.memberId === selfId).forEach(a => {
+  assigns.filter(a => a.memberId === selfId && !isAssignForDeletedProject(a)).forEach(a => {
     const p = pj(a.projectId);
     if(!p) return;
     const taskRows = tasks
@@ -6317,7 +6333,7 @@ function renderMyProjectsList(){
 
 function renderPersonalList() {
   const container = document.getElementById('personal-list'); const hideP = document.getElementById('pf-hide-past')?.checked; const startT = new Date(); const startP = new Date(startT.getFullYear(), startT.getMonth(), startT.getDate());
-  let mine = events.filter(e => e.who===selfId && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
+  let mine = events.filter(e => e.who===selfId && !isEventForDeletedProject(e) && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
   if(hideP) mine=mine.filter(e=>!e._p); mine.sort((a,b)=>{ if(a._p!==b._p) return a._p?1:-1; const tA=parseDateSafely(a.start).getTime(), tB=parseDateSafely(b.start).getTime(); return a._p?tB-tA:tA-tB; });
   if(!mine.length){container.innerHTML='<div class="empty">없음</div>';return;}
   let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="apiSave({action:'deleteEvent',id:'${e.id}'})" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
@@ -6930,7 +6946,7 @@ async function deleteMember(id){ return disableMember(id); }
 
 function renderProjectManageList(){
   const el=document.getElementById('proj-count'); const list=document.getElementById('project-manage-list'); if(!el||!list) return;
-  const sorted=[...projects].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const sorted=[...getActiveProjects()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
   el.textContent=`(${sorted.length})`;
   let h='';
   sorted.forEach(p=>{
@@ -6962,12 +6978,17 @@ function openEditProject(id){
 function getProjectFormHTML(isEdit, project){
   const projectId = project?.id || '';
   const memberSection = isEdit ? projectMemberManagerHtml(projectId) : '';
+  const deleteSection = isEdit && canManageAll() ? `<div class="project-danger-zone">
+      <div><div class="project-danger-title">사업 삭제 처리</div><div class="project-danger-desc">데이터는 지우지 않고 목록과 화면에서 숨김 처리합니다. 연결된 참여인력, 업무, 일정 데이터도 보존됩니다.</div></div>
+      <button class="btn-danger-sm" onclick="deleteProject('${escapeAttr(projectId)}')">삭제 처리</button>
+    </div>` : '';
   return `<input type="hidden" id="project-id">
     <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
     <div class="form-row"><div><div class="fl">시작일</div><input id="project-start" type="date"></div><div><div class="fl">종료일</div><input id="project-end" type="date"></div></div>
     <div class="form-row full"><div><div class="fl">색상</div><input id="project-color" type="color" value="#3B6D11"></div></div>
     <div style="display:flex;gap:8px;margin-bottom:${isEdit?'18px':'0'}"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">${isEdit?'사업 정보 저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
-    ${memberSection}`;
+    ${memberSection}
+    ${deleteSection}`;
 }
 
 function submitProject(){
@@ -6989,10 +7010,78 @@ function submitProject(){
     else closeModal();
   });
 }
-function deleteProjectFromEdit(){ showToast('이 기능은 사용하지 않습니다'); }
-async function archiveProject(id){ showToast('보관 기능은 사용하지 않습니다. 완료 사업은 완료 사업 숨기기/완료 사업 접기로 관리합니다.'); }
+function deleteProjectFromEdit(){
+  const id = document.getElementById('project-id')?.value || '';
+  if(id) deleteProject(id);
+}
+async function archiveProject(id){ showToast('사업 삭제 처리는 사업 수정 화면에서 할 수 있습니다.'); }
 async function restoreProject(id){ showToast('이 기능은 사용하지 않습니다'); }
-async function deleteProject(id){ showToast('이 기능은 사용하지 않습니다'); }
+function projectDeleteRelatedItems(projectId){
+  const projectTaskIds = new Set(tasks.filter(t => t.project === projectId).map(t => t.id));
+  const projectEventIds = new Set(events.filter(e => e.project === projectId).map(e => e.id));
+  const relatedTargetIds = new Set([projectId, ...projectTaskIds, ...projectEventIds]);
+
+  return {
+    assigns: assigns.filter(a => a.projectId === projectId),
+    tasks: tasks.filter(t => t.project === projectId),
+    events: events.filter(e => e.project === projectId),
+    comments: comments.filter(c => relatedTargetIds.has(c.targetId) && ['project','task','event'].includes(c.targetType)),
+    activityLogs: activityLogs.filter(l => relatedTargetIds.has(l.targetId) && ['project','task','event'].includes(l.targetType)),
+    notifications: notifications.filter(n => relatedTargetIds.has(n.targetId) && ['project','task','event'].includes(n.targetType))
+  };
+}
+function projectDeleteSummaryText(p, related){
+  const rows = [
+    `사업명: ${p.name || p.id}`,
+    `연결된 참여인력 ${related.assigns.length}건`,
+    `연결된 업무 ${related.tasks.length}건`,
+    `연결된 사업 일정 ${related.events.length}건`
+  ];
+  const extra = related.comments.length + related.activityLogs.length + related.notifications.length;
+  if(extra) rows.push(`관련 댓글/로그/알림 ${extra}건`);
+  return rows.join('\n');
+}
+async function commitDeleteRefsInChunks(refs){
+  // 과거 물리 삭제용 함수는 더 이상 사용하지 않습니다.
+  // 사업 삭제는 데이터 보존을 위해 projects 문서에 deleted 플래그만 남깁니다.
+}
+async function deleteProject(id){
+  if(!requireManager()) return;
+  const p = pj(id);
+  if(!p){ showToast('사업을 찾을 수 없습니다'); return; }
+  if(isDeletedProject(p)){ showToast('이미 삭제 처리된 사업입니다'); return; }
+
+  const related = projectDeleteRelatedItems(id);
+  const summary = projectDeleteSummaryText(p, related);
+  if(!confirm(`이 사업을 삭제 처리할까요?\n\n${summary}\n\n데이터는 지워지지 않고, 일반 화면에서 숨김 처리됩니다.`)) return;
+  if(!confirm(`최종 확인입니다.\n\n${p.name || id}\n\n이 사업을 목록에서 숨김 처리하시겠습니까?`)) return;
+
+  try{
+    showStatus('사업 삭제 처리 중...', 'loading');
+    await db.collection('projects').doc(id).set({
+      deleted:true,
+      status:'deleted',
+      deletedAt:new Date().toISOString(),
+      deletedBy:selfId || '',
+      updatedAt:new Date().toISOString(),
+      updatedBy:selfId || ''
+    }, { merge:true });
+
+    await logActivity('softDeleteProject', 'project', id, p.name || id, {...p, visibility:'team'}).catch(()=>{});
+
+    if(selProj === id){
+      selProj = 'all';
+      ls('selectedProject', 'all');
+    }
+    closeModal();
+    hideStatus();
+    showToast('사업을 삭제 처리했습니다. 데이터는 보존됩니다.');
+    refreshAll();
+  }catch(e){
+    hideStatus();
+    showToast('사업 삭제 처리 실패: ' + (e.message || e));
+  }
+}
 
 
 function projectMemberManagerHtml(projectId){
@@ -7154,7 +7243,7 @@ function downloadTextFile(filename,text,mime){ const blob=new Blob([text],{type:
 function rowsToCSV(rows,headers){ const head=headers.map(csvEscape).join(','); const body=rows.map(row=>headers.map(h=>csvEscape(row[h])).join(',')).join('\n'); return '\ufeff'+head+(body?'\n'+body:''); }
 function exportCSV(type){
   if(!requireManager()) return; const now=new Date().toISOString().slice(0,10); let rows=[], headers=[];
-  if(type==='projects'){ headers=['id','name','start','end','status','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
+  if(type==='projects'){ headers=['id','name','start','end','status','deleted','deletedAt','deletedBy','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',deleted:p.deleted===true,deletedAt:p.deletedAt||'',deletedBy:p.deletedBy||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
   else if(type==='tasks'){ headers=['id','title','project','projectName','proposal','proposalName','assignee','assigneeName','start','end','status','priority','showOnCalendar','note']; rows=tasks.map(t=>({id:t.id,title:t.title||'',project:t.project||'',projectName:pj(t.project)?.name||'',proposal:t.proposal||'',proposalName:pr(t.proposal)?.name||'',assignee:t.assignee||'',assigneeName:mb(t.assignee)?.name||'',start:t.start||'',end:t.end||'',status:normalizeTaskStatus(t.status),priority:t.priority||getTaskMatrixType(t),showOnCalendar:t.showOnCalendar===true,note:t.note||''})); }
   else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',public:e.public===true})); }
   else if(type==='proposals'){ headers=['id','name','status','result','start','deadline','demandOrg','participants','participantNames','note']; rows=proposals.map(p=>({id:p.id,name:p.name||'',status:proposalStatusLabel(proposalStatusValue(p)),result:proposalResultLabel(proposalResultValue(p)),start:p.start||'',deadline:p.deadline||'',demandOrg:p.demandOrg||'',participants:p.participants||'',participantNames:proposalParticipantNames(p).join('; '),note:p.note||''})); }
