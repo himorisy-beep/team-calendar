@@ -4006,7 +4006,7 @@ function openAddTask(){
       <div class="task-form-help">보고·제출·마감처럼 팀 캘린더에서 공유할 필요가 있는 주요 업무만 체크하세요.</div>
     </div>
     <div class="form-row full"><div><div class="fl">메모</div><textarea id="task-note" rows="4"></textarea></div></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
+    <div id="task-form-actions" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
   `;
   openModal('업무 추가');
 }
@@ -4021,6 +4021,7 @@ function onTaskContextTypeChange(){
 }
 
 function openEditTask(id){
+  closeDetailPanel();
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
 
@@ -4040,6 +4041,10 @@ function openEditTask(id){
   document.getElementById('task-priority').value = getTaskMatrixType(t);
   document.getElementById('task-show-calendar').checked = !!(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true');
   document.getElementById('task-note').value = t.note || '';
+  const actionBox = document.getElementById('task-form-actions');
+  if(actionBox){
+    actionBox.innerHTML = `<button class="btn-danger-sm" style="height:32px;padding:0 12px" onclick="deleteTaskFromEdit('${t.id}')">삭제</button><span style="flex:1"></span><button class="btn btn-primary" onclick="submitTask()">수정 저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button>`;
+  }
 }
 
 function submitTask(){
@@ -4274,6 +4279,21 @@ window.toggleTaskDone = function(id){
 window.deleteTask = function(id){
   if(!confirm('업무를 삭제할까요?')) return;
   apiSave({action:'deleteTask', id});
+};
+
+window.deleteTaskFromEdit = function(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  if(!canEditItem(t)){
+    showToast('권한이 없습니다.');
+    return;
+  }
+  if(!confirm('이 업무를 삭제할까요?')) return;
+  apiSave({action:'deleteTask', id}, ()=>{
+    closeModal();
+    closeDetailPanel();
+    showToast('삭제했습니다.');
+  });
 };
 
 window.addMemo = function(text){
@@ -5522,6 +5542,7 @@ function openAddProposal(){
 }
 
 function openEditProposal(id){
+  closeDetailPanel();
   if(!requireMemberWrite()) return;
   const p = proposals.find(x => x.id === id); if(!p) return;
   editingProposalId = id;
@@ -6342,6 +6363,7 @@ function renderPersonalList() {
 
 function openAddEvent() { if(!requireMemberWrite()) return; editingEventId = null; document.getElementById('modal-body').innerHTML = getEventFormHTML(false); openModal('새 일정 추가'); onTypeChange(); }
 function openEditEvent(id) {
+  closeDetailPanel();
   const e = events.find(ev => ev.id === id);
   if (!e) return;
   editingEventId = id;
