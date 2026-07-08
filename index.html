@@ -2614,7 +2614,9 @@ function canClientWrite(action, id, data){
   if(col === 'tasks'){
     const existing = tasks.find(t=>t.id===id);
     const assignee = data.assignee || existing?.assignee;
-    return canManageAll() || assignee === selfId;
+    const changedKeys = existing ? Object.keys(data || {}).filter(k => JSON.stringify(data[k] ?? '') !== JSON.stringify(existing[k] ?? '')) : Object.keys(data || {});
+    const assigneeOnly = action === 'updateTask' && existing && changedKeys.length > 0 && changedKeys.every(k => ['assignee','updatedAt','updatedBy'].includes(k));
+    return canManageAll() || assignee === selfId || (isMemberUser() && assigneeOnly);
   }
 
   if(col === 'events'){
@@ -3895,6 +3897,7 @@ function openQuickAdd(){
 const COMMON_TASK_TITLES = [
   '제안서 목차 작성',
   '제안서 본문 작성',
+  '기술협상',
   '예산표 검토',
   '산출물 품질검토',
   '회의자료 작성',
@@ -4047,6 +4050,33 @@ function openEditTask(id){
   }
 }
 
+function openReassignTask(id){
+  closeDetailPanel();
+  const t = tasks.find(x=>x.id===id);
+  if(!t || !canReassignTask(t)){ showToast('권한이 없습니다.'); return; }
+  const memberOptions = getActiveMembers().map(m=>`<option value="${m.id}" ${m.id===t.assignee?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
+  document.getElementById('modal-body').innerHTML = `
+    <input type="hidden" id="reassign-task-id" value="${escapeAttr(t.id)}">
+    <div class="form-row full"><div><div class="fl">업무</div><input type="text" value="${escapeAttr(t.title || '')}" readonly></div></div>
+    <div class="form-row full"><div><div class="fl">담당자</div><select id="reassign-task-assignee">${memberOptions}</select></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-primary" onclick="submitTaskAssignee()">저장</button>
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+    </div>
+  `;
+  openModal('업무 담당자 변경');
+}
+
+function submitTaskAssignee(){
+  const id = document.getElementById('reassign-task-id')?.value || '';
+  const assignee = document.getElementById('reassign-task-assignee')?.value || '';
+  const t = tasks.find(x=>x.id===id);
+  if(!t || !assignee){ showToast('담당자를 선택해주세요.'); return; }
+  if(t.assignee === assignee){ closeModal(); return; }
+  apiSave({ action:'updateTask', id, assignee }, ()=>closeModal());
+}
+
+
 function submitTask(){
   const title = getTaskTitleValue();
   if(!title){ showToast('업무명을 입력해주세요'); return; }
@@ -4084,6 +4114,10 @@ function submitTask(){
 
 function canEditItem(item){
   return canManageAll() || item?.who === selfId || item?.assignee === selfId;
+}
+
+function canReassignTask(item){
+  return isMemberUser() && !!item?.id;
 }
 
 function openDetailPanel(title, subtitle, bodyHtml, targetType, targetId){
@@ -6586,7 +6620,7 @@ function showTask(id){
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
     <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
     <div class="dr"><span class="dl">메모</span><span>${escapeHtml(t.note || '-')}</span></div>
-    ${canEdit?`<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditTask('${t.id}')">수정</button></div>`:''}
+    ${(canEdit || canReassignTask(t))?`<div style="margin-top:16px;text-align:right;display:flex;gap:6px;justify-content:flex-end;">${canEdit?`<button class="btn btn-secondary btn-sm" onclick="openEditTask('${t.id}')">수정</button>`:`<button class="btn btn-secondary btn-sm" onclick="openReassignTask('${t.id}')">담당 변경</button>`}</div>`:''}
   `;
   openDetailPanel(t.title, '업무', body, 'task', t.id);
 }
@@ -7541,4 +7575,3 @@ initAuth();
 </script>
 </body>
 </html>
- 
