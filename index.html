@@ -850,20 +850,6 @@ input[type="checkbox"]{
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.active-filter-bar{
-  display:none;
-  align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
-  padding:9px 12px;
-  margin-bottom:14px;
-  border:.5px solid var(--border);
-  border-radius:var(--r-sm);
-  background:var(--bg);
-  font-size:12px;
-  color:var(--text2);
-}
-.active-filter-bar.show{display:flex}
 
 .today-title-wrap{display:flex;align-items:center;gap:9px;min-width:0;max-width:100%}
 .today-kpi-inline{display:flex;align-items:center;gap:5px;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -882,28 +868,6 @@ input[type="checkbox"]{
   .today-mini-badge strong{font-size:11px}
 }
 
-.active-filter-label{font-weight:800;color:var(--text)}
-.active-filter-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  padding:3px 8px;
-  border-radius:999px;
-  background:var(--bg2);
-  border:.5px solid var(--border);
-  color:var(--text2);
-  max-width:100%;
-}
-.active-filter-reset{
-  margin-left:auto;
-  border:none;
-  background:none;
-  color:var(--text);
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  font-family:inherit;
-}
 .today-kpi-grid{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -1010,16 +974,7 @@ input[type="checkbox"]{
     font-size:12px;
     text-align:center;
   }
-  .active-filter-bar{
-    margin:0 14px 12px;
-    align-items:flex-start;
-  }
-  .active-filter-reset{
-    width:100%;
-    margin-left:0;
-    text-align:left;
-  }
-  .today-kpi-grid{
+.today-kpi-grid{
     grid-template-columns:repeat(4,minmax(0,1fr));
     gap:5px;
     margin-bottom:8px;
@@ -1827,7 +1782,6 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
   <button class="btn btn-secondary btn-sm" onclick="openNotifications()">알림 <span id="notice-count" class="notice-dot" style="display:none">0</span></button>
   <button class="btn btn-primary btn-sm" onclick="openQuickAdd()"><span class="label-desktop">+ 새로 만들기</span><span class="label-mobile">+</span></button>
 </div>
-<div id="active-filter-bar" class="active-filter-bar"></div>
 
 <div id="page-home" class="page active">
   <div class="page-header today-page-header">
@@ -4475,86 +4429,11 @@ function buildSidebar(){
 }
 function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; getActiveProjects().forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
 function renderActiveFilterBar(){
-  const bar = document.getElementById('active-filter-bar');
-  if(!bar) return;
-
-  const parts = [];
-
-  if(selProj !== 'all'){
-    const project = pj(selProj);
-    parts.push(`<span class="active-filter-pill">사업: ${escapeHtml(project?.name || '선택된 사업')}</span>`);
-  }
-
-  if(hiddenMb.size){
-    const hiddenNames = Array.from(hiddenMb).map(id => mb(id)?.name || id).filter(Boolean);
-    const label = hiddenNames.length <= 3
-      ? hiddenNames.join(', ')
-      : `${hiddenNames.slice(0,3).join(', ')} 외 ${hiddenNames.length - 3}명`;
-    parts.push(`<span class="active-filter-pill">숨긴 멤버: ${escapeHtml(label)}</span>`);
-  }
-
-  if(currentPage === 'cal' && isCalendarMineScope()){
-    parts.push('<span class="active-filter-pill">캘린더: 내 것만</span>');
-  }
-
-  if(currentPage === 'proposals'){
-    if(proposalStatusFilter !== 'active') parts.push(`<span class="active-filter-pill">제안 상태: ${escapeHtml(proposalFilterLabel(proposalStatusFilter))}</span>`);
-    if(proposalResultFilter !== 'all') parts.push(`<span class="active-filter-pill">수주 여부: ${escapeHtml(proposalResultFilterLabel(proposalResultFilter))}</span>`);
-    if(proposalHidePast) parts.push('<span class="active-filter-pill">지난 제안 숨김</span>');
-  }
-
-  if(currentPage === 'personal'){
-    if(pFilter !== 'all') parts.push(`<span class="active-filter-pill">내 업무: ${escapeHtml(pFilter === 'public' ? '공유됨' : '비공개')}</span>`);
-    if(ls('personalHidePast') === 'Y') parts.push('<span class="active-filter-pill">지난 일정 숨김</span>');
-  }
-
-  if(currentPage === 'setup' && userTeamFilter !== 'all'){
-    parts.push(`<span class="active-filter-pill">팀원: ${escapeHtml(userTeamFilterLabel(userTeamFilter))}</span>`);
-  }
-
-  if(!parts.length){
-    bar.className = 'active-filter-bar';
-    bar.innerHTML = '';
-    return;
-  }
-
-  const count = parts.length;
-  bar.className = 'active-filter-bar show';
-  bar.innerHTML = `<span class="active-filter-label">필터 ${count}</span>${parts.join('')}<button type="button" class="active-filter-reset" onclick="resetActiveFilters()">초기화</button>`;
+  // 필터 상태 표시 바는 제거했습니다. 각 화면의 체크박스/필터 버튼 상태로 확인합니다.
 }
 
 function resetActiveFilters(){
-  hiddenMb.clear();
-  selProj = 'all';
-  saveJsonArray('hiddenMembers', hiddenMb);
-  ls('selectedProject', 'all');
-
-  if(currentPage === 'cal'){
-    calScope = 'all';
-    ls('calendarScope', 'all');
-  }
-
-  if(currentPage === 'proposals'){
-    proposalStatusFilter = 'active';
-    proposalResultFilter = 'all';
-    proposalHidePast = false;
-    ls('proposalStatusFilter', 'active');
-    ls('proposalResultFilter', 'all');
-    ls('proposalHidePast', null);
-  }
-
-  if(currentPage === 'personal'){
-    pFilter = 'all';
-    ls('personalFilter', 'all');
-    ls('personalHidePast', 'N');
-  }
-
-  if(currentPage === 'setup'){
-    userTeamFilter = 'all';
-    ls('userTeamFilter', 'all');
-  }
-
-  refreshAll();
+  // 별도 필터 상태 바를 제거하면서 사용하지 않는 예비 함수입니다.
 }
 
 function getVisEv(){ return events.filter(e=>{ if(isEventForDeletedProject(e)) return false; if(isPrivatePersonal(e)) return false; if(!e.public&&e.who!==selfId)return false; if(isCalendarMineScope()&&!isMyCalendarEvent(e))return false; if(hiddenMb.size&&e.who!=='all'&&hiddenMb.has(e.who))return false; if(selProj!=='all'&&e.project!==selProj)return false; return true; }); }
