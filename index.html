@@ -3096,7 +3096,7 @@ function renderHome(){
     .sort((a,b)=>a._d-b._d);
 
   function actionRow(item){
-    const quick = item.quickDone ? `<button class="btn btn-secondary btn-sm action-quick-btn" onclick="event.stopPropagation();quickSetTaskStatus('${item.quickDone}','완료')">완료</button>` : '';
+    const quick = item.quickDone ? `<button class="btn btn-secondary btn-sm action-quick-btn" onclick="event.stopPropagation();quickSetTaskStatus('${item.quickDone}','완료',true)">완료</button>` : '';
     return `<div class="action-item" onclick="${item.onClick}">
       <div class="action-dot" style="background:${item.dot}"></div>
       <div class="action-main">
@@ -6464,7 +6464,7 @@ function quickTaskStatusButtons(t){
   return `<div class="task-status-action-bar"><div class="task-status-action-title">상태 빠른 변경</div><div class="quick-status-row">${buttons}</div></div>`;
 }
 
-window.quickSetTaskStatus = function(id, status){
+window.quickSetTaskStatus = function(id, status, suppressDetailOpen){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
   if(!canEditItem(t)){
@@ -6481,7 +6481,9 @@ window.quickSetTaskStatus = function(id, status){
   };
   apiSave(payload, ()=>{
     showToast('업무 상태를 변경했습니다.');
-    setTimeout(()=>showTask(id), 150);
+    if(!suppressDetailOpen){
+      setTimeout(()=>showTask(id), 150);
+    }
   });
 };
 
