@@ -4992,8 +4992,19 @@ function renderCalList(){
 
 function renderOverview(){ const mode=effectiveOverviewMode(); syncPersistentControls(); if(mode==='board') renderBoard(); else if(mode==='table') renderProjectTable(); else if(mode==='gantt') renderGantt(); else renderMemberOverview(); }
 
+function canViewAllProjectManagementWork(){
+  return isManagerUser();
+}
+
+function isProjectManagementTaskVisible(t){
+  if(!t) return false;
+  if(!canViewAllProjectManagementWork() && String(t.assignee || '') !== String(selfId || '')) return false;
+  if(hiddenMb.has(t.assignee)) return false;
+  return true;
+}
+
 function projectSummaryStats(p){
-  const projTasks = tasks.filter(t=>t.project===p.id && !hiddenMb.has(t.assignee));
+  const projTasks = tasks.filter(t=>t.project===p.id && isProjectManagementTaskVisible(t));
   const now = new Date();
   now.setHours(0,0,0,0);
   const weekEnd = new Date(now);
@@ -5035,7 +5046,7 @@ function renderBoardProjectCards(vp){
     const projAssigns=assigns.filter(a=>a.projectId===p.id&&!hiddenMb.has(a.memberId)); 
 
     const projTasks=tasks
-      .filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&!hiddenMb.has(t.assignee))
+      .filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&isProjectManagementTaskVisible(t))
       .map(t=>({...t,_kind:'task',_past:isManagementPastTask(t),_date:t.end || t.start}))
       .filter(t=>!hidePast || !t._past);
 
@@ -5109,7 +5120,7 @@ function renderProjectTable(){
 
   const rowHtml = (p) => {
     const projAssigns = assigns.filter(a=>a.projectId===p.id);
-    const projTasks = tasks.filter(t=>t.project===p.id);
+    const projTasks = tasks.filter(t=>t.project===p.id && isProjectManagementTaskVisible(t));
     const doing = projTasks.filter(t=>normalizeTaskStatus(t.status)!=='완료').length;
     const done = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료').length;
     const overdue = projTasks.filter(t=>isOverdue(t)).length;
@@ -5163,7 +5174,8 @@ function renderProjectTable(){
 
 function renderGantt() {
   const mappedEvents = events.filter(e => isProjectScheduleEvent(e) && !isEventForDeletedProject(e)).map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
-  const allTasks = [...tasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
+  const visibleTasks = tasks.filter(t => isProjectManagementTaskVisible(t));
+  const allTasks = [...visibleTasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
   if (!allTasks.length) { document.getElementById('overview-container').innerHTML = '<div class="empty">내역이 없습니다</div>'; return; }
   const dates = allTasks.flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()]).filter(v=>!isNaN(v) && v>0); 
   if(!dates.length){ document.getElementById('overview-container').innerHTML = '<div class="empty">유효한 날짜가 없습니다</div>'; return; }
@@ -7458,4 +7470,3 @@ initAuth();
 </script>
 </body>
 </html>
- 
