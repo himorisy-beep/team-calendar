@@ -1790,7 +1790,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
   <div id="home-summary"></div>
 </div>
 
-<div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div class="cal-view-tabs"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button><div class="cal-scope-tabs" aria-label="캘린더 표시 범위"><button class="chip active" id="cal-scope-all" onclick="setCalendarScope('all')">전체</button><button class="chip" id="cal-scope-mine" onclick="setCalendarScope('mine')">내 것만</button></div></div></div><div id="cal-container"></div></div>
+<div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)" aria-label="이전 달">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)" aria-label="다음 달">▶</button></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div><div class="cal-view-tabs"><div class="cal-mode-tabs" aria-label="캘린더 보기 방식"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div><div class="cal-scope-tabs" aria-label="캘린더 표시 범위"><button class="chip active" id="cal-scope-all" onclick="setCalendarScope('all')">전체</button><button class="chip" id="cal-scope-mine" onclick="setCalendarScope('mine')">내 것만</button></div></div></div><div id="cal-container"></div></div>
 
 <div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check ov-mobile-hide"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span class="label-desktop">완료 사업 숨기기</span><span class="label-mobile">완료 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
 
@@ -3913,9 +3913,14 @@ function isProjectScheduleEvent(e){
 
 function getCalendarTasks(){
   return tasks.filter(t => {
-    if(!(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true')) return false;
+    const isMine = String(t.assignee || '') === String(selfId || '');
+    const isShared = isPublicTask(t);
+
+    // 내 업무는 공유 체크 여부와 관계없이 내 캘린더에 항상 표시합니다.
+    // 다른 사람의 업무는 "캘린더에도 표시"가 체크된 공유 업무만 표시합니다.
+    if(!isMine && !isShared) return false;
     if(isTaskForDeletedProject(t)) return false;
-    if(isCalendarMineScope() && !isMyCalendarTask(t)) return false;
+    if(isCalendarMineScope() && !isMine) return false;
     if(t.assignee && hiddenMb.has(t.assignee)) return false;
     if(selProj !== 'all' && t.project !== selProj) return false;
     return t.start && t.end;
@@ -3963,7 +3968,7 @@ function openAddTask(){
     </div>
     <div class="task-option-box">
       <label class="task-check-row"><input type="checkbox" id="task-show-calendar"><span>캘린더에도 표시</span></label>
-      <div class="task-form-help">보고·제출·마감처럼 팀 캘린더에서 공유할 필요가 있는 주요 업무만 체크하세요.</div>
+      <div class="task-form-help">내 업무는 체크 여부와 관계없이 내 캘린더에 표시됩니다. 체크하면 다른 팀원의 캘린더에도 표시됩니다.</div>
     </div>
     <div class="form-row full"><div><div class="fl">메모</div><textarea id="task-note" rows="4"></textarea></div></div>
     <div id="task-form-actions" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
@@ -6514,7 +6519,7 @@ function showTask(id){
     <div class="dr"><span class="dl">상태</span><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]}">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span></div>
     ${taskCompletedDate(t)?`<div class="dr"><span class="dl">완료일</span><span>${taskCompletedDate(t)}</span></div>`:''}
     <div class="dr"><span class="dl">분류</span><span>${TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '-'}</span></div>
-    <div class="dr"><span class="dl">캘린더</span><span>${(t.showOnCalendar === true || t.showOnCalendar === 'TRUE' || t.showOnCalendar === 'true') ? '표시' : '미표시'}</span></div>
+    <div class="dr"><span class="dl">캘린더</span><span>${isPublicTask(t) ? '팀원에게도 표시' : '본인만 표시'}</span></div>
     <div class="dr"><span class="dl">메모</span><span>${escapeHtml(t.note || '-')}</span></div>
     ${(canEdit || canReassignTask(t))?`<div style="margin-top:16px;text-align:right;display:flex;gap:6px;justify-content:flex-end;">${canEdit?`<button class="btn btn-secondary btn-sm" onclick="openEditTask('${t.id}')">수정</button>`:`<button class="btn btn-secondary btn-sm" onclick="openReassignTask('${t.id}')">담당 변경</button>`}</div>`:''}
   `;
@@ -7257,6 +7262,163 @@ initAuth();
 .settings-section-title{max-width:760px;margin:18px 0 8px;font-size:11px;font-weight:900;color:var(--text3);letter-spacing:.07em;text-transform:uppercase}
 .settings-section-title:first-child{margin-top:0}
 @media(max-width:680px){.settings-section-title{margin:14px 0 7px;padding:0 2px;font-size:10px}}
+
+
+
+/* Final mobile calendar header layout: date, controls, and legend use separate rows. */
+.cal-mode-tabs{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+
+@media(max-width:680px){
+  #page-cal .page-header.cal-page-header{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "calendar-nav"
+      "calendar-controls"
+      "calendar-legend"!important;
+    gap:8px!important;
+    align-items:center!important;
+    width:100%!important;
+    margin-bottom:10px!important;
+    overflow:visible!important;
+  }
+
+  #page-cal .cal-nav-inline{
+    grid-area:calendar-nav!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:8px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  #page-cal .cal-nav-inline .btn{
+    flex:0 0 34px!important;
+    width:34px!important;
+    min-width:34px!important;
+    height:32px!important;
+    padding:0!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:8px!important;
+    font-size:11px!important;
+    line-height:1!important;
+  }
+
+  #page-cal .cal-nav-inline #month-title{
+    flex:0 0 auto!important;
+    min-width:112px!important;
+    width:auto!important;
+    text-align:center!important;
+    font-size:18px!important;
+    font-weight:900!important;
+    line-height:32px!important;
+    white-space:nowrap!important;
+  }
+
+  #page-cal .cal-view-tabs{
+    grid-area:calendar-controls!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:10px!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+
+  #page-cal .cal-mode-tabs,
+  #page-cal .cal-scope-tabs{
+    display:flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    flex:0 0 auto!important;
+    min-width:0!important;
+  }
+
+  #page-cal .cal-mode-tabs{
+    padding:2px!important;
+    border:.5px solid var(--border2)!important;
+    border-radius:9px!important;
+    background:var(--bg2)!important;
+  }
+
+  #page-cal .cal-scope-tabs{
+    margin-left:auto!important;
+    padding-left:0!important;
+    border-left:none!important;
+  }
+
+  #page-cal .cal-mode-tabs .chip,
+  #page-cal .cal-scope-tabs .chip{
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:48px!important;
+    height:30px!important;
+    padding:0 10px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:7px!important;
+    font-size:11px!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    word-break:keep-all!important;
+  }
+
+  #page-cal .cal-mode-tabs .chip{
+    border-color:transparent!important;
+    background:transparent!important;
+  }
+
+  #page-cal .cal-mode-tabs .chip.active{
+    background:var(--text)!important;
+    color:var(--bg)!important;
+    border-color:var(--text)!important;
+  }
+
+  #page-cal .cal-scope-tabs .chip:last-child{
+    min-width:58px!important;
+  }
+
+  #page-cal .cal-inline-legend{
+    grid-area:calendar-legend!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    padding:4px 1px 2px!important;
+    white-space:nowrap!important;
+    scrollbar-width:none!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+
+  #page-cal .cal-inline-legend::-webkit-scrollbar{display:none!important}
+
+  #page-cal .cal-inline-legend .legend-item{
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    flex:0 0 auto!important;
+    min-width:max-content!important;
+    font-size:11px!important;
+    line-height:1.2!important;
+    white-space:nowrap!important;
+    word-break:keep-all!important;
+  }
+
+  #page-cal .cal-inline-legend .dot{
+    flex:0 0 7px!important;
+    width:7px!important;
+    height:7px!important;
+  }
+}
 
 </style>
 
