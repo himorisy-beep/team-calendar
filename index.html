@@ -3942,17 +3942,31 @@ function calendarEventTitle(e){
 }
 
 
-function openAddTask(){
+function isTaskLinkableProject(p){
+  // 기간이 지났더라도 미완료 업무나 향후 일정이 남은 지연 사업은 계속 선택할 수 있습니다.
+  return !!p && !isDeletedProject(p) && !isClosedProject(p);
+}
+
+function isTaskLinkableProposal(p){
+  // 마감일이 지난 진행중 제안은 지연 상태이므로 유지하고, 제출완료된 제안만 제외합니다.
+  return !!p && proposalStatusValue(p) !== 'submitted';
+}
+
+function openAddTask(existingTask=null){
   if(!requireMemberWrite()) return;
-  const projectOptions = getActiveProjects().map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
-  const proposalOptions = proposals.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
+  const selectedProjectId = existingTask?.project || '';
+  const selectedProposalId = existingTask?.proposal || '';
+  const linkableProjects = getActiveProjects().filter(p => isTaskLinkableProject(p) || p.id === selectedProjectId);
+  const linkableProposals = proposals.filter(p => isTaskLinkableProposal(p) || p.id === selectedProposalId);
+  const projectOptions = linkableProjects.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
+  const proposalOptions = linkableProposals.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
   const memberOptions = getActiveMembers().map(m=>`<option value="${m.id}" ${m.id===selfId?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
   const todayVal = todayStr;
 
   document.getElementById('modal-body').innerHTML = `
     <input type="hidden" id="task-id">
     <div class="form-row full"><div><div class="fl">업무명</div><select id="task-title-preset" onchange="onTaskTitleChange()"><option value="">— 자주 쓰는 업무 선택 —</option>${commonTaskTitleOptions('')}<option value="custom">직접 입력</option></select><input id="task-title-custom" type="text" placeholder="업무명을 직접 입력" style="display:none;margin-top:6px"></div></div>
-    <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">등록된 제안이 없습니다</option>'}</select></div></div></div>
+    <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">진행 중인 사업이 없습니다</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">진행 중인 제안이 없습니다</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div><select id="task-assignee">${memberOptions}</select></div></div>
     <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${todayVal}"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
@@ -3990,7 +4004,7 @@ function openEditTask(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
 
-  openAddTask();
+  openAddTask(t);
   document.getElementById('modal-title').textContent = '업무 수정';
   document.getElementById('task-id').value = t.id;
   setTaskTitleValue(t.title || '');
