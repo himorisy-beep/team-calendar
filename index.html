@@ -1792,7 +1792,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
 
 <div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)" aria-label="이전 달">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)" aria-label="다음 달">▶</button></div><div class="cal-view-tabs"><div class="cal-mode-tabs" aria-label="캘린더 보기 방식"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div><div class="cal-scope-tabs" aria-label="캘린더 표시 범위"><button class="chip active" id="cal-scope-all" onclick="setCalendarScope('all')">전체</button><button class="chip" id="cal-scope-mine" onclick="setCalendarScope('mine')">내 것만</button></div></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check" id="ov-hide-done-wrap"><input class="header-check-input" type="checkbox" id="ov-hide-done" onchange="toggleOverviewHideDoneTasks(this.checked)" checked><span class="label-desktop">완료 업무 숨기기</span><span class="label-mobile">완료 업무 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check" id="ov-hide-done-wrap"><input class="header-check-input" type="checkbox" id="ov-hide-done" onchange="toggleOverviewHideDoneTasks(this.checked)" checked><span class="label-desktop">완료 업무·일정 숨기기</span><span class="label-mobile">완료 내역 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -2219,6 +2219,10 @@ function isPastScheduleItem(item){
   if(!end || isNaN(end.getTime()) || end.getTime() === 0) return false;
   end.setHours(23,59,59,999);
   return end < todayStartDate();
+}
+function isCompletedScheduleItem(item){
+  // 일정에는 별도 완료 상태가 없으므로 종료일이 지난 일정을 완료 일정으로 봅니다.
+  return isPastScheduleItem(item);
 }
 function isManagementPastTask(t){
   // 사업 관리에서는 완료 업무만 회색/취소선 처리합니다.
@@ -5087,7 +5091,8 @@ function renderBoardProjectCards(vp){
 
     const projEvents=events
       .filter(e=>isProjectScheduleEvent(e) && e.project===p.id && (e.who==='all' || !hiddenMb.has(e.who)))
-      .map(e=>({...e,_kind:'event',_past:isPastScheduleItem(e),_date:e.end || e.start}));
+      .filter(e=>!hideDoneTasks || !isCompletedScheduleItem(e))
+      .map(e=>({...e,_kind:'event',_past:isCompletedScheduleItem(e),_date:e.end || e.start}));
 
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
 
@@ -5219,7 +5224,10 @@ function renderGantt() {
   const allTasks = [...visibleTasks, ...mappedEvents].filter(t => {
     if(!visibleProjectIds.has(t.project)) return false;
     if(t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false;
-    if(hideDoneTasks && !t.isEvent && isCompletedTask(t)) return false;
+    if(hideDoneTasks){
+      if(t.isEvent && isCompletedScheduleItem(t)) return false;
+      if(!t.isEvent && isCompletedTask(t)) return false;
+    }
     return t.start && t.end;
   });
 
@@ -6840,7 +6848,7 @@ function toggleFilterSection(key){
 }
 
 function toggleOverviewHideDoneTasks(v){
-  // 켜져 있으면 진행 사업과 펼친 완료 사업을 포함한 모든 사업관리 화면에서 완료 업무를 전부 제외합니다.
+  // 켜져 있으면 진행 사업과 펼친 완료 사업 모두에서 완료 업무와 종료된 일정을 전부 제외합니다.
   hideDoneTasks=!!v;
   ls('overviewHideDoneTasks', hideDoneTasks ? 'Y' : 'N');
   renderOverview();
