@@ -1792,7 +1792,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
 
 <div id="page-cal" class="page"><div class="page-header cal-page-header"><div class="cal-nav-inline"><button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)" aria-label="이전 달">◀</button><span style="font-size:18px;font-weight:700" id="month-title"></span><button class="btn btn-secondary btn-sm" onclick="changeMonth(1)" aria-label="다음 달">▶</button></div><div class="cal-view-tabs"><div class="cal-mode-tabs" aria-label="캘린더 보기 방식"><button class="chip active" id="vm-cal" onclick="setVM('cal')">달력</button><button class="chip" id="vm-list" onclick="setVM('list')">목록</button></div><div class="cal-scope-tabs" aria-label="캘린더 표시 범위"><button class="chip active" id="cal-scope-all" onclick="setCalendarScope('all')">전체</button><button class="chip" id="cal-scope-mine" onclick="setCalendarScope('mine')">내 것만</button></div></div><div class="cal-inline-legend" aria-label="캘린더 범례"><div class="legend-item"><div class="dot" style="background:#2E7D32"></div>휴가</div><div class="legend-item"><div class="dot" style="background:#1D4ED8"></div>외근</div><div class="legend-item"><div class="dot" style="background:#F97316"></div>출장</div><div class="legend-item"><div class="dot" style="background:#7C3AED"></div>연수</div><div class="legend-item"><div class="dot" style="background:#1E3A8A"></div>회의</div><div class="legend-item"><div class="dot" style="background:#0891B2"></div>제안시작</div><div class="legend-item"><div class="dot" style="background:#DC2626"></div>제출종료</div><div class="legend-item"><div class="dot" style="background:#475569"></div>업무</div></div></div><div id="cal-container"></div></div>
 
-<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check ov-mobile-hide"><input class="header-check-input" type="checkbox" id="ov-hide-past" onchange="toggleHidePast(this.checked)" checked><span class="label-desktop">완료 사업 숨기기</span><span class="label-mobile">완료 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
+<div id="page-overview" class="page"><div class="page-header"><span class="page-title">사업 관리</span><div class="overview-actions"><label class="header-check" id="ov-hide-done-wrap"><input class="header-check-input" type="checkbox" id="ov-hide-done" onchange="toggleOverviewHideDoneTasks(this.checked)" checked><span class="label-desktop">완료 업무 숨기기</span><span class="label-mobile">완료 업무 숨김</span></label><button class="chip active" id="ov-board" onclick="setOV('board')">보드</button><button class="chip ov-mobile-hide" id="ov-table" onclick="setOV('table')"><span class="label-desktop">테이블</span><span class="label-mobile">표</span></button><button class="chip ov-mobile-hide" id="ov-gantt" onclick="setOV('gantt')">간트</button><button class="chip" id="ov-members" onclick="setOV('members')"><span class="label-desktop">멤버별 공수</span><span class="label-mobile">공수</span></button><button class="btn btn-primary btn-sm" onclick="openAddProject()"><span class="label-desktop">+ 사업 추가</span><span class="label-mobile">+ 추가</span></button></div></div><div id="overview-container"></div></div>
 
 <div id="page-proposals" class="page">
   <div class="page-header">
@@ -2009,7 +2009,7 @@ const today = new Date();
 let editingEventId = null; 
 let editingProposalId = null;
 let curY = today.getFullYear(), curM = today.getMonth(); 
-let hidePast = ls('hidePast') !== 'N';
+let hideDoneTasks = ls('overviewHideDoneTasks') !== 'N';
 const currentManDayYear = String(today.getFullYear());
 let storedManDayYear = ss('manDayYear');
 let manDayYear = (storedManDayYear === 'all' || /^\d{4}$/.test(String(storedManDayYear || ''))) ? String(storedManDayYear) : currentManDayYear;
@@ -2279,11 +2279,13 @@ function sortProjectsBySchedule(a,b){
   return aClosed ? bd - ad : ad - bd;
 }
 
-let closedProjectsOpen = ls('closedProjectsOpen') === 'Y';
+let closedProjectsOpen = false;
 function toggleClosedProjects(){
   closedProjectsOpen = !closedProjectsOpen;
-  ls('closedProjectsOpen', closedProjectsOpen ? 'Y' : 'N');
   renderOverview();
+}
+function shouldShowClosedProjects(closed){
+  return closedProjectsOpen || (selProj !== 'all' && Array.isArray(closed) && closed.length === 1);
 }
 
 function getOverviewProjectGroups(){
@@ -3016,8 +3018,10 @@ function prunePersistedFilters(){
 }
 
 function syncPersistentControls(){
-  const ovHide = document.getElementById('ov-hide-past');
-  if(ovHide) ovHide.checked = !!hidePast;
+  const ovHideDone = document.getElementById('ov-hide-done');
+  if(ovHideDone) ovHideDone.checked = !!hideDoneTasks;
+  const ovHideDoneWrap = document.getElementById('ov-hide-done-wrap');
+  if(ovHideDoneWrap) ovHideDoneWrap.style.display = ['board','gantt'].includes(effectiveOverviewMode()) ? '' : 'none';
 
   ['board','table','gantt','members'].forEach(k=>{
     const el = document.getElementById('ov-'+k);
@@ -5067,12 +5071,11 @@ function renderBoardProjectCards(vp){
     const projTasks=tasks
       .filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&isProjectManagementTaskVisible(t))
       .map(t=>({...t,_kind:'task',_past:isManagementPastTask(t),_date:t.end || t.start}))
-      .filter(t=>!hidePast || !t._past);
+      .filter(t=>!hideDoneTasks || !t._past);
 
     const projEvents=events
       .filter(e=>isProjectScheduleEvent(e) && e.project===p.id && (e.who==='all' || !hiddenMb.has(e.who)))
-      .map(e=>({...e,_kind:'event',_past:isPastScheduleItem(e),_date:e.end || e.start}))
-      .filter(e=>!hidePast || !e._past);
+      .map(e=>({...e,_kind:'event',_past:isPastScheduleItem(e),_date:e.end || e.start}));
 
     const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
 
@@ -5103,8 +5106,8 @@ function renderBoardProjectCards(vp){
 
 function renderBoard(){
   const {active, closed} = getOverviewProjectGroups();
-  const hasAny = active.length || (!hidePast && closed.length);
-  if(!hasAny){
+  const showClosed = shouldShowClosedProjects(closed);
+  if(!active.length && !closed.length){
     document.getElementById('overview-container').innerHTML='<div class="empty">사업이 없습니다</div>';
     return;
   }
@@ -5116,10 +5119,10 @@ function renderBoard(){
     h += '<div class="empty" style="padding:14px">진행 중이거나 예정된 사업이 없습니다</div>';
   }
 
-  if(!hidePast && closed.length){
+  if(closed.length){
     h += `<div class="closed-project-section">
-      <button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button>
-      ${closedProjectsOpen ? `<div class="overview-grid">${renderBoardProjectCards(closed)}</div>` : ''}
+      <button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${showClosed ? '접기 ▴' : '보기 ▾'}</span></button>
+      ${showClosed ? `<div class="overview-grid">${renderBoardProjectCards(closed)}</div>` : ''}
     </div>`;
   }
 
@@ -5129,10 +5132,9 @@ function renderBoard(){
 function renderProjectTable(){
   const target = document.getElementById('overview-container');
   const {active, closed} = getOverviewProjectGroups();
-  const visibleClosed = !hidePast && closedProjectsOpen ? closed : [];
-  const vp = [...active, ...visibleClosed];
+  const showClosed = shouldShowClosedProjects(closed);
 
-  if(!vp.length && !(closed.length && !hidePast)){
+  if(!active.length && !closed.length){
     target.innerHTML='<div class="empty">사업이 없습니다</div>';
     return;
   }
@@ -5182,9 +5184,9 @@ function renderProjectTable(){
 
   h += active.map(rowHtml).join('');
 
-  if(!hidePast && closed.length){
-    h += `<tr class="closed-project-table-row"><td colspan="8"><button class="closed-project-toggle" style="margin:0" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${closedProjectsOpen ? '접기 ▴' : '보기 ▾'}</span></button></td></tr>`;
-    if(closedProjectsOpen) h += closed.map(rowHtml).join('');
+  if(closed.length){
+    h += `<tr class="closed-project-table-row"><td colspan="8"><button class="closed-project-toggle" style="margin:0" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${showClosed ? '접기 ▴' : '보기 ▾'}</span></button></td></tr>`;
+    if(showClosed) h += closed.map(rowHtml).join('');
   }
 
   h += '</tbody></table></div>';
@@ -5192,27 +5194,76 @@ function renderProjectTable(){
 }
 
 function renderGantt() {
-  const mappedEvents = events.filter(e => isProjectScheduleEvent(e) && !isEventForDeletedProject(e)).map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
+  const target = document.getElementById('overview-container');
+  const {active, closed} = getOverviewProjectGroups();
+  const showClosed = shouldShowClosedProjects(closed);
+  const visibleProjects = [...active, ...(showClosed ? closed : [])];
+  const visibleProjectIds = new Set(visibleProjects.map(p => p.id));
+
+  const mappedEvents = events
+    .filter(e => isProjectScheduleEvent(e) && !isEventForDeletedProject(e))
+    .map(e => ({ id: e.id, title: e.title, project: e.project, assignee: e.who, start: e.start, end: e.end, isEvent: true }));
   const visibleTasks = tasks.filter(t => isProjectManagementTaskVisible(t));
-  const allTasks = [...visibleTasks, ...mappedEvents].filter(t => { if (t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false; if (selProj !== 'all' && t.project !== selProj) return false; if (hidePast && isPast(t.end) && (!t.isEvent && t.status === '완료' || t.isEvent)) return false; return t.start && t.end; });
-  if (!allTasks.length) { document.getElementById('overview-container').innerHTML = '<div class="empty">내역이 없습니다</div>'; return; }
-  const dates = allTasks.flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()]).filter(v=>!isNaN(v) && v>0); 
-  if(!dates.length){ document.getElementById('overview-container').innerHTML = '<div class="empty">유효한 날짜가 없습니다</div>'; return; }
-  let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
-  const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1; 
-  const pct = (d) => { const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10)); return Math.max(0, Math.min(100, (diff / totalDays) * 100)); };
-  let h = ''; getActiveProjects().filter(p => (selProj === 'all' || p.id === selProj)).forEach(p => {
-    const pt = allTasks.filter(t => t.project === p.id); if (!pt.length) return;
-    h += `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
-    pt.forEach(t => { const a = mb(t.assignee); h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`; });
-    h += `</div><div class="gantt-right-pane" style="width: ${totalDays * 36}px;"><div class="gantt-time-header">`;
-    for (let i = 0; i < totalDays; i++) { const dt = new Date(minD.getTime() + i * 864e5); h += `<div class="gantt-day-col"><span style="font-size:9px;">${['SU','MO','TU','WE','TH','FR','SA'][dt.getDay()]}</span><span style="font-size:11px;">${dt.getDate()}</span></div>`; }
-    h += `</div>`; pt.forEach(t => { const l = pct(t.start).toFixed(2) + '%';
-    const rawW = Math.max(100 / totalDays, pct(t.end) - pct(t.start) + 100 / totalDays);
-    const w = `calc(${rawW.toFixed(2)}% - 4px)`; h += `<div class="gantt-timeline-row"><div class="gantt-grid-bg">`; for (let i = 0; i < totalDays; i++) h += `<div class="gantt-grid-line"></div>`; h += `</div><div class="gantt-bar-wrapper" style="left:${l}; width:${w};"><div class="gantt-bar" style="background:${lighten(p.color)}; color:${p.color};" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div></div></div>`; });
-    h += `</div></div></div>`;
+  const allTasks = [...visibleTasks, ...mappedEvents].filter(t => {
+    if(!visibleProjectIds.has(t.project)) return false;
+    if(t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false;
+    if(hideDoneTasks && !t.isEvent && normalizeTaskStatus(t.status) === '완료') return false;
+    return t.start && t.end;
   });
-  document.getElementById('overview-container').innerHTML = h || '<div class="empty">내역이 없습니다</div>';
+
+  const dates = allTasks
+    .flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()])
+    .filter(v=>!isNaN(v) && v>0);
+
+  if(!dates.length){
+    let emptyHtml = active.length ? '<div class="empty">표시할 업무나 일정이 없습니다</div>' : '<div class="empty">진행 중이거나 예정된 사업이 없습니다</div>';
+    if(closed.length){
+      emptyHtml += `<div class="closed-project-section"><button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${showClosed ? '접기 ▴' : '보기 ▾'}</span></button></div>`;
+    }
+    target.innerHTML = emptyHtml;
+    return;
+  }
+
+  let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
+  const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1;
+  const pct = (d) => {
+    const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10));
+    return Math.max(0, Math.min(100, (diff / totalDays) * 100));
+  };
+
+  const projectBlockHtml = (p) => {
+    const pt = allTasks.filter(t => t.project === p.id);
+    if(!pt.length) return '';
+    let h = `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}${isClosedProject(p)?'<span style="margin-left:auto;font-size:11px;color:var(--text3)">완료</span>':''}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
+    pt.forEach(t => {
+      const a = mb(t.assignee);
+      h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`;
+    });
+    h += `</div><div class="gantt-right-pane" style="width: ${totalDays * 36}px;"><div class="gantt-time-header">`;
+    for(let i=0;i<totalDays;i++){
+      const dt = new Date(minD.getTime()+i*864e5);
+      h += `<div class="gantt-day-col"><span style="font-size:9px;">${['SU','MO','TU','WE','TH','FR','SA'][dt.getDay()]}</span><span style="font-size:11px;">${dt.getDate()}</span></div>`;
+    }
+    h += `</div>`;
+    pt.forEach(t => {
+      const l = pct(t.start).toFixed(2)+'%';
+      const rawW = Math.max(100/totalDays, pct(t.end)-pct(t.start)+100/totalDays);
+      const w = `calc(${rawW.toFixed(2)}% - 4px)`;
+      h += `<div class="gantt-timeline-row"><div class="gantt-grid-bg">`;
+      for(let i=0;i<totalDays;i++) h += `<div class="gantt-grid-line"></div>`;
+      h += `</div><div class="gantt-bar-wrapper" style="left:${l}; width:${w};"><div class="gantt-bar" style="background:${lighten(p.color)}; color:${p.color};" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div></div></div>`;
+    });
+    return h + `</div></div></div>`;
+  };
+
+  let h = active.map(projectBlockHtml).join('');
+  if(!h && active.length) h = '<div class="empty">진행 사업에 표시할 업무나 일정이 없습니다</div>';
+
+  if(closed.length){
+    h += `<div class="closed-project-section"><button class="closed-project-toggle" onclick="toggleClosedProjects()"><span>완료 사업 ${closed.length}개</span><span>${showClosed ? '접기 ▴' : '보기 ▾'}</span></button>${showClosed ? closed.map(projectBlockHtml).join('') : ''}</div>`;
+  }
+
+  target.innerHTML = h || '<div class="empty">내역이 없습니다</div>';
 }
 
 function getProposalDdayClass(p){
@@ -5912,7 +5963,7 @@ function proposalManDayRows(memberId){
   return proposals
     .filter(p => normalizeIdArray(p.participantIds).includes(memberId))
     .map(p => {
-      if(hidePast && isPastProposal(p)) return null;
+      if(proposalHidePast && isPastProposal(p)) return null;
       const startDate = proposalEffectiveStart(p, memberId);
       const endDate = validManDayDate(p.deadline);
       const days = inclusiveCalendarManDays(startDate, endDate);
@@ -6776,7 +6827,7 @@ function toggleFilterSection(key){
   ls(`filter_${key}`, willOpen ? 'Y' : 'N');
 }
 
-function toggleHidePast(v){ hidePast=!!v; ls('hidePast', hidePast ? 'Y' : 'N'); refreshAll(); } 
+function toggleOverviewHideDoneTasks(v){ hideDoneTasks=!!v; ls('overviewHideDoneTasks', hideDoneTasks ? 'Y' : 'N'); renderOverview(); } 
 function togglePersonalHidePast(v){ ls('personalHidePast', v ? 'Y' : 'N'); renderPersonalCurrentView(); renderActiveFilterBar(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); } 
 function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', selProj); buildSidebar(); refreshAll(); } 
