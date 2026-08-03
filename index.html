@@ -2193,10 +2193,10 @@ function isPrivatePersonal(e){
   return e && e.type === 'personal';
 }
 function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
-function isOverdue(t){ if(!t.end || t.status === '완료') return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
+function isOverdue(t){ if(!t.end || isCompletedTask(t)) return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
 
 function taskCompletedDate(t){
-  if(!t || normalizeTaskStatus(t.status) !== '완료') return '';
+  if(!t || !isCompletedTask(t)) return '';
   return fmtDateFull(t.completedAt || t.completedDate || '');
 }
 
@@ -2223,7 +2223,7 @@ function isPastScheduleItem(item){
 function isManagementPastTask(t){
   // 사업 관리에서는 완료 업무만 회색/취소선 처리합니다.
   // 미완료 마감초과 업무는 지연 업무이므로 상단에 남겨둡니다.
-  return normalizeTaskStatus(t?.status) === '완료';
+  return isCompletedTask(t);
 }
 function sortManagementRows(a,b){
   if(a._past !== b._past) return a._past ? 1 : -1;
@@ -2233,7 +2233,7 @@ function sortManagementRows(a,b){
 }
 
 function hasOpenTaskForProject(projectId){
-  return tasks.some(t => t.project === projectId && normalizeTaskStatus(t.status) !== '완료');
+  return tasks.some(t => t.project === projectId && !isCompletedTask(t));
 }
 
 function hasFutureEventForProject(projectId){
@@ -4204,10 +4204,22 @@ const TASK_STATUS_OPTIONS = {
 };
 
 function normalizeTaskStatus(status){
-  if(status === '할 일') return '대기';
-  if(status === '진행중') return '진행';
-  if(TASK_STATUS_OPTIONS[status]) return status;
-  return status || '대기';
+  const raw = String(status ?? '').trim();
+  const lower = raw.toLowerCase();
+  if(raw === '할 일' || lower === 'todo' || lower === 'to-do') return '대기';
+  if(raw === '진행중' || lower === 'in progress' || lower === 'doing') return '진행';
+  if(['완료됨','완료 처리','완료처리'].includes(raw) || ['done','completed','complete'].includes(lower)) return '완료';
+  if(TASK_STATUS_OPTIONS[raw]) return raw;
+  return raw || '대기';
+}
+
+function isCompletedTask(taskOrStatus){
+  if(taskOrStatus && typeof taskOrStatus === 'object'){
+    const legacyDone = taskOrStatus.done;
+    if(legacyDone === true || ['true','y','yes','1'].includes(String(legacyDone ?? '').trim().toLowerCase())) return true;
+    return normalizeTaskStatus(taskOrStatus.status) === '완료';
+  }
+  return normalizeTaskStatus(taskOrStatus) === '완료';
 }
 
 function taskStatusOptions(selected){
@@ -5033,8 +5045,8 @@ function projectSummaryStats(p){
   const weekEnd = new Date(now);
   weekEnd.setDate(weekEnd.getDate()+7);
   weekEnd.setHours(23,59,59,999);
-  const activeTasks = projTasks.filter(t=>normalizeTaskStatus(t.status)!=='완료');
-  const doneTasks = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료');
+  const activeTasks = projTasks.filter(t=>!isCompletedTask(t));
+  const doneTasks = projTasks.filter(t=>isCompletedTask(t));
   const overdueTasks = activeTasks.filter(t=>isOverdue(t));
   const dueThisWeek = activeTasks.filter(t=>{
     if(!t.end || isOverdue(t)) return false;
@@ -5070,8 +5082,8 @@ function renderBoardProjectCards(vp){
 
     const projTasks=tasks
       .filter(t=>t.project===p.id&&(selProj==='all'||t.project===selProj)&&isProjectManagementTaskVisible(t))
-      .map(t=>({...t,_kind:'task',_past:isManagementPastTask(t),_date:t.end || t.start}))
-      .filter(t=>!hideDoneTasks || !t._past);
+      .filter(t=>!hideDoneTasks || !isCompletedTask(t))
+      .map(t=>({...t,_kind:'task',_past:isManagementPastTask(t),_date:t.end || t.start}));
 
     const projEvents=events
       .filter(e=>isProjectScheduleEvent(e) && e.project===p.id && (e.who==='all' || !hiddenMb.has(e.who)))
@@ -5142,8 +5154,8 @@ function renderProjectTable(){
   const rowHtml = (p) => {
     const projAssigns = assigns.filter(a=>a.projectId===p.id);
     const projTasks = tasks.filter(t=>t.project===p.id && isProjectManagementTaskVisible(t));
-    const doing = projTasks.filter(t=>normalizeTaskStatus(t.status)!=='완료').length;
-    const done = projTasks.filter(t=>normalizeTaskStatus(t.status)==='완료').length;
+    const doing = projTasks.filter(t=>!isCompletedTask(t)).length;
+    const done = projTasks.filter(t=>isCompletedTask(t)).length;
     const overdue = projTasks.filter(t=>isOverdue(t)).length;
     const closed = isClosedProject(p);
     const residual = hasResidualTaskAfterProjectEnd(p);
@@ -5207,7 +5219,7 @@ function renderGantt() {
   const allTasks = [...visibleTasks, ...mappedEvents].filter(t => {
     if(!visibleProjectIds.has(t.project)) return false;
     if(t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false;
-    if(hideDoneTasks && !t.isEvent && normalizeTaskStatus(t.status) === '완료') return false;
+    if(hideDoneTasks && !t.isEvent && isCompletedTask(t)) return false;
     return t.start && t.end;
   });
 
@@ -6827,7 +6839,12 @@ function toggleFilterSection(key){
   ls(`filter_${key}`, willOpen ? 'Y' : 'N');
 }
 
-function toggleOverviewHideDoneTasks(v){ hideDoneTasks=!!v; ls('overviewHideDoneTasks', hideDoneTasks ? 'Y' : 'N'); renderOverview(); } 
+function toggleOverviewHideDoneTasks(v){
+  // 켜져 있으면 진행 사업과 펼친 완료 사업을 포함한 모든 사업관리 화면에서 완료 업무를 전부 제외합니다.
+  hideDoneTasks=!!v;
+  ls('overviewHideDoneTasks', hideDoneTasks ? 'Y' : 'N');
+  renderOverview();
+} 
 function togglePersonalHidePast(v){ ls('personalHidePast', v ? 'Y' : 'N'); renderPersonalCurrentView(); renderActiveFilterBar(); }
 function toggleSidebar(){ document.querySelector('.sidebar').classList.toggle('show'); document.getElementById('sidebar-overlay').classList.toggle('show'); } 
 function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', selProj); buildSidebar(); refreshAll(); } 
