@@ -6371,11 +6371,8 @@ function exportManDaysExcel(){
 .project-card-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}
 .reopen-project-btn{font-weight:700}
 .project-unified-save{display:flex;gap:8px;align-items:center;margin-top:18px;padding-top:14px;border-top:.5px solid var(--border)}
-.project-save-help{font-size:10px;color:var(--text3);opacity:.72;line-height:1.4;margin-top:4px;font-weight:400}
-.project-save-help b{font-weight:500;color:inherit}
 .ui-form-help{font-size:10px!important;color:var(--text3)!important;opacity:.72;line-height:1.4!important;font-weight:400!important}
 @media(max-width:680px){.reopen-project-note{font-size:10px;padding:6px 7px}.task-priority-help,.task-form-help,.privacy-help,.manday-only-note,.ui-form-help{font-size:10px!important}}
-@media(max-width:680px){.project-save-help{font-size:10px;opacity:.72}}
 .unified-project-members .project-member-edit-actions{align-self:center}
 .closed-project-toggle{justify-content:flex-start!important;text-align:left}
 .closed-toggle-label{display:inline-flex;align-items:center;gap:7px}
@@ -7326,32 +7323,30 @@ function renderProjectManageList(){
   });
   list.innerHTML=h || '<div class="empty">사업이 없습니다</div>';
 }
-let projectMemberEditState = { projectId:'', deleted:new Set() };
-
-function resetProjectMemberEditState(projectId=''){
-  projectMemberEditState = { projectId, deleted:new Set() };
+function projectMemberSavedRowHtml(a){
+  const m = mb(a.memberId);
+  const appliedDate = assignAppliedDateValue(a);
+  const endDate = assignEndDateValue(a);
+  const assignId = a.id || '';
+  const projectId = a.projectId || '';
+  return `<div class="project-member-edit-row unified-pm-row" id="pm-row-${escapeAttr(assignId)}" data-pm-row data-assign-id="${escapeAttr(assignId)}" data-member-id="${escapeAttr(a.memberId || '')}">
+    ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+    <div class="project-member-edit-main">
+      <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')}</div>
+      <div class="project-member-edit-fields">
+        <label><span>역할</span><input type="text" id="pm-role-${escapeAttr(assignId)}" value="${escapeAttr(a.role || '')}" placeholder="역할" onchange="updateProjectMemberInline('${escapeAttr(assignId)}','${escapeAttr(projectId)}')"></label>
+        <label><span>투입시작</span><input type="date" id="pm-start-${escapeAttr(assignId)}" value="${escapeAttr(appliedDate)}" onchange="updateProjectMemberInline('${escapeAttr(assignId)}','${escapeAttr(projectId)}')"></label>
+        <label><span>투입종료</span><input type="date" id="pm-end-${escapeAttr(assignId)}" value="${escapeAttr(endDate)}" onchange="updateProjectMemberInline('${escapeAttr(assignId)}','${escapeAttr(projectId)}')"></label>
+      </div>
+    </div>
+    <div class="project-member-edit-actions"><button class="btn-danger-sm" onclick="deleteProjectMemberInline('${escapeAttr(assignId)}','${escapeAttr(a.memberId || '')}')">삭제</button></div>
+  </div>`;
 }
 
 function projectMemberUnifiedEditorHtml(projectId){
   const projectAssigns = assigns.filter(a => a.projectId === projectId);
   const assignedIds = new Set(projectAssigns.map(a => a.memberId));
-  const rows = projectAssigns.map(a => {
-    const m = mb(a.memberId);
-    const appliedDate = assignAppliedDateValue(a);
-    const endDate = assignEndDateValue(a);
-    return `<div class="project-member-edit-row unified-pm-row" id="pm-row-${escapeAttr(a.id)}" data-pm-row data-new="0" data-assign-id="${escapeAttr(a.id)}" data-member-id="${escapeAttr(a.memberId)}">
-      ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
-      <div class="project-member-edit-main">
-        <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')}</div>
-        <div class="project-member-edit-fields">
-          <label><span>역할</span><input type="text" id="pm-role-${escapeAttr(a.id)}" value="${escapeAttr(a.role || '')}" placeholder="역할"></label>
-          <label><span>투입시작</span><input type="date" id="pm-start-${escapeAttr(a.id)}" value="${escapeAttr(appliedDate)}"></label>
-          <label><span>투입종료</span><input type="date" id="pm-end-${escapeAttr(a.id)}" value="${escapeAttr(endDate)}"></label>
-        </div>
-      </div>
-      <div class="project-member-edit-actions"><button class="btn-danger-sm" onclick="markProjectMemberForDelete('${escapeAttr(a.id)}','${escapeAttr(a.memberId)}')">삭제</button></div>
-    </div>`;
-  }).join('');
+  const rows = projectAssigns.map(a => projectMemberSavedRowHtml({...a, projectId})).join('');
 
   const memberOptions = getActiveMembers()
     .filter(m => !assignedIds.has(m.id))
@@ -7365,25 +7360,8 @@ function projectMemberUnifiedEditorHtml(projectId){
       <div class="form-row full"><div><div class="fl">추가할 팀원</div><select id="pm-member-sel"><option value="">— 팀원 선택</option>${memberOptions}</select></div></div>
       <div class="form-row full"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div></div>
       <div class="form-row"><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div><div><div class="fl">투입 종료일</div><input type="date" id="pm-end-input" placeholder="미입력 시 사업 종료일"></div></div>
-      <button class="btn btn-secondary" style="width:100%" onclick="queueProjectMemberAdd('${escapeAttr(projectId)}')">목록에 추가</button>
-      <div class="project-save-help" style="font-size:10px!important;color:var(--text3)!important;opacity:.72!important;line-height:1.4!important;margin-top:4px!important;font-weight:400!important;letter-spacing:0!important;">참여인력 변경은 아래 <b style="font-weight:500;color:inherit">저장</b> 버튼을 눌러야 최종 반영됩니다.</div>
+      <button class="btn btn-secondary" style="width:100%" onclick="addProjectMemberInline('${escapeAttr(projectId)}')">목록에 추가</button>
     </div>
-  </div>`;
-}
-
-function projectMemberQueuedRowHtml(tempId, memberId, role, startDate, endDate){
-  const m = mb(memberId);
-  return `<div class="project-member-edit-row unified-pm-row" id="pm-row-${escapeAttr(tempId)}" data-pm-row data-new="1" data-assign-id="${escapeAttr(tempId)}" data-member-id="${escapeAttr(memberId)}">
-    ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
-    <div class="project-member-edit-main">
-      <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')} <span class="status-chip warn" style="margin-left:4px">추가 예정</span></div>
-      <div class="project-member-edit-fields">
-        <label><span>역할</span><input type="text" id="pm-role-${escapeAttr(tempId)}" value="${escapeAttr(role)}" placeholder="역할"></label>
-        <label><span>투입시작</span><input type="date" id="pm-start-${escapeAttr(tempId)}" value="${escapeAttr(startDate)}"></label>
-        <label><span>투입종료</span><input type="date" id="pm-end-${escapeAttr(tempId)}" value="${escapeAttr(endDate)}"></label>
-      </div>
-    </div>
-    <div class="project-member-edit-actions"><button class="btn-danger-sm" onclick="removeQueuedProjectMember('${escapeAttr(tempId)}','${escapeAttr(memberId)}')">삭제</button></div>
   </div>`;
 }
 
@@ -7403,7 +7381,7 @@ function setProjectMemberOptionEnabled(memberId, enabled){
   if(opt) opt.disabled = !enabled;
 }
 
-function queueProjectMemberAdd(projectId){
+function addProjectMemberInline(projectId){
   if(!requireMemberWrite()) return;
   const memberId = document.getElementById('pm-member-sel')?.value || '';
   if(!memberId){ showToast('팀원을 선택해주세요'); return; }
@@ -7411,36 +7389,59 @@ function queueProjectMemberAdd(projectId){
   if(!list) return;
   const duplicate = Array.from(list.querySelectorAll('[data-pm-row]')).some(row => row.dataset.memberId === memberId);
   if(duplicate){ showToast('이미 참여인력 목록에 있습니다'); return; }
+
   const role = document.getElementById('pm-role-input')?.value.trim() || '';
-  const startDate = document.getElementById('pm-start-input')?.value || fmtDateFull(new Date());
-  const endDate = document.getElementById('pm-end-input')?.value || '';
-  const tempId = 'as_' + Date.now() + '_' + Math.random().toString(16).slice(2,8);
-  list.querySelector('.pm-empty')?.remove();
-  list.insertAdjacentHTML('beforeend', projectMemberQueuedRowHtml(tempId, memberId, role, startDate, endDate));
-  setProjectMemberOptionEnabled(memberId, false);
-  const sel = document.getElementById('pm-member-sel'); if(sel) sel.value='';
-  const roleInput = document.getElementById('pm-role-input'); if(roleInput) roleInput.value='';
+  const assignedAtDate = document.getElementById('pm-start-input')?.value || fmtDateFull(new Date());
+  const assignedEndDate = document.getElementById('pm-end-input')?.value || '';
+  const id = 'as_' + Date.now() + '_' + Math.random().toString(16).slice(2,8);
+  const nowIso = new Date().toISOString();
+
+  apiSave({
+    action:'addAssign', id, memberId, projectId, role,
+    assignedAtDate,
+    assignedAt:assignedAtDate || nowIso,
+    assignedEndDate,
+    endedAtDate:assignedEndDate,
+    createdAt:nowIso
+  }, ()=>{
+    list.querySelector('.pm-empty')?.remove();
+    list.insertAdjacentHTML('beforeend', projectMemberSavedRowHtml({id,memberId,projectId,role,assignedAtDate,assignedEndDate}));
+    setProjectMemberOptionEnabled(memberId, false);
+    const sel=document.getElementById('pm-member-sel'); if(sel) sel.value='';
+    const roleInput=document.getElementById('pm-role-input'); if(roleInput) roleInput.value='';
+    showToast('참여인력을 추가했습니다');
+  });
 }
 
-function markProjectMemberForDelete(assignId, memberId){
+function updateProjectMemberInline(assignId, projectId){
   if(!requireMemberWrite()) return;
-  projectMemberEditState.deleted.add(assignId);
-  document.getElementById(`pm-row-${assignId}`)?.remove();
-  setProjectMemberOptionEnabled(memberId, true);
-  const list=document.getElementById('project-member-edit-list');
-  if(list && !list.querySelector('[data-pm-row]')) list.innerHTML='<div class="empty pm-empty" style="padding:12px">등록된 참여인력이 없습니다</div>';
+  const assignedAtDate=document.getElementById(`pm-start-${assignId}`)?.value || '';
+  const assignedEndDate=document.getElementById(`pm-end-${assignId}`)?.value || '';
+  const role=document.getElementById(`pm-role-${assignId}`)?.value?.trim() || '';
+  apiSave({
+    action:'updateAssign', id:assignId, role,
+    assignedAtDate,
+    assignedAt:assignedAtDate,
+    assignedEndDate,
+    endedAtDate:assignedEndDate,
+    updatedAt:new Date().toISOString()
+  }, ()=>showToast('참여인력 변경을 저장했습니다'));
 }
 
-function removeQueuedProjectMember(tempId, memberId){
-  document.getElementById(`pm-row-${tempId}`)?.remove();
-  setProjectMemberOptionEnabled(memberId, true);
-  const list=document.getElementById('project-member-edit-list');
-  if(list && !list.querySelector('[data-pm-row]')) list.innerHTML='<div class="empty pm-empty" style="padding:12px">등록된 참여인력이 없습니다</div>';
+function deleteProjectMemberInline(assignId, memberId){
+  if(!requireMemberWrite()) return;
+  if(!confirm('이 참여인력을 삭제할까요?')) return;
+  apiSave({action:'deleteAssign',id:assignId}, ()=>{
+    document.getElementById(`pm-row-${assignId}`)?.remove();
+    setProjectMemberOptionEnabled(memberId, true);
+    const list=document.getElementById('project-member-edit-list');
+    if(list && !list.querySelector('[data-pm-row]')) list.innerHTML='<div class="empty pm-empty" style="padding:12px">등록된 참여인력이 없습니다</div>';
+    showToast('참여인력을 삭제했습니다');
+  });
 }
 
 function openAddProject(){
   if(!requireMemberWrite()) return;
-  resetProjectMemberEditState('');
   document.getElementById('modal-body').innerHTML=getProjectFormHTML(false);
   openModal('사업 추가');
 }
@@ -7449,7 +7450,6 @@ function openEditProject(id){
   if(!requireMemberWrite()) return;
   const p=pj(id);
   if(!p) return;
-  resetProjectMemberEditState(id);
   document.getElementById('modal-body').innerHTML=getProjectFormHTML(true, p);
   openModal('사업 수정');
   document.getElementById('project-id').value=p.id;
@@ -7464,7 +7464,7 @@ function getProjectFormHTML(isEdit, project){
   const memberSection = isEdit ? projectMemberUnifiedEditorHtml(projectId) : '';
   const deleteSection = isEdit && canManageAll() ? `<div class="project-danger-zone clean"><div class="project-danger-title">사업 삭제</div><button class="btn-danger-sm" onclick="deleteProject('${escapeAttr(projectId)}')">삭제</button></div>` : '';
   const saveActions = isEdit
-    ? `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`
+    ? `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">사업 정보 저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`
     : `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">추가</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
   return `<input type="hidden" id="project-id">
     <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
@@ -7488,41 +7488,10 @@ async function submitProject(){
     end:document.getElementById('project-end').value
   };
 
-  if(!existing){
-    apiSave({action:'addProject',id,...projectData}, ()=>{ showToast('사업을 추가했습니다'); closeModal(); });
-    return;
-  }
-
-  try{
-    const batch=db.batch();
-    batch.set(db.collection('projects').doc(id), projectData, {merge:true});
-
-    const nowIso=new Date().toISOString();
-    const rows=Array.from(document.querySelectorAll('#project-member-edit-list [data-pm-row]'));
-    rows.forEach(row=>{
-      const assignId=row.dataset.assignId||'';
-      const memberId=row.dataset.memberId||'';
-      if(!assignId || !memberId) return;
-      const role=document.getElementById(`pm-role-${assignId}`)?.value?.trim()||'';
-      const assignedAtDate=document.getElementById(`pm-start-${assignId}`)?.value||'';
-      const assignedEndDate=document.getElementById(`pm-end-${assignId}`)?.value||'';
-      const isNew=row.dataset.new==='1';
-      const ref=db.collection('assigns').doc(assignId);
-      if(isNew){
-        batch.set(ref,{memberId,projectId:id,role,assignedAtDate,assignedAt:assignedAtDate||nowIso,assignedEndDate,endedAtDate:assignedEndDate,createdAt:nowIso});
-      }else{
-        batch.set(ref,{role,assignedAtDate,assignedAt:assignedAtDate,assignedEndDate,endedAtDate:assignedEndDate,updatedAt:nowIso},{merge:true});
-      }
-    });
-
-    projectMemberEditState.deleted.forEach(assignId=>batch.delete(db.collection('assigns').doc(assignId)));
-    await batch.commit();
-    logActivity('updateProject','project',id,name,{...existing,...projectData,visibility:'team'}).catch(()=>{});
-    showToast('사업과 참여인력을 저장했습니다');
+  apiSave({action:existing?'updateProject':'addProject',id,...projectData}, ()=>{
+    showToast(existing?'사업 정보를 저장했습니다':'사업을 추가했습니다');
     closeModal();
-  }catch(e){
-    showToast('저장 실패: '+(e.message||e));
-  }
+  });
 }
 function deleteProjectFromEdit(){
   const id = document.getElementById('project-id')?.value || '';
