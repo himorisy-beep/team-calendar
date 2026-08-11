@@ -328,12 +328,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .eisen-desc{font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.4}
 .eisen-input{margin-bottom:10px}
 .task-priority-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
-.task-priority-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:5px}
+.task-priority-help{font-size:9.5px;color:var(--text3);opacity:.76;line-height:1.4;margin-top:4px}
 .task-option-box{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:8px}
 .task-check-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;line-height:1.4}
 .task-check-row input[type="checkbox"]{width:auto!important;min-width:16px;height:16px;margin:0;flex:0 0 auto}
-.task-form-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:5px}
-.privacy-help{font-size:11px;color:var(--text3);line-height:1.45;margin:-4px 0 10px}
+.task-form-help{font-size:9.5px;color:var(--text3);opacity:.76;line-height:1.4;margin-top:4px}
+.privacy-help{font-size:9.5px;color:var(--text3);opacity:.76;line-height:1.4;margin:-3px 0 9px}
 .eisen-list{display:flex;flex-direction:column;gap:4px;overflow:auto;padding-right:4px}
 .eisen-list::-webkit-scrollbar{width:6px}
 .eisen-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px}
@@ -1444,7 +1444,7 @@ button,
 .proposal-participant-start-row{display:flex;align-items:center;gap:8px;font-size:12px;min-width:0}
 .proposal-participant-start-row .member-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .proposal-participant-start-row input{width:130px;padding:5px 7px;font-size:12px;background:var(--bg)}
-.manday-only-note{font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px}
+.manday-only-note{font-size:9.5px;color:var(--text3);opacity:.76;line-height:1.4;margin-top:4px}
 .bulk-md-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(210px,.8fr);gap:8px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border)}
 .bulk-md-row:last-child{border-bottom:none}
 .bulk-md-row-title{font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1936,7 +1936,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
   <div class="detail-head">
     <div>
       <div class="detail-title" id="detail-title">상세</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px" id="detail-subtitle"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="detail-subtitle"></div>
     </div>
     <button class="detail-close" onclick="closeDetailPanel()">✕</button>
   </div>
@@ -3312,7 +3312,7 @@ function renderProposalParticipantStartRows(){
   if(!box) return;
   const ids = getSelectedProposalParticipantIds();
   if(!ids.length){
-    box.innerHTML = '<div style="font-size:12px;color:var(--text3)">참여 멤버를 선택하면 멤버별 투입 시작일을 입력할 수 있습니다.</div>';
+    box.innerHTML = '<div class="ui-form-help">참여 멤버를 선택하면 멤버별 투입 시작일을 입력할 수 있습니다.</div>';
     return;
   }
   const defaultDate = defaultProposalParticipantStartDate();
@@ -5550,7 +5550,7 @@ function getProposalFormHTML(isEdit){
       <div id="proposal-selected-members" style="display:flex;gap:5px;flex-wrap:wrap;min-height:30px;align-items:center;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;background:var(--bg)"></div>
       <button type="button" class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;display:flex;justify-content:center;gap:5px" onclick="toggleProposalMemberPicker()"><span>멤버 선택</span><span id="proposal-member-picker-icon">▾</span></button>
       <div id="proposal-member-picker" style="display:none;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;max-height:150px;overflow:auto;background:var(--bg);margin-top:6px">${memberChecks}</div>
-      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">선택된 내부 멤버의 오늘 탭 주간 캘린더에만 해당 제안 시작/마감이 표시됩니다.</div>
+      <div class="ui-form-help" style="margin-top:4px">선택된 내부 멤버의 오늘 탭 주간 캘린더에만 해당 제안 시작/마감이 표시됩니다.</div>
       <div id="proposal-participant-starts" class="proposal-participant-starts"></div>
     </div></div>
     <div class="form-row full"><div><div class="fl">참여자</div><textarea id="proposal-participants" rows="3"></textarea></div></div>
@@ -5558,9 +5558,9 @@ function getProposalFormHTML(isEdit){
     <div class="form-row full"><div>
       <div class="fl">첨부파일 다운로드 링크 후보</div>
       <textarea id="proposal-filelinks" rows="4" placeholder="한 줄에 하나씩 입력하세요.&#10;예: 제안요청서.hwp | https://www.g2b.go.kr/...&#10;예: 입찰공고서.pdf | https://www.g2b.go.kr/..."></textarea>
-      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">형식: 파일명 | URL. 나라장터 자동연계 전까지는 후보 링크를 수동으로 붙여둘 수 있습니다.</div>
+      <div class="ui-form-help" style="margin-top:4px">형식: 파일명 | URL. 나라장터 자동연계 전까지는 후보 링크를 수동으로 붙여둘 수 있습니다.</div>
     </div></div>
-    <div class="form-row full"><div><div class="fl">수주 여부</div><select id="proposal-result" onchange="syncProposalStatusByResult()">${proposalResultOptions('pending')}</select><div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px">수주 또는 미수주를 선택하면 상태가 자동으로 제출완료로 변경됩니다.</div></div></div>
+    <div class="form-row full"><div><div class="fl">수주 여부</div><select id="proposal-result" onchange="syncProposalStatusByResult()">${proposalResultOptions('pending')}</select><div class="ui-form-help" style="margin-top:4px">수주 또는 미수주를 선택하면 상태가 자동으로 제출완료로 변경됩니다.</div></div></div>
     <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitProposal()">${isEdit ? '수정 저장' : '제안 추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
 function openAddProposal(){
@@ -6294,11 +6294,15 @@ function exportManDaysExcel(){
 
 <style id="ux-project-reopen-final">
 /* Final UX pass: clearer calendar sharing, unified project editing, compact project controls. */
-.reopen-project-note{margin:0 0 10px;padding:9px 10px;border:.5px solid #F1C27D;border-radius:var(--r-sm);background:#FFF8E8;color:#854F0B;font-size:12px;line-height:1.45}
+.reopen-project-note{margin:0 0 8px;padding:6px 8px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);color:var(--text3);font-size:9.5px;line-height:1.4;font-weight:400}.reopen-project-note strong{color:var(--text2);font-weight:600}
 .project-card-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}
 .reopen-project-btn{font-weight:700}
 .project-unified-save{display:flex;gap:8px;align-items:center;margin-top:18px;padding-top:14px;border-top:.5px solid var(--border)}
-.project-save-help{font-size:11px;color:var(--text3);line-height:1.45;margin-top:7px}
+.project-save-help{font-size:9px;color:var(--text3);opacity:.68;line-height:1.35;margin-top:5px;font-weight:400}
+.project-save-help b{font-weight:500;color:inherit}
+.ui-form-help{font-size:9.5px!important;color:var(--text3)!important;opacity:.76;line-height:1.4!important;font-weight:400!important}
+@media(max-width:680px){.reopen-project-note{font-size:9px;padding:6px 7px}.task-priority-help,.task-form-help,.privacy-help,.manday-only-note,.ui-form-help{font-size:9px!important}}
+@media(max-width:680px){.project-save-help{font-size:8.5px;opacity:.64}}
 .unified-project-members .project-member-edit-actions{align-self:center}
 .closed-project-toggle{justify-content:flex-start!important;text-align:left}
 .closed-toggle-label{display:inline-flex;align-items:center;gap:7px}
@@ -6655,7 +6659,7 @@ function getEventFormHTML(isEdit) {
   return `<input type="hidden" id="ev-original-who" value="${escapeAttr(selfId)}"><input type="hidden" id="ev-created-by" value="${escapeAttr(selfId)}"><div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>
   <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
   <div class="form-row" id="ev-time-row" style="display:none"><div><div class="fl">시작 시간</div><input type="time" id="ev-start-time"></div><div><div class="fl">종료 시간</div><input type="time" id="ev-end-time"></div></div>
-  <div id="ev-time-help" style="display:none;font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 10px">회의처럼 특정 시간에 진행되는 일정만 입력하세요. 비워두면 종일 일정으로 저장됩니다.</div>
+  <div id="ev-time-help" class="ui-form-help" style="display:none;margin:-2px 0 9px">회의처럼 특정 시간에 진행되는 일정만 입력하세요. 비워두면 종일 일정으로 저장됩니다.</div>
   <div class="form-row full"><div><div class="fl">유형</div><select id="ev-type" onchange="onTypeChange()">
     <option value="meeting">회의</option>
     <option value="trip">출장</option>
@@ -6667,7 +6671,7 @@ function getEventFormHTML(isEdit) {
   <div class="sub-row" id="sub-row"><div class="fl">세부</div><select id="ev-sub" onchange="onSubChange()"></select><div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="입력"></div></div>
   <div class="form-row full" id="ev-proj-row"><div><div class="fl">사업</div><select id="ev-proj"><option value="">— 없음</option>${pOpts}</select></div></div>
   <div class="toggle-row" id="pub-row"><div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--text2)">팀 캘린더 공유</span></div>
-  <div id="personal-help" style="display:none;font-size:12px;color:var(--text3);line-height:1.5;margin:-4px 0 12px">개인 일정은 본인에게만 표시됩니다. 관리자와 팀장도 확인할 수 없습니다.</div>
+  <div id="personal-help" class="ui-form-help" style="display:none;margin:-3px 0 10px">개인 일정은 본인에게만 표시됩니다. 관리자와 팀장도 확인할 수 없습니다.</div>
   <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitEvent()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; 
 }
 
@@ -7037,7 +7041,7 @@ function getInviteFormHTML(isEdit){
   const statusField = isEdit
     ? `<div><div class="fl">상태</div><select id="invite-active"><option value="true" selected>활성</option><option value="false">비활성</option></select></div>`
     : `<div><div class="fl">상태</div><input id="invite-active" type="hidden" value="true"><div style="padding:7px 10px;border:.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);font-size:13px;color:var(--text2)">활성</div></div>`;
-  return `<input type="hidden" id="invite-original-id"><input type="hidden" id="invite-linked" value="false"><div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"><div id="invite-email-help" style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px"></div></div></div><div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div><div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div>${statusField}</div><div style="font-size:11px;color:var(--text3);line-height:1.5;margin:-2px 0 12px">신규 초대는 활성 대기 상태로 등록됩니다. 이미 로그인 연결이 완료된 계정은 이메일을 직접 변경할 수 없습니다.</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
+  return `<input type="hidden" id="invite-original-id"><input type="hidden" id="invite-linked" value="false"><div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="invite-email" type="email" placeholder="user@example.com"><div id="invite-email-help" class="ui-form-help" style="margin-top:4px"></div></div></div><div class="form-row full"><div><div class="fl">연결할 팀원</div><select id="invite-member">${inviteMemberOptions('')}</select></div></div><div class="form-row"><div><div class="fl">권한</div><select id="invite-role">${inviteRoleOptions('member')}</select></div>${statusField}</div><div class="ui-form-help" style="margin:-2px 0 10px">신규 초대는 활성 대기 상태로 등록됩니다. 이미 로그인 연결이 완료된 계정은 이메일을 직접 변경할 수 없습니다.</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:1" onclick="submitInvite()">${isEdit?'저장':'초대 등록'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
 function openAddInvite(){ if(!requireManager()) return; document.getElementById('modal-body').innerHTML = getInviteFormHTML(false); openModal('사용자 초대 등록'); }
 function openAddInviteForMember(memberId){ if(!requireManager()) return; openAddInvite(); const sel=document.getElementById('invite-member'); if(sel) sel.value=memberId; }
@@ -7163,7 +7167,7 @@ function getMemberFormHTML(isEdit){
       <label class="task-check-row"><input type="checkbox" id="member-login-enabled" onchange="toggleMemberLoginFields()"><span>로그인 계정도 연결하기</span></label>
       <div class="task-form-help">체크하면 해당 이메일로 로그인할 수 있는 초대 정보를 함께 저장합니다. 신규 초대는 활성 대기 상태로만 등록됩니다.</div>
       <div id="member-login-box" style="display:none;margin-top:10px">
-        <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="member-login-email" type="email" placeholder="user@example.com"><div id="member-login-email-help" style="font-size:11px;color:var(--text3);line-height:1.45;margin-top:4px"></div></div></div>
+        <div class="form-row full"><div><div class="fl">로그인 이메일</div><input id="member-login-email" type="email" placeholder="user@example.com"><div id="member-login-email-help" class="ui-form-help" style="margin-top:4px"></div></div></div>
         <div class="form-row"><div><div class="fl">접속 권한</div><select id="member-login-role">${inviteRoleOptions('member')}</select></div>${statusField}</div>
       </div>
     </div>
@@ -7583,7 +7587,7 @@ function projectMemberManagerHtml(projectId){
       <div class="form-row full"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div></div>
       <div class="form-row"><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div><div><div class="fl">투입 종료일</div><input type="date" id="pm-end-input" placeholder="미입력 시 사업 종료일"></div></div>
       <button class="btn btn-secondary" style="width:100%" onclick="addProjectMember('${escapeAttr(projectId)}')">참여인력 추가</button>
-      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-top:6px">중간 합류·중도 종료가 있으면 투입 시작일과 종료일을 입력합니다. 종료일을 비워두면 사업 종료일까지 MD가 계산됩니다.</div>
+      <div class="ui-form-help" style="margin-top:5px">중간 합류·중도 종료가 있으면 투입 시작일과 종료일을 입력합니다. 종료일을 비워두면 사업 종료일까지 MD가 계산됩니다.</div>
     </div>
   </div>`;
 }
