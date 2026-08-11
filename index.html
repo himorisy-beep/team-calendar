@@ -470,6 +470,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   .todo-item{font-size:12px;gap:5px}
   .todo-del{font-size:11px}
 }
+/* Task title: direct input + history-based autocomplete */
+.task-title-autocomplete{position:relative}
+.task-title-autocomplete #task-title-input{padding-right:10px}
+.task-title-suggestions{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;background:var(--bg);border:.5px solid var(--border2);border-radius:var(--r-sm);box-shadow:0 8px 22px rgba(0,0,0,.10);max-height:224px;overflow-y:auto;padding:4px}
+.task-title-suggestions.show{display:block}
+.task-title-suggestion{width:100%;border:none;background:transparent;color:var(--text);font-family:inherit;display:flex;align-items:center;gap:10px;justify-content:space-between;text-align:left;padding:7px 8px;border-radius:5px;cursor:pointer}
+.task-title-suggestion:hover,.task-title-suggestion.active{background:var(--bg2)}
+.task-title-suggestion-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:500}
+@media(max-width:680px){
+  .task-title-suggestions{max-height:190px}
+  .task-title-suggestion{padding:7px}
+  .task-title-suggestion-name{font-size:12px}
+}
+
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;align-items:center;justify-content:center}
 .modal-bg.show{display:flex}
 .modal{background:var(--bg);border-radius:var(--r);padding:22px;width:400px;max-width:94vw;border:.5px solid var(--border2);max-height:88vh;overflow-y:auto}
@@ -3859,59 +3873,117 @@ function openQuickAdd(){
 }
 
 
-const COMMON_TASK_TITLES = [
-  '제안서 목차 작성',
-  '제안서 본문 작성',
-  '기술협상',
-  '예산표 검토',
-  '산출물 품질검토',
-  '회의자료 작성',
-  '착수보고서 초안 작성',
-  '중간보고서 작성',
-  '결과보고서 작성',
-  '자료조사',
-  '기관 의견 반영',
-  '번역/검수 요청',
-  '제출자료 취합',
-  '첨부파일 확인',
-  '회의록 정리',
-  '일정 조율'
-];
-
-function commonTaskTitleOptions(selected){
-  return COMMON_TASK_TITLES.map(v => `<option value="${escapeAttr(v)}" ${v === selected ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('');
+function normalizeTaskTitleKey(value){
+  return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 }
 
-function onTaskTitleChange(){
-  const sel = document.getElementById('task-title-preset');
-  const custom = document.getElementById('task-title-custom');
-  if(!sel || !custom) return;
-  custom.style.display = sel.value === 'custom' ? 'block' : 'none';
-  if(sel.value === 'custom') custom.focus();
+function taskTitleUsageSuggestions(query=''){
+  const map = new Map();
+  tasks.forEach(t => {
+    const title = String(t?.title || '').trim().replace(/\s+/g, ' ');
+    if(!title) return;
+    const key = normalizeTaskTitleKey(title);
+    if(!key) return;
+    const stampSource = t.updatedAt || t.createdAt || t.completedAt || t.end || t.start || '';
+    const stamp = parseDateSafely(stampSource)?.getTime?.() || 0;
+    const row = map.get(key) || {title, count:0, latest:0};
+    row.count += 1;
+    if(stamp >= row.latest){
+      row.latest = stamp;
+      row.title = title;
+    }
+    map.set(key, row);
+  });
+
+  const q = normalizeTaskTitleKey(query);
+  return Array.from(map.values())
+    .filter(row => !q || normalizeTaskTitleKey(row.title).includes(q))
+    .sort((a,b) => b.count - a.count || b.latest - a.latest || a.title.localeCompare(b.title, 'ko'))
+    .slice(0, 7);
+}
+
+let taskTitleSuggestionIndex = -1;
+
+function renderTaskTitleSuggestions(){
+  const input = document.getElementById('task-title-input');
+  const box = document.getElementById('task-title-suggestions');
+  if(!input || !box) return;
+
+  const query = input.value || '';
+  const exactKey = normalizeTaskTitleKey(query);
+  const rows = taskTitleUsageSuggestions(query)
+    .filter(row => !exactKey || normalizeTaskTitleKey(row.title) !== exactKey);
+
+  taskTitleSuggestionIndex = -1;
+  if(document.activeElement !== input || !rows.length){
+    box.innerHTML = '';
+    box.classList.remove('show');
+    return;
+  }
+
+  box.innerHTML = rows.map((row, idx) => `
+    <button type="button" class="task-title-suggestion" data-index="${idx}" data-value="${escapeAttr(row.title)}" onmousedown="event.preventDefault()" onclick="chooseTaskTitleSuggestion(this.dataset.value)">
+      <span class="task-title-suggestion-name">${escapeHtml(row.title)}</span>
+    </button>`).join('');
+  box.classList.add('show');
+}
+
+function hideTaskTitleSuggestionsSoon(){
+  setTimeout(() => {
+    const box = document.getElementById('task-title-suggestions');
+    if(box) box.classList.remove('show');
+  }, 120);
+}
+
+function chooseTaskTitleSuggestion(title){
+  const input = document.getElementById('task-title-input');
+  const box = document.getElementById('task-title-suggestions');
+  if(!input) return;
+  input.value = title || '';
+  if(box) box.classList.remove('show');
+  taskTitleSuggestionIndex = -1;
+  input.focus();
+}
+
+function handleTaskTitleAutocompleteKey(event){
+  const box = document.getElementById('task-title-suggestions');
+  if(!box || !box.classList.contains('show')) return;
+  const items = Array.from(box.querySelectorAll('.task-title-suggestion'));
+  if(!items.length) return;
+
+  if(event.key === 'ArrowDown' || event.key === 'ArrowUp'){
+    event.preventDefault();
+    const dir = event.key === 'ArrowDown' ? 1 : -1;
+    taskTitleSuggestionIndex = (taskTitleSuggestionIndex + dir + items.length) % items.length;
+    items.forEach((el, i) => el.classList.toggle('active', i === taskTitleSuggestionIndex));
+    items[taskTitleSuggestionIndex]?.scrollIntoView({block:'nearest'});
+  } else if(event.key === 'Enter' && taskTitleSuggestionIndex >= 0){
+    event.preventDefault();
+    chooseTaskTitleSuggestion(items[taskTitleSuggestionIndex]?.dataset.value || '');
+  } else if(event.key === 'Escape'){
+    box.classList.remove('show');
+    taskTitleSuggestionIndex = -1;
+  }
+}
+
+function setupTaskTitleAutocomplete(){
+  const input = document.getElementById('task-title-input');
+  if(!input || input.dataset.autocompleteBound === 'Y') return;
+  input.dataset.autocompleteBound = 'Y';
+  input.addEventListener('focus', renderTaskTitleSuggestions);
+  input.addEventListener('input', renderTaskTitleSuggestions);
+  input.addEventListener('keydown', handleTaskTitleAutocompleteKey);
+  input.addEventListener('blur', hideTaskTitleSuggestionsSoon);
 }
 
 function getTaskTitleValue(){
-  const sel = document.getElementById('task-title-preset');
-  const custom = document.getElementById('task-title-custom');
-  if(!sel) return '';
-  if(sel.value === 'custom') return (custom?.value || '').trim();
-  return sel.value.trim();
+  return (document.getElementById('task-title-input')?.value || '').trim();
 }
 
 function setTaskTitleValue(title){
-  const sel = document.getElementById('task-title-preset');
-  const custom = document.getElementById('task-title-custom');
-  if(!sel || !custom) return;
-
-  if(COMMON_TASK_TITLES.includes(title)){
-    sel.value = title;
-    custom.value = '';
-    custom.style.display = 'none';
-  } else {
-    sel.value = 'custom';
-    custom.value = title || '';
-    custom.style.display = 'block';
-  }
+  const input = document.getElementById('task-title-input');
+  if(!input) return;
+  input.value = title || '';
 }
 
 
@@ -3973,7 +4045,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
 
   document.getElementById('modal-body').innerHTML = `
     <input type="hidden" id="task-id">
-    <div class="form-row full"><div><div class="fl">업무명</div><select id="task-title-preset" onchange="onTaskTitleChange()"><option value="">— 자주 쓰는 업무 선택 —</option>${commonTaskTitleOptions('')}<option value="custom">직접 입력</option></select><input id="task-title-custom" type="text" placeholder="업무명을 직접 입력" style="display:none;margin-top:6px"></div></div>
+    <div class="form-row full"><div><div class="fl">업무명</div><div class="task-title-autocomplete"><input id="task-title-input" type="text" placeholder="업무명을 입력하세요" autocomplete="off" aria-autocomplete="list" aria-controls="task-title-suggestions"><div id="task-title-suggestions" class="task-title-suggestions" role="listbox"></div></div></div></div>
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">진행 중인 사업이 없습니다</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">진행 중인 제안이 없습니다</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div><select id="task-assignee">${memberOptions}</select></div></div>
@@ -3997,6 +4069,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     <div id="task-form-actions" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
   `;
   openModal(forcedProjectId ? '업무 추가 · 다시 진행' : '업무 추가');
+  setupTaskTitleAutocomplete();
 }
 
 function reopenProjectWithTask(projectId){
