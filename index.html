@@ -7366,7 +7366,7 @@ function projectMemberUnifiedEditorHtml(projectId){
       <div class="form-row full"><div><div class="fl">역할</div><input type="text" id="pm-role-input" placeholder="예: PM, 사업관리, 연구, 개발"></div></div>
       <div class="form-row"><div><div class="fl">투입 시작일</div><input type="date" id="pm-start-input" value="${fmtDateFull(new Date())}"></div><div><div class="fl">투입 종료일</div><input type="date" id="pm-end-input" placeholder="미입력 시 사업 종료일"></div></div>
       <button class="btn btn-secondary" style="width:100%" onclick="queueProjectMemberAdd('${escapeAttr(projectId)}')">목록에 추가</button>
-      <div class="project-save-help">참여인력 변경은 아래 <b>저장</b> 버튼을 눌러야 최종 반영됩니다.</div>
+      <div class="project-save-help" style="font-size:9px!important;color:var(--text3)!important;opacity:.58!important;line-height:1.25!important;margin-top:4px!important;font-weight:400!important;letter-spacing:-0.01em!important;">참여인력 변경은 아래 <b style="font-weight:500;color:inherit">저장</b> 버튼을 눌러야 최종 반영됩니다.</div>
     </div>
   </div>`;
 }
