@@ -1907,7 +1907,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">내가 맡은 사업/제안</div>
       <label class="header-check">
-        <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 사업·제안 숨기기</span><span class="label-mobile">완료 숨김</span>
+        <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 내역 숨기기</span><span class="label-mobile">완료 숨김</span>
       </label>
     </div>
     <div id="my-project-list"></div>
@@ -6648,8 +6648,6 @@ function renderMyProjectsList(){
   if(!container) return;
   const hideToggle = document.getElementById('personal-project-hide-completed');
   if(hideToggle) hideToggle.checked = hideCompletedPersonalProjects;
-  const hidePastInPersonal = false;
-
   const todayStart = new Date();
   todayStart.setHours(0,0,0,0);
 
@@ -6678,11 +6676,11 @@ function renderMyProjectsList(){
       .map(t => {
         const status = normalizeTaskStatus(t.status);
         const od = isOverdue(t);
-        const done = status === '완료';
+        const done = isCompletedTask(t);
         const past = done;
         const cls = STATUS_TAG[status] || 'tag-sub';
         const sortDate = parseDateSafely(t.end || t.start).getTime() || 9999999999999;
-        return { _past: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+        return { _past: past, _completed: done, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
           <div class="task-title" onclick="showTask('${t.id}')" style="${od && !past ? 'color:#D85A30;font-weight:600;' : ''}">
             ${od && !past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
           </div>
@@ -6694,9 +6692,9 @@ function renderMyProjectsList(){
     const eventRows = events
       .filter(e => e.project === p.id && e.who === selfId)
       .map(e => {
-        const past = isEndedBeforeToday(e.end || e.start);
+        const past = isCompletedScheduleItem(e);
         const sortDate = parseDateSafely(e.end || e.start).getTime() || 9999999999999;
-        return { _past: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+        return { _past: past, _completed: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
           <div class="task-title" onclick="showEv('${e.id}')" style="${past ? '' : 'color:#185FA5'}">${escapeHtml(e.title || '')}</div>
           <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
           <div class="task-dates">${formatEventPeriod(e)}</div>
@@ -6721,11 +6719,11 @@ function renderMyProjectsList(){
         .map(t => {
           const status = normalizeTaskStatus(t.status);
           const od = isOverdue(t);
-          const done = status === '완료';
+          const done = isCompletedTask(t);
           const past = done;
           const cls = STATUS_TAG[status] || 'tag-sub';
           const sortDate = parseDateSafely(t.end || t.start).getTime() || 9999999999999;
-          return { _past: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+          return { _past: past, _completed: done, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
             <div class="task-title" onclick="showTask('${t.id}')" style="${od && !past ? 'color:#D85A30;font-weight:600;' : ''}">
               ${od && !past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
             </div>
@@ -6736,6 +6734,7 @@ function renderMyProjectsList(){
 
       const proposalRows = [{
         _past:isPastProposal(p),
+        _completed:proposalStatusValue(p) === 'submitted',
         _sortDate:parseDateSafely(p.deadline || p.start).getTime() || 9999999999999,
         html:`<div class="task-row ${isPastProposal(p) ? 'is-past' : ''}">
           <div class="task-title" onclick="showProposal('${p.id}')" style="${isPastProposal(p) ? '' : 'color:#7C3AED'}">${escapeHtml(p.name || '')}</div>
@@ -6761,7 +6760,7 @@ function renderMyProjectsList(){
   let h = '<div class="overview-grid">';
   groups.forEach(group => {
     const rows = group.rows
-      .filter(row => !hidePastInPersonal || !row._past)
+      .filter(row => !hideCompletedPersonalProjects || !row._completed)
       .sort(sortRows)
       .map(row => row.html)
       .join('');
