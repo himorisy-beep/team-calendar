@@ -1904,7 +1904,12 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
   </div>
 
   <div class="card" id="my-project-wrap" style="display:none">
-    <div class="card-title">내가 맡은 사업/제안</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">내가 맡은 사업/제안</div>
+      <label class="header-check">
+        <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 사업·제안 숨기기</span><span class="label-mobile">완료 숨김</span>
+      </label>
+    </div>
     <div id="my-project-list"></div>
   </div>
 </div>
@@ -2031,7 +2036,8 @@ let vm = ['cal','list'].includes(ls('calendarView')) ? ls('calendarView') : 'cal
     pFilter = ['all','public','private'].includes(ls('personalFilter')) ? ls('personalFilter') : 'all',
     pvMode = 'work',
     personalWorkView = ['list','matrix'].includes(ls('personalWorkView')) ? ls('personalWorkView') : 'list',
-    calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window'; 
+    calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window';
+let hideCompletedPersonalProjects = ls('personalHideCompletedProjects') !== 'N'; 
 let calScope = ['all','mine'].includes(ls('calendarScope')) ? ls('calendarScope') : 'all';
 const today = new Date(); 
 let editingEventId = null; 
@@ -4455,6 +4461,12 @@ window.toggleHideDone = function(val) {
   renderTodos(); 
 };
 
+window.togglePersonalProjectHideCompleted = function(val) {
+  hideCompletedPersonalProjects = !!val;
+  ls('personalHideCompletedProjects', hideCompletedPersonalProjects ? 'Y' : 'N');
+  renderMyProjectsList();
+};
+
 window.openEditTodo = function(id) {
   const t = todos.find(x => x.id === id); 
   if(!t) return;
@@ -6634,7 +6646,9 @@ function renderMyWorkOverview(){
 function renderMyProjectsList(){
   const container = document.getElementById('my-project-list');
   if(!container) return;
-  const hidePastInPersonal = document.getElementById('pf-hide-past')?.checked;
+  const hideToggle = document.getElementById('personal-project-hide-completed');
+  if(hideToggle) hideToggle.checked = hideCompletedPersonalProjects;
+  const hidePastInPersonal = false;
 
   const todayStart = new Date();
   todayStart.setHours(0,0,0,0);
@@ -6657,7 +6671,8 @@ function renderMyProjectsList(){
 
   assigns.filter(a => a.memberId === selfId && !isAssignForDeletedProject(a)).forEach(a => {
     const p = pj(a.projectId);
-    if(!p) return;
+    if(!p || isProposalShadowProject(p)) return;
+    if(hideCompletedPersonalProjects && isClosedProject(p)) return;
     const taskRows = tasks
       .filter(t => t.project === p.id && t.assignee === selfId)
       .map(t => {
@@ -6699,6 +6714,7 @@ function renderMyProjectsList(){
 
   proposals
     .filter(p => normalizeIdArray(p.participantIds).includes(selfId) || tasks.some(t => t.proposal === p.id && t.assignee === selfId))
+    .filter(p => !hideCompletedPersonalProjects || proposalStatusValue(p) !== 'submitted')
     .forEach(p => {
       const taskRows = tasks
         .filter(t => t.proposal === p.id && t.assignee === selfId)
