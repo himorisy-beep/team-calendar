@@ -167,6 +167,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .personal-header{align-items:flex-start}
 .personal-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
 .personal-tab-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.personal-work-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.personal-work-view-tabs{display:flex;align-items:center;gap:6px}
+.personal-work-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.my-task-list{display:flex;flex-direction:column}
+.my-task-list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--border)}
+.my-task-list-row:last-child{border-bottom:none}
+.my-task-list-row.is-done{opacity:.58}
+.my-task-list-main{flex:1;min-width:0;cursor:pointer}
+.my-task-list-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-task-list-title.overdue{color:#D85A30}
+.my-task-list-meta{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-task-list-side{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .recent-list{display:flex;flex-direction:column}
 .week-mini{border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--border)}
 .week-mini-head{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border)}
@@ -189,12 +201,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
   .my-focus{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .focus-mini{padding:10px}
   .focus-mini-value{font-size:18px}
-  #page-personal .personal-header{display:block;margin-bottom:18px}
+  #page-personal .personal-header{display:block;margin-bottom:14px}
   #page-personal .personal-actions{margin-left:0;width:100%;display:block}
-  #page-personal .personal-hide-check{display:inline-flex;margin:16px 0 10px}
-  #page-personal .personal-tab-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+  #page-personal .personal-tab-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;margin-top:10px}
   #page-personal .personal-tab-row .chip,
   #page-personal .personal-tab-row .btn{width:100%;min-width:0;padding:7px 4px;font-size:12px;line-height:1.2;border-radius:12px;white-space:nowrap;text-align:center;justify-content:center}
+  #page-personal .personal-work-toolbar{display:block;margin-bottom:10px}
+  #page-personal .personal-work-view-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%}
+  #page-personal .personal-work-view-tabs .chip{width:100%;text-align:center;justify-content:center}
+  #page-personal .personal-work-actions{margin-top:8px;justify-content:space-between;gap:6px}
+  #page-personal .personal-work-actions .header-check{margin-right:auto}
+  #page-personal .my-task-list-row{align-items:flex-start;gap:8px}
+  #page-personal .my-task-list-side{flex-direction:column;align-items:flex-end;gap:4px}
 }
 .quick-menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .quick-card{border:.5px solid var(--border);border-radius:var(--r-sm);padding:14px;background:var(--bg2);cursor:pointer}
@@ -1823,67 +1841,57 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
   <div class="page-header personal-header">
     <span class="page-title">내 업무</span>
     <div class="personal-actions">
-      <label class="header-check personal-hide-check">
-        <input class="header-check-input" type="checkbox" id="pf-hide-past" onchange="togglePersonalHidePast(this.checked)"><span class="label-desktop">지난 일정 숨기기</span><span class="label-mobile">지난 숨김</span>
-      </label>
       <div class="personal-tab-row">
-        <button class="chip active" id="pv-list" onclick="setPV('list')">일정</button>
-        <button class="chip" id="pv-projects" onclick="setPV('projects')"><span class="label-desktop">맡은 사업/제안</span><span class="label-mobile">사업/제안</span></button>
-        <button class="chip" id="pv-todos" onclick="setPV('todos')"><span class="label-desktop">업무 매트릭스</span><span class="label-mobile">매트릭스</span></button>
+        <button class="chip active" id="pv-work" onclick="setPV('work')">업무</button>
+        <button class="chip" id="pv-projects" onclick="setPV('projects')">사업·제안</button>
       </div>
     </div>
   </div>
 
-
-  <div class="card" id="personal-list-wrap" style="display:none">
-    <div class="card-title">내 일정 목록</div>
-    <div class="filter-chips">
-      <button class="chip active" id="pf-all" onclick="filterP('all')">전체</button>
-      <button class="chip" id="pf-public" onclick="filterP('public')">공유됨</button>
-      <button class="chip" id="pf-private" onclick="filterP('private')">비공개</button>
-    </div>
-    <div id="personal-list"></div>
-  </div>
-
-  <div class="card" id="my-project-wrap" style="display:none">
-    <div class="card-title">내가 맡은 사업/제안</div>
-    <div id="my-project-list"></div>
-  </div>
-
-  <div id="my-todo-wrap" style="display:none">
-    <div class="page-header" style="margin-bottom:12px">
-      <span class="page-title" style="font-size:15px">업무 매트릭스</span>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+  <div id="my-work-wrap">
+    <div class="personal-work-toolbar">
+      <div class="personal-work-view-tabs" aria-label="내 업무 보기 방식">
+        <button class="chip active" id="pw-list" onclick="setPersonalWorkView('list')">목록</button>
+        <button class="chip" id="pw-matrix" onclick="setPersonalWorkView('matrix')">매트릭스</button>
+      </div>
+      <div class="personal-work-actions">
         <label class="header-check">
-          <input class="header-check-input" type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"><span class="label-desktop">완료된 업무/메모 숨기기</span><span class="label-mobile">완료 숨김</span>
+          <input class="header-check-input" type="checkbox" id="todo-hide-done" onchange="toggleHideDone(this.checked)"><span class="label-desktop">완료된 업무·메모 숨기기</span><span class="label-mobile">완료 숨김</span>
         </label>
         <button class="btn btn-primary btn-sm" onclick="openAddTask()"><span class="label-desktop">+ 업무 추가</span><span class="label-mobile">+ 추가</span></button>
       </div>
     </div>
 
-    <div class="eisenhower-grid">
-      <div class="card eisen-card">
-        <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
-        <div class="eisen-desc">즉시 처리해야 하는 공식 업무</div>
-        <div id="task-urgent-important-list" class="eisen-list"></div>
-      </div>
+    <div class="card" id="my-task-list-wrap">
+      <div class="card-title">내 담당 업무</div>
+      <div id="my-task-list" class="my-task-list"></div>
+    </div>
 
-      <div class="card eisen-card">
-        <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
-        <div class="eisen-desc">중요하지만 계획해서 처리할 업무</div>
-        <div id="task-important-list" class="eisen-list"></div>
-      </div>
+    <div id="my-task-matrix-wrap" style="display:none">
+      <div class="eisenhower-grid">
+        <div class="card eisen-card">
+          <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
+          <div class="eisen-desc">즉시 처리해야 하는 공식 업무</div>
+          <div id="task-urgent-important-list" class="eisen-list"></div>
+        </div>
 
-      <div class="card eisen-card">
-        <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
-        <div class="eisen-desc">빠르게 처리하거나 위임할 업무</div>
-        <div id="task-urgent-list" class="eisen-list"></div>
-      </div>
+        <div class="card eisen-card">
+          <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
+          <div class="eisen-desc">중요하지만 계획해서 처리할 업무</div>
+          <div id="task-important-list" class="eisen-list"></div>
+        </div>
 
-      <div class="card eisen-card">
-        <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
-        <div class="eisen-desc">우선순위가 낮거나 대기 중인 업무</div>
-        <div id="task-backlog-list" class="eisen-list"></div>
+        <div class="card eisen-card">
+          <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
+          <div class="eisen-desc">빠르게 처리하거나 위임할 업무</div>
+          <div id="task-urgent-list" class="eisen-list"></div>
+        </div>
+
+        <div class="card eisen-card">
+          <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
+          <div class="eisen-desc">우선순위가 낮거나 대기 중인 업무</div>
+          <div id="task-backlog-list" class="eisen-list"></div>
+        </div>
       </div>
     </div>
 
@@ -1893,6 +1901,11 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
       <input type="text" id="memo-in" placeholder="+ 사업과 무관한 간단 메모 추가 (Enter)" style="margin-bottom:12px" onkeypress="if(event.key==='Enter') addMemo(this.value)">
       <div id="personal-memo-list" style="display:flex;flex-direction:column;gap:4px"></div>
     </div>
+  </div>
+
+  <div class="card" id="my-project-wrap" style="display:none">
+    <div class="card-title">내가 맡은 사업/제안</div>
+    <div id="my-project-list"></div>
   </div>
 </div>
 
@@ -2016,7 +2029,8 @@ let selProj = ls('selectedProject') || 'all';
 let vm = ['cal','list'].includes(ls('calendarView')) ? ls('calendarView') : 'cal',
     ovMode = ['board','table','gantt','members'].includes(ls('overviewMode')) ? ls('overviewMode') : 'board',
     pFilter = ['all','public','private'].includes(ls('personalFilter')) ? ls('personalFilter') : 'all',
-    pvMode = 'list',
+    pvMode = 'work',
+    personalWorkView = ['list','matrix'].includes(ls('personalWorkView')) ? ls('personalWorkView') : 'list',
     calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window'; 
 let calScope = ['all','mine'].includes(ls('calendarScope')) ? ls('calendarScope') : 'all';
 const today = new Date(); 
@@ -3713,7 +3727,8 @@ function openNotificationTarget(targetType, targetId){
     goPage('overview');
   } else if(targetType === 'todo'){
     goPage('personal');
-    setPV('todos');
+    setPV('work');
+    setPersonalWorkView('list');
   }
 }
 
@@ -4540,6 +4555,7 @@ function renderPersonalMemos(){
 }
 
 function renderTodos() {
+  renderMyTaskList();
   renderTaskMatrix();
   renderPersonalMemos();
 }
@@ -6450,32 +6466,89 @@ function renderMembersPage(){
 }
 
 function setPV(mode){
-  pvMode = mode;
+  // 예전 list/todos 값은 모두 통합된 업무 화면으로 연결합니다.
+  pvMode = mode === 'projects' ? 'projects' : 'work';
   renderPersonalCurrentView();
 }
 
+function setPersonalWorkView(view){
+  personalWorkView = view === 'matrix' ? 'matrix' : 'list';
+  ls('personalWorkView', personalWorkView);
+  renderPersonalWorkView();
+}
+
+function renderPersonalWorkView(){
+  const listWrap = document.getElementById('my-task-list-wrap');
+  const matrixWrap = document.getElementById('my-task-matrix-wrap');
+  const listBtn = document.getElementById('pw-list');
+  const matrixBtn = document.getElementById('pw-matrix');
+
+  if(listBtn) listBtn.classList.toggle('active', personalWorkView === 'list');
+  if(matrixBtn) matrixBtn.classList.toggle('active', personalWorkView === 'matrix');
+  if(listWrap) listWrap.style.display = personalWorkView === 'list' ? 'block' : 'none';
+  if(matrixWrap) matrixWrap.style.display = personalWorkView === 'matrix' ? 'block' : 'none';
+
+  renderMyTaskList();
+  renderTaskMatrix();
+  renderPersonalMemos();
+}
+
 function renderPersonalCurrentView(){
-  if(!['list','projects','todos'].includes(pvMode)) pvMode = 'list';
+  if(!['work','projects'].includes(pvMode)) pvMode = 'work';
 
-  const listWrap = document.getElementById('personal-list-wrap');
+  const workWrap = document.getElementById('my-work-wrap');
   const projectWrap = document.getElementById('my-project-wrap');
-  const todoWrap = document.getElementById('my-todo-wrap');
-
-  const listBtn = document.getElementById('pv-list');
+  const workBtn = document.getElementById('pv-work');
   const projectBtn = document.getElementById('pv-projects');
-  const todoBtn = document.getElementById('pv-todos');
 
-  if(listBtn) listBtn.classList.toggle('active', pvMode === 'list');
+  if(workBtn) workBtn.classList.toggle('active', pvMode === 'work');
   if(projectBtn) projectBtn.classList.toggle('active', pvMode === 'projects');
-  if(todoBtn) todoBtn.classList.toggle('active', pvMode === 'todos');
-
-  if(listWrap) listWrap.style.display = pvMode === 'list' ? 'block' : 'none';
+  if(workWrap) workWrap.style.display = pvMode === 'work' ? 'block' : 'none';
   if(projectWrap) projectWrap.style.display = pvMode === 'projects' ? 'block' : 'none';
-  if(todoWrap) todoWrap.style.display = pvMode === 'todos' ? 'block' : 'none';
 
   if(pvMode === 'projects') renderMyProjectsList();
-  else if(pvMode === 'todos') renderTodos();
-  else renderPersonalList();
+  else renderPersonalWorkView();
+}
+
+function renderMyTaskList(){
+  const container = document.getElementById('my-task-list');
+  if(!container) return;
+
+  const hideDone = ls('hideDone') === 'Y';
+  const hideEl = document.getElementById('todo-hide-done');
+  if(hideEl) hideEl.checked = hideDone;
+
+  let myTasks = tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t));
+  if(hideDone) myTasks = myTasks.filter(t => !isCompletedTask(t));
+
+  myTasks.sort((a,b)=>{
+    const aDone = isCompletedTask(a), bDone = isCompletedTask(b);
+    if(aDone !== bDone) return aDone ? 1 : -1;
+    const aOver = isOverdue(a), bOver = isOverdue(b);
+    if(aOver !== bOver) return aOver ? -1 : 1;
+    const aDate = parseDateSafely(a.end || a.start).getTime() || 0;
+    const bDate = parseDateSafely(b.end || b.start).getTime() || 0;
+    return aDone ? bDate - aDate : aDate - bDate;
+  });
+
+  container.innerHTML = myTasks.map(t => {
+    const status = normalizeTaskStatus(t.status);
+    const done = isCompletedTask(t);
+    const overdue = isOverdue(t) && !done;
+    const context = taskContextLabel(t, '연결 없음');
+    const matrixLabel = TASK_MATRIX_META[getTaskMatrixType(t)]?.label || '';
+    return `<div class="my-task-list-row ${done ? 'is-done' : ''}">
+      <input type="checkbox" class="todo-cb" ${done ? 'checked' : ''} onchange="toggleTaskDone('${t.id}')">
+      <div class="my-task-list-main" onclick="showTask('${t.id}')">
+        <div class="my-task-list-title ${overdue ? 'overdue' : ''}">${overdue ? '[지연] ' : ''}${escapeHtml(t.title || '')}</div>
+        <div class="my-task-list-meta">${escapeHtml(context)} · ${fmtDate(t.start)}~${fmtDate(t.end)}</div>
+      </div>
+      <div class="my-task-list-side">
+        <span class="tag ${STATUS_TAG[status] || 'tag-sub'}">${escapeHtml(status)}</span>
+        ${matrixLabel ? `<span class="tag tag-sub">${escapeHtml(matrixLabel)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty" style="padding:18px">표시할 담당 업무가 없습니다</div>';
 }
 
 function renderMyWorkOverview(){
@@ -6996,7 +7069,7 @@ function toggleProj(id){ selProj=selProj===id?'all':id; ls('selectedProject', se
 function changeMonth(dir){ curM+=dir; if(curM>11){curM=0;curY++;} if(curM<0){curM=11;curY--;} renderCal(); } 
 function setVM(m){ vm=['cal','list'].includes(m)?m:'cal'; ls('calendarView', vm); ['cal','list'].forEach(k=>document.getElementById('vm-'+k).classList.toggle('active',k===vm)); renderCal(); } 
 function setOV(m){ ovMode=['board','table','gantt','members'].includes(m)?m:'board'; if(isMobileCompactView() && ['table','gantt'].includes(ovMode)) ovMode='board'; ls('overviewMode', ovMode); ['board','table','gantt','members'].forEach(k=>{ const el=document.getElementById('ov-'+k); if(el) el.classList.toggle('active',k===effectiveOverviewMode()); }); renderOverview(); } 
-function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='list'; ['all','public','private'].forEach(k=>document.getElementById('pf-'+k).classList.toggle('active',k===pFilter)); renderPersonalCurrentView(); renderActiveFilterBar(); } 
+function filterP(f){ pFilter=['all','public','private'].includes(f)?f:'all'; ls('personalFilter', pFilter); pvMode='work'; ['all','public','private'].forEach(k=>{ const el=document.getElementById('pf-'+k); if(el) el.classList.toggle('active',k===pFilter); }); renderPersonalCurrentView(); renderActiveFilterBar(); } 
 function openChangeSelf(){ 
   const me = getSelfMember();
   document.getElementById('modal-body').innerHTML=`
