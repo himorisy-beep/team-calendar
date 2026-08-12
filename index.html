@@ -2050,7 +2050,11 @@ function isTaskForDeletedProject(t){ return !!(t && t.project && isProjectDelete
 function isEventForDeletedProject(e){ return !!(e && e.project && isProjectDeletedById(e.project)); }
 function isAssignForDeletedProject(a){ return !!(a && a.projectId && isProjectDeletedById(a.projectId)); }
 function getActiveMembers(){ return members.filter(isActiveMember); }
-function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p)); }
+function isProposalShadowProject(p){
+  // 제안 문서가 과거/오류 데이터로 projects 컬렉션에 중복 저장되어 있어도 사업으로 표시하지 않습니다.
+  return String(p?.id || '').startsWith('proposal_');
+}
+function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p) && !isProposalShadowProject(p)); }
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
   const raw = String(role || '').trim();
@@ -7725,7 +7729,7 @@ function downloadTextFile(filename,text,mime){ const blob=new Blob([text],{type:
 function rowsToCSV(rows,headers){ const head=headers.map(csvEscape).join(','); const body=rows.map(row=>headers.map(h=>csvEscape(row[h])).join(',')).join('\n'); return '\ufeff'+head+(body?'\n'+body:''); }
 function exportCSV(type){
   if(!requireManager()) return; const now=new Date().toISOString().slice(0,10); let rows=[], headers=[];
-  if(type==='projects'){ headers=['id','name','start','end','status','deleted','deletedAt','deletedBy','memberCount']; rows=projects.map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',deleted:p.deleted===true,deletedAt:p.deletedAt||'',deletedBy:p.deletedBy||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
+  if(type==='projects'){ headers=['id','name','start','end','status','deleted','deletedAt','deletedBy','memberCount']; rows=projects.filter(p=>!isProposalShadowProject(p)).map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',deleted:p.deleted===true,deletedAt:p.deletedAt||'',deletedBy:p.deletedBy||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
   else if(type==='tasks'){ headers=['id','title','project','projectName','proposal','proposalName','assignee','assigneeName','start','end','status','priority','showOnCalendar','note']; rows=tasks.map(t=>({id:t.id,title:t.title||'',project:t.project||'',projectName:pj(t.project)?.name||'',proposal:t.proposal||'',proposalName:pr(t.proposal)?.name||'',assignee:t.assignee||'',assigneeName:mb(t.assignee)?.name||'',start:t.start||'',end:t.end||'',status:normalizeTaskStatus(t.status),priority:t.priority||getTaskMatrixType(t),showOnCalendar:t.showOnCalendar===true,note:t.note||''})); }
   else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',public:e.public===true})); }
   else if(type==='proposals'){ headers=['id','name','status','result','start','deadline','demandOrg','participants','participantNames','note']; rows=proposals.map(p=>({id:p.id,name:p.name||'',status:proposalStatusLabel(proposalStatusValue(p)),result:proposalResultLabel(proposalResultValue(p)),start:p.start||'',deadline:p.deadline||'',demandOrg:p.demandOrg||'',participants:p.participants||'',participantNames:proposalParticipantNames(p).join('; '),note:p.note||''})); }
