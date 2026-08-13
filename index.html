@@ -1,3 +1,145 @@
+
+6월 24일 (수) 오후 8:01
+
+calendar_v20(1).html
+파일
+이거에서 수정해줘. 제안 관리에 진행중이랑 작성중 두개있는데 그냥 진행중 하나로 해줘. 근데 지금 제안 추가나 제안 수정 팝업에 상태가 제안 목록 상태랑 안맞는 것 같아. 일치시켜줘
+
+투입공수 쪽에 디자인이 중간? 상단쪽 사업이름이랑 업무내용이 사라지면서 선이 두개 달랑 있는게 이상한데 보기좋게 정리해줘
+
+ 이중에 뭐야?
+
+찾았는데 포스트라 [FAIL]MDAxfEianzwNvorbW1hbmQgdmFsdWUgaXMgbnVsbA== 이렇게 뜨고 안열린다
+
+모바일버전에 일정 맡은 사업제안 저게 저렇게 네줄이나 차지하는게 마음에 안들어 한줄에 네개버튼이 잇으먄 좋겠어
+
+ 하나뿐인데 무슨소리야
+
+41F0906F-0A66-48F7-9BF5-1C6590C0C8B2.png
+A702C921-CBFF-4E27-B1CD-A22F851A02C5.png
+캘린더 탭에 달력 목록 한줄에 보이게. 제안관리 탭도 안에 상태 부분이랑 수주여부 부분 버튼 한줄에 보이게해줘. 그리고 상단에 검색 알림 새로만들기 버튼 세개 크기가 일정하지 않아 크기 똑같게 수정
+
+이게 다인데
+
+맞아?
+
+이렇게 됐는데?
+
+상단 버튼 크기가 너무 커졌잖아
+
+6월 26일 (금) 오후 6:00
+일단 해건협만 봐도 5월 28? 일까진데 어케 공수가 일년의 반이 넘어?
+
+
+calendar_v20_manday_project_click_removed_fixed(1).html
+파일
+코드 검토 해줘
+
+
+붙여넣은 텍스트 (1)(19).txt
+문서
+firestore rules 검사해줘
+
+위에 대화한 캘린더 공유부분 수정하고, 모바일버전에 상단 날짜랑 색깔칩 글자 겹치고 달력 목록 버튼 모양 좀 이상한것도 수정해서 최종 교체 코드 수정본 줘
+
+7월 29일 (수) 오전 12:16
+모바일로 보면 캘린더 상단에 컬러칩이 월이랑 겹쳐 그리고 버튼도 달력이랑 목록만 있어
+
+ 안바꼈는데 바꾼거 맞아?
+
+이거 저장 눌러야하니까 번거로운것같아 그냥 목록에 추가하면 되는걸로 하는게 나은것같은데
+
+수정했습니다.
+
+전체 교체용 TXT 파일 다운로드
+
+내 업무 > 사업·제안에 완료 사업·제안 숨기기 체크박스를 추가했습니다.
+
+사업: 기존 완료 판정 기준인 isClosedProject()에 해당하면 숨김
+
+제안: 제출완료 상태면 숨김
+
+기본값은 숨김 체크 상태
+
+체크 해제하면 완료 사업·제안도 다시 표시
+
+선택 상태는 저장되어 새로고침 후에도 유지
+
+오늘 탭과 내 업무 > 업무 영역은 변경하지 않음
+
+JS 문법 검사 통과
+
+
+calendar_v20_personal_projects_hide_completed_fixed.txt
+문서
+
+
+4d275ce4-f2b6-4622-bae0-e1c846233ec5.png
+완료된거 안숨겨지는데?
+
+맞습니다. 기존 구현이 부족했습니다. 체크박스가 완료된 사업/제안 카드만 숨기고 카드 안의 완료 업무는 그대로 보여주고 있었습니다.
+
+이번에는 체크 시 아래를 모두 숨기도록 수정했습니다.
+
+완료된 사업
+
+제출완료된 제안
+
+진행 중인 사업 안의 완료 업무
+
+사업 안의 종료된 일정
+
+진행 중인 제안 안의 완료 업무
+
+체크박스 문구도 의미에 맞게 **완료 내역 숨기기**로 바꿨습니다.
+
+전체 교체용 TXT 파일 다운로드
+
+JS 문법 검사도 통과했습니다.
+
+
+calendar_v20_personal_projects_hide_completed_items_fixed.txt
+문서
+
+
+오늘 오전 9:25
+업무 기간 사이에 완료가 되면 완료일 이후는 캘린더에 안뜨게 할 수 없어?
+
+가능합니다. 수정했습니다.
+
+전체 교체용 TXT 파일 다운로드
+
+동작은 이렇게 바뀝니다.
+
+업무기간: 8/1 ~ 8/31
+
+실제 완료일: 8/13
+
+캘린더 표시: 8/1 ~ 8/13까지만
+
+8/14 이후에는 표시되지 않음
+
+완료일 당일은 표시
+
+완료를 다시 진행으로 바꾸면 원래 마감일까지 다시 표시
+
+원래 마감일보다 늦게 완료한 경우에는 업무기간을 더 늘려서 표시하지 않음
+
+현재 코드가 이미 완료 시 completedAt을 저장하고 있어서 별도의 Firestore Rules 수정은 필요 없습니다. 
+
+
+달력 보기, 목록 보기, 날짜 클릭 상세 모두 같은 기준을 적용했고 JS 문법 검사도 통과했습니다.
+
+
+calendar_v20_calendar_task_stop_at_completion_fixed.txt
+문서
+
+
+라이브러리
+/
+calendar_v20_calendar_task_stop_at_completion_fixed.txt
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -4032,6 +4174,26 @@ function getCalendarTasks(){
   });
 }
 
+// 완료된 업무는 실제 완료일 이후 캘린더에 표시하지 않습니다.
+// 원래 마감일보다 늦게 완료된 경우에는 기존 업무 기간을 늘리지 않습니다.
+function calendarTaskEndValue(t){
+  if(!t) return '';
+  const start = fmtDateFull(t.start || '');
+  const originalEnd = fmtDateFull(t.end || t.start || '');
+  if(!isCompletedTask(t)) return originalEnd;
+
+  const completed = taskCompletedDate(t);
+  if(!completed) return originalEnd;
+  if(start && completed < start) return start;
+  if(originalEnd && completed > originalEnd) return originalEnd;
+  return completed;
+}
+
+function calendarTaskInDay(t, y, m, d){
+  if(!t) return false;
+  return inDay({...t, end:calendarTaskEndValue(t)}, y, m, d);
+}
+
 function calendarTaskTitle(t){
   const a = mb(t.assignee || '');
   const name = a?.name || '';
@@ -4755,7 +4917,7 @@ function getWeekEventSegments(weekDates, vis){
 
   getCalendarTasks().forEach(t => {
     const s = normalizeDay(parseDateSafely(t.start));
-    const en = normalizeDay(parseDateSafely(t.end || t.start));
+    const en = normalizeDay(parseDateSafely(calendarTaskEndValue(t) || t.start));
     const sT = s.getTime();
     const eT = en.getTime();
 
@@ -4983,7 +5145,7 @@ function renderCalList(){
 
   const taskItems = getCalendarTasks().map(t => {
     const s = parseDateSafely(t.start);
-    const en = parseDateSafely(t.end || t.start);
+    const en = parseDateSafely(calendarTaskEndValue(t) || t.start);
     return {
       kind:'task',
       id:t.id,
@@ -7037,7 +7199,7 @@ function dayClick(d){
   const dayHolidays = holidaysOnDay(curY, curM, d);
   const marks = proposalMarksOnDay(curY, curM, d);
   const de=getVisEv().filter(e=>inDay(e,curY,curM,d));
-  const dtasks=getCalendarTasks().filter(t=>inDay(t,curY,curM,d));
+  const dtasks=getCalendarTasks().filter(t=>calendarTaskInDay(t,curY,curM,d));
   if(!dayHolidays.length && !de.length && !marks.length && !dtasks.length)return;
   let h='<div class="list-wrap">';
   dayHolidays.forEach(hol=>{
