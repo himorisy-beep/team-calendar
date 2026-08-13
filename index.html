@@ -8289,5 +8289,50 @@ initAuth();
   syncBodyState();
 })();
 </script>
+
+<style id="final-helper-typography-visual-fix">
+/* Final helper typography: keep informational copy subordinate and caution copy compact but noticeable. */
+.ui-form-help,
+.task-priority-help,
+.task-form-help,
+.manday-only-note{
+  font-size:9px!important;
+  font-weight:400!important;
+  line-height:1.35!important;
+  color:var(--text3)!important;
+  opacity:.76!important;
+  -webkit-text-size-adjust:none!important;
+  text-size-adjust:none!important;
+}
+.ui-form-caution,
+.privacy-help{
+  font-size:9.5px!important;
+  font-weight:600!important;
+  line-height:1.25!important;
+  color:var(--text3)!important;
+  opacity:.78!important;
+  letter-spacing:-.01em!important;
+  -webkit-text-size-adjust:none!important;
+  text-size-adjust:none!important;
+}
+#ev-time-help{
+  font-size:9.5px!important;
+  font-weight:600!important;
+  line-height:1.25!important;
+  margin:-3px 0 7px!important;
+  -webkit-text-size-adjust:none!important;
+  text-size-adjust:none!important;
+}
+@media(max-width:680px){
+  .ui-form-help,
+  .task-priority-help,
+  .task-form-help,
+  .manday-only-note{font-size:9px!important;font-weight:400!important;line-height:1.35!important}
+  .ui-form-caution,
+  .privacy-help,
+  #ev-time-help{font-size:9.5px!important;font-weight:600!important;line-height:1.25!important}
+}
+</style>
+
 </body>
 </html>
