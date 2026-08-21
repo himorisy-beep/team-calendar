@@ -4823,7 +4823,13 @@ function getWeekEventSegments(weekDates, vis){
     });
   });
 
+  const mobileCalendar = isMobileCompactView();
+  const calendarKindPriority = { event:0, proposal:1, holiday:2, task:3 };
   segments.sort((a,b)=>{
+    // 일정/제안이 업무보다 먼저 보이도록 기존 캘린더 정보 위계를 유지합니다.
+    const ap = calendarKindPriority[a.kind] ?? 9;
+    const bp = calendarKindPriority[b.kind] ?? 9;
+    if(ap !== bp) return ap - bp;
     if(a.startCol !== b.startCol) return a.startCol - b.startCol;
     return (b.endCol - b.startCol) - (a.endCol - a.startCol);
   });
@@ -4839,7 +4845,8 @@ function getWeekEventSegments(weekDates, vis){
     laneEnds[lane] = seg.endCol;
   });
 
-  const MAX_CAL_WEEK_LANES = 3;
+  // 모바일에서는 항목을 +N 안으로 숨기지 않고 모두 보여줍니다. 데스크톱은 기존 3줄 제한을 유지합니다.
+  const MAX_CAL_WEEK_LANES = mobileCalendar ? Math.max(laneEnds.length, 1) : 3;
   const moreCounts = Array(8).fill(0);
   segments.forEach(seg => {
     if(seg.lane > MAX_CAL_WEEK_LANES){
@@ -6808,8 +6815,20 @@ function renderPersonalList() {
   let mine = events.filter(e => e.who===selfId && !isEventForDeletedProject(e) && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
   if(hideP) mine=mine.filter(e=>!e._p); mine.sort((a,b)=>{ if(a._p!==b._p) return a._p?1:-1; const tA=parseDateSafely(a.start).getTime(), tB=parseDateSafely(b.start).getTime(); return a._p?tB-tA:tA-tB; });
   if(!mine.length){container.innerHTML='<div class="empty">없음</div>';return;}
-  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="apiSave({action:'deleteEvent',id:'${e.id}'})" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
+  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="event.stopPropagation();deleteEventById('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
   container.innerHTML=h;
+}
+
+function deleteEventById(id){
+  const e = events.find(ev => ev.id === id);
+  if(!e){ showToast('삭제할 일정을 찾지 못했습니다.'); return; }
+  if(!canEditItem(e)){ showToast('권한이 없습니다.'); return; }
+  if(!confirm('이 일정을 삭제할까요?')) return;
+  apiSave({action:'deleteEvent', id}, ()=>{
+    closeModal();
+    closeDetailPanel();
+    showToast('일정을 삭제했습니다.');
+  });
 }
 
 function openAddEvent() { if(!requireMemberWrite()) return; editingEventId = null; document.getElementById('modal-body').innerHTML = getEventFormHTML(false); openModal('새 일정 추가'); onTypeChange(); }
@@ -6855,7 +6874,22 @@ function getEventFormHTML(isEdit) {
   <div class="form-row full" id="ev-proj-row"><div><div class="fl">사업</div><select id="ev-proj"><option value="">— 없음</option>${pOpts}</select></div></div>
   <div class="toggle-row" id="pub-row"><div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--text2)">팀 캘린더 공유</span></div>
   <div id="personal-help" class="ui-form-caution" style="display:none;margin:-3px 0 10px">개인 일정은 본인에게만 표시됩니다. 관리자와 팀장도 확인할 수 없습니다.</div>
-  <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitEvent()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; 
+  <div style="display:flex;gap:8px;align-items:center">${isEdit?`<button class="btn-danger-sm" style="height:32px;padding:0 12px" onclick="deleteEventFromEdit()">삭제</button><span style="flex:1"></span>`:''}<button class="btn btn-primary" ${isEdit?'':'style="flex:1"'} onclick="submitEvent()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; 
+}
+
+function deleteEventFromEdit(){
+  const id = editingEventId || '';
+  const e = events.find(ev => ev.id === id);
+  if(!e){ showToast('삭제할 일정을 찾지 못했습니다.'); return; }
+  if(!canEditItem(e)){ showToast('권한이 없습니다.'); return; }
+  if(!confirm('이 일정을 삭제할까요?')) return;
+
+  apiSave({action:'deleteEvent', id}, ()=>{
+    editingEventId = null;
+    closeModal();
+    closeDetailPanel();
+    showToast('일정을 삭제했습니다.');
+  });
 }
 
 function onTypeChange(){ 
@@ -8333,6 +8367,17 @@ initAuth();
   .ui-form-caution,
   .privacy-help,
   #ev-time-help{font-size:9.5px!important;font-weight:400!important;line-height:1.3!important;color:var(--text2)!important;opacity:.92!important}
+}
+
+
+/* Mobile task visibility safeguard */
+@media(max-width:680px){
+  #page-personal .personal-tab-row #pv-work,
+  #page-personal .personal-tab-row #pv-projects{display:flex!important;align-items:center;justify-content:center}
+  #page-personal #my-task-list-wrap,
+  #page-personal #my-task-list{width:100%;min-width:0}
+  #page-personal .my-task-list-row{display:flex!important;width:100%;min-width:0}
+  #page-personal .my-task-list-main{display:block!important;min-width:0}
 }
 </style>
 
