@@ -3269,11 +3269,11 @@ function renderHome(){
       .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:`showTask('${t.id}')`,
       quickDone:t.id}));
 
-    const shown = dayItems.slice(0,3).map(item => `
+    // 오늘 탭의 이번 주 일정·마감은 축약하지 않고 해당 날짜의 항목을 모두 보여줍니다.
+    // 입력 순서가 일정 → 제안 → 업무이므로 화면에서도 그 순서를 유지합니다.
+    const shown = dayItems.map(item => `
       <div class="week-mini-item ${item.kind}" onclick="${item.onClick}" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</div>
     `).join('');
-
-    const more = dayItems.length > 3 ? `<div class="week-mini-more">+${dayItems.length-3}</div>` : '';
     const isToday = fmtDateFull(day) === fmtDateFull(now);
 
     const dayHolidays = holidaysOnDay(day.getFullYear(), day.getMonth(), day.getDate());
@@ -3284,7 +3284,6 @@ function renderHome(){
     return `<div class="week-mini-day ${isToday?'today':''} ${holidayClass}">
       <div class="week-mini-date-row"><div class="week-mini-date">${day.getDate()}</div>${holidayLabel}</div>
       ${shown || '<div style="font-size:11px;color:var(--text3)">-</div>'}
-      ${more}
     </div>`;
   }).join('');
 
