@@ -4086,7 +4086,9 @@ function openAddTask(existingTask=null, forcedProjectId=''){
   if(!requireMemberWrite()) return;
   const selectedProjectId = existingTask?.project || forcedProjectId || '';
   const selectedProposalId = existingTask?.proposal || '';
-  const linkableProjects = getActiveProjects().filter(p => isTaskLinkableProject(p) || p.id === selectedProjectId);
+  const linkableProjects = getActiveProjects()
+    .filter(p => isTaskLinkableProject(p) || p.id === selectedProjectId)
+    .sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko-KR', {sensitivity:'base', numeric:true}));
   const linkableProposals = proposals.filter(p => isTaskLinkableProposal(p) || p.id === selectedProposalId);
   const projectOptions = linkableProjects.map(p=>`<option value="${p.id}" ${p.id===selectedProjectId?'selected':''}>${escapeHtml(p.name||'')}</option>`).join('');
   const proposalOptions = linkableProposals.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
