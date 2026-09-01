@@ -2075,6 +2075,10 @@ function isProposalShadowProject(p){
   return String(p?.id || '').startsWith('proposal_');
 }
 function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p) && !isProposalShadowProject(p)); }
+function getEventSelectableProjects(selectedProjectId=''){
+  const selected = String(selectedProjectId || '');
+  return getActiveProjects().filter(p => !isClosedProject(p) || String(p.id || '') === selected);
+}
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
   const raw = String(role || '').trim();
@@ -4601,7 +4605,7 @@ function buildSidebar(){
   const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
   syncFilterSections();
 }
-function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; getActiveProjects().forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
+function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; getEventSelectableProjects(cur).forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
 function renderActiveFilterBar(){
   // 필터 상태 표시 바는 제거했습니다. 각 화면의 체크박스/필터 버튼 상태로 확인합니다.
 }
@@ -6879,7 +6883,8 @@ function openEditEvent(id) {
   onSubChange();
 }
 function getEventFormHTML(isEdit) { 
-  const pOpts = getActiveProjects().map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
+  const selectedProjectId = isEdit ? (events.find(ev => ev.id === editingEventId)?.project || '') : '';
+  const pOpts = getEventSelectableProjects(selectedProjectId).map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
 
