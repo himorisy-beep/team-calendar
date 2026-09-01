@@ -2077,7 +2077,9 @@ function isProposalShadowProject(p){
 function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p) && !isProposalShadowProject(p)); }
 function getEventSelectableProjects(selectedProjectId=''){
   const selected = String(selectedProjectId || '');
-  return getActiveProjects().filter(p => !isClosedProject(p) || String(p.id || '') === selected);
+  return getActiveProjects()
+    .filter(p => !isClosedProject(p) || String(p.id || '') === selected)
+    .sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko-KR', {sensitivity:'base', numeric:true}));
 }
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
