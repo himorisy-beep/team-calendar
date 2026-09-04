@@ -2126,6 +2126,10 @@ function roleLabel(role){
 function canManageAll(){
   return isManagerUser();
 }
+function canCreateForOtherMember(){
+  // 운영상 다른 멤버의 신규 일정·업무 등록은 팀장/관리 권한에서만 허용합니다.
+  return isManagerUser();
+}
 function canEditOwn(memberIdValue){
   return isManagerUser() || memberIdValue === selfId;
 }
@@ -4092,7 +4096,11 @@ function openAddTask(existingTask=null, forcedProjectId=''){
   const linkableProposals = proposals.filter(p => isTaskLinkableProposal(p) || p.id === selectedProposalId);
   const projectOptions = linkableProjects.map(p=>`<option value="${p.id}" ${p.id===selectedProjectId?'selected':''}>${escapeHtml(p.name||'')}</option>`).join('');
   const proposalOptions = linkableProposals.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
-  const memberOptions = getActiveMembers().map(m=>`<option value="${m.id}" ${m.id===selfId?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
+  const taskAssigneeMembers = existingTask || canCreateForOtherMember()
+    ? getActiveMembers()
+    : getActiveMembers().filter(m => String(m.id || '') === String(selfId || ''));
+  const taskDefaultAssignee = existingTask?.assignee || selfId;
+  const memberOptions = taskAssigneeMembers.map(m=>`<option value="${m.id}" ${m.id===taskDefaultAssignee?'selected':''}>${escapeHtml(m.name||'')}</option>`).join('');
   const todayVal = todayStr;
 
   document.getElementById('modal-body').innerHTML = `
@@ -4100,7 +4108,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     <div class="form-row full"><div><div class="fl">업무명</div><div class="task-title-autocomplete"><input id="task-title-input" type="text" placeholder="업무명을 입력하세요" autocomplete="off" aria-autocomplete="list" aria-controls="task-title-suggestions"><div id="task-title-suggestions" class="task-title-suggestions" role="listbox"></div></div></div></div>
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">진행 중인 사업이 없습니다</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">진행 중인 제안이 없습니다</option>'}</select></div></div></div>
-    <div class="form-row full"><div><div class="fl">담당자</div><select id="task-assignee">${memberOptions}</select></div></div>
+    <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
     <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${todayVal}"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
     <div class="task-priority-box">
@@ -4209,6 +4217,11 @@ function submitTask(){
   const contextType = document.getElementById('task-context-type')?.value || 'project';
   const taskProject = contextType === 'project' ? (document.getElementById('task-project')?.value || '') : '';
   const taskProposal = contextType === 'proposal' ? (document.getElementById('task-proposal')?.value || '') : '';
+  const taskAssignee = document.getElementById('task-assignee')?.value || selfId;
+  if(!isEdit && String(taskAssignee) !== String(selfId) && !canCreateForOtherMember()){
+    showToast('다른 멤버의 업무는 팀장만 추가할 수 있습니다.');
+    return;
+  }
 
   apiSave({
     action:isEdit?'updateTask':'addTask',
@@ -4216,7 +4229,7 @@ function submitTask(){
     title,
     project:taskProject,
     proposal:taskProposal,
-    assignee:document.getElementById('task-assignee').value,
+    assignee:taskAssignee,
     start:document.getElementById('task-start').value,
     end:document.getElementById('task-end').value,
     status,
@@ -6891,8 +6904,12 @@ function getEventFormHTML(isEdit) {
   const pOpts = getEventSelectableProjects(selectedProjectId).map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+  const newEventMemberOptions = getActiveMembers().map(m => `<option value="${m.id}" ${String(m.id)===String(selfId)?'selected':''}>${escapeHtml(m.name || '')}</option>`).join('');
+  const eventMemberField = !isEdit && canCreateForOtherMember()
+    ? `<div class="form-row full"><div><div class="fl">일정 대상</div><select id="ev-who">${newEventMemberOptions}</select></div></div>`
+    : '';
 
-  return `<input type="hidden" id="ev-original-who" value="${escapeAttr(selfId)}"><input type="hidden" id="ev-created-by" value="${escapeAttr(selfId)}"><div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>
+  return `<input type="hidden" id="ev-original-who" value="${escapeAttr(selfId)}"><input type="hidden" id="ev-created-by" value="${escapeAttr(selfId)}"><div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>${eventMemberField}
   <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
   <div class="form-row" id="ev-time-row" style="display:none"><div><div class="fl">시작 시간</div><input type="time" id="ev-start-time"></div><div><div class="fl">종료 시간</div><input type="time" id="ev-end-time"></div></div>
   <div id="ev-time-help" class="ui-form-caution" style="display:none;margin:-2px 0 9px">회의처럼 특정 시간에 진행되는 일정만 입력하세요. 비워두면 종일 일정으로 저장됩니다.</div>
@@ -6993,8 +7010,13 @@ function submitEvent(){
   const existingEvent = editingEventId ? events.find(ev => ev.id === editingEventId) : null;
   const originalWhoFromForm = document.getElementById('ev-original-who')?.value || '';
   const originalCreatedByFromForm = document.getElementById('ev-created-by')?.value || '';
-  const originalWho = editingEventId ? (originalWhoFromForm || existingEvent?.who || selfId) : selfId;
+  const selectedNewWho = !editingEventId ? (document.getElementById('ev-who')?.value || selfId) : '';
+  const originalWho = editingEventId ? (originalWhoFromForm || existingEvent?.who || selfId) : selectedNewWho;
   const originalCreatedBy = editingEventId ? (originalCreatedByFromForm || existingEvent?.createdBy || originalWho) : selfId;
+  if(!editingEventId && String(originalWho) !== String(selfId) && !canCreateForOtherMember()){
+    showToast('다른 멤버의 일정은 팀장만 추가할 수 있습니다.');
+    return;
+  }
 
   let sub=''; 
   if(['vacation','offsite','trip','training','meeting'].includes(ty)){ 
@@ -7023,6 +7045,10 @@ function submitEvent(){
   }
 
   const isPersonal = ty === 'personal';
+  if(!editingEventId && isPersonal && String(originalWho) !== String(selfId)){
+    showToast('개인 일정은 본인만 등록할 수 있습니다.');
+    return;
+  }
   apiSave({ 
     action: editingEventId?'updateEvent':'addEvent', 
     id: editingEventId||'ev_'+Date.now(), 
