@@ -1770,6 +1770,32 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
 @media(max-width:680px){.project-danger-zone{flex-direction:row;align-items:center}.project-danger-zone .btn-danger-sm{height:30px;width:auto}}
 
 .proposal-file-link .attachment-icon{width:15px;height:15px;display:inline-block;vertical-align:-3px;flex-shrink:0}
+
+/* Keep today's date marker separate from the holiday label. */
+.cal-week-day.today .dn{
+  width:auto!important;
+  min-width:0!important;
+  max-width:100%;
+  background:transparent!important;
+  border-radius:0!important;
+  justify-content:flex-start!important;
+  gap:4px;
+}
+.cal-week-day .holiday-label{
+  max-width:none;
+  min-width:0;
+  flex:0 1 auto;
+}
+.cal-week-day.holiday-day .dn,
+.cal-week-day.today.holiday-day .today-num,
+.week-mini-day.holiday-day .week-mini-date{
+  color:#B91C1C!important;
+}
+.cal-week-day.today.holiday-day .today-num,
+.week-mini-day.today.holiday-day .week-mini-date{
+  background:#FEE2E2!important;
+}
+
 </style>
 <!-- Menu icons: Lucide v0.468.0, ISC license. -->
 </head>
