@@ -1852,7 +1852,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
 </div>
 <div style="margin-top:auto; border-top:.5px solid var(--border); padding-top:8px;">
   <div style="display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:var(--r-sm)">
-    <div class="av" id="self-av"></div>
+    <span class="member-filter-dot" id="self-av" aria-hidden="true"></span>
     <span style="font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" id="self-name">—</span>
     <button type="button" onclick="logout()" style="border:none;background:none;color:var(--text3);font-size:11px;cursor:pointer;padding:3px 2px;white-space:nowrap;font-family:inherit">로그아웃</button>
   </div>
@@ -4694,7 +4694,7 @@ function buildSidebar(){
   });
   const pc=document.getElementById('sb-projects'); pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
   getActiveProjects().forEach(p=>{ const d=document.createElement('div'); d.className='proj-chip'+(selProj===p.id?' active':''); d.innerHTML=`<div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}`; d.onclick=()=>toggleProj(p.id); pc.appendChild(d); });
-  const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
+  const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent='';av.style.setProperty('--member-color',s.color); document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
   syncFilterSections();
 }
 function refreshProjSelect(){
@@ -7424,7 +7424,7 @@ function renderUserTeamManageList(){
       if(row.invite) actions.push(`<button class="btn btn-secondary btn-sm" onclick="openEditInvite('${escapeAttr(row.invite.id)}')">연결 수정</button>`);
       if(row.user) actions.push(`<button class="btn-danger-sm" onclick="toggleUserActive('${escapeAttr(row.user.id)}', false)">계정 비활성</button>`);
     }
-    return `<div class="user-team-row ${inactive?'is-inactive':''}"><div class="av" style="width:30px;height:30px;font-size:11px;background:${lighten(color)};color:${color}">${ini(name)}</div><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(name)}</div><span class="status-chip ${row.statusCls}">${escapeHtml(row.statusLabel)}</span></div><div class="user-team-meta">${metaBits.map(escapeHtml).join(' · ')}</div></div><div class="user-team-actions">${actions.join('')}</div></div>`;
+    return `<div class="user-team-row ${inactive?'is-inactive':''}"><span class="member-filter-dot" style="--member-color:${escapeAttr(color)};margin-top:5px" aria-hidden="true"></span><div class="user-team-main"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px"><div class="user-team-name">${escapeHtml(name)}</div><span class="status-chip ${row.statusCls}">${escapeHtml(row.statusLabel)}</span></div><div class="user-team-meta">${metaBits.map(escapeHtml).join(' · ')}</div></div><div class="user-team-actions">${actions.join('')}</div></div>`;
   }).join('');
 }
 
