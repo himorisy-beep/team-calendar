@@ -2904,7 +2904,7 @@ async function notifyCommentOwners(commentData){
     title:`${actor}님이 ${label}에 댓글을 남겼습니다`,
     body:targetTitle,
     category:'comment'
-  }).catch(()=>{})));
+  })));
 }
 
 async function notifyManagerEditOwners(action, id, existingBefore, savedData){
@@ -2940,7 +2940,7 @@ async function notifyManagerEditOwners(action, id, existingBefore, savedData){
       title,
       body:targetTitle,
       category:'manager_update'
-    }).catch(()=>{});
+    });
   }));
 }
 
@@ -2967,6 +2967,35 @@ async function logActivity(action, targetType, targetId, title, visibilitySource
   });
 }
 
+const saveSideEffectHealth = {};
+function trackSaveSideEffect(key, promise){
+  return promise.then(() => { saveSideEffectHealth[key] = {ok:true}; }).catch(error => {
+    saveSideEffectHealth[key] = {ok:false, message:error.message || String(error)};
+    console.warn('저장 후 처리 실패:', key, error);
+    showToast('내용은 저장됐지만 ' + ({activity:'변경 이력',notification:'알림'}[key] || key) + ' 기록에 실패했습니다.');
+  });
+}
+
+function validateSaveDateRange(action, data, existing){
+  if(!/^(add|update)(Task|Project|Proposal|Assign)$/.test(action)) return '';
+  const dateFields = action.endsWith('Assign') ? ['assignedAtDate','assignedAt','assignedEndDate','endedAtDate'] : action.endsWith('Proposal') ? ['start','deadline'] : ['start','end'];
+  if(action.startsWith('update') && existing && !dateFields.some(key => Object.prototype.hasOwnProperty.call(data,key) && data[key] !== existing[key])) return '';
+  const item = {...(existing || {}), ...data};
+  let start, end;
+  if(action.endsWith('Assign')){
+    start = item.assignedAtDate || item.assignedAt;
+    end = item.assignedEndDate || item.endedAtDate;
+  }else{
+    start = item.start;
+    end = action.endsWith('Proposal') ? item.deadline : item.end;
+  }
+  if(!start || !end) return '';
+  const startDate = parseDateSafely(start), endDate = parseDateSafely(end);
+  if(!startDate.getTime() || !endDate.getTime() || isNaN(startDate) || isNaN(endDate)) return '날짜를 확인해주세요.';
+  if(endDate < startDate) return '종료일·마감일은 시작일보다 빠를 수 없습니다.';
+  return '';
+}
+
 async function apiSave(payload, onSuccess){ 
   try { 
     const { action, id, ...data } = payload; 
@@ -2978,6 +3007,12 @@ async function apiSave(payload, onSuccess){
     }
 
     const existingBefore = getExistingItem(col, id);
+    const dateError = validateSaveDateRange(action, data, existingBefore);
+    if(dateError){ showToast(dateError); return; }
+    if(col === 'tasks' && /^(add|update)/.test(action) && Object.prototype.hasOwnProperty.call(data, 'status')){
+      data.status = normalizeTaskStatus(data.status);
+      if(existingBefore && Object.prototype.hasOwnProperty.call(existingBefore, 'done')) data.done = data.status === '완료';
+    }
 
     if(action.startsWith('add') || action.startsWith('update')) { 
       await db.collection(col).doc(id).set(data, { merge: true }); 
@@ -2989,15 +3024,15 @@ async function apiSave(payload, onSuccess){
       const targetType = getTargetTypeFromAction(action);
       const visibilitySource = {...(existingBefore || {}), ...(data || {})};
       const title = data.title || data.name || data.text || existingBefore?.title || existingBefore?.name || existingBefore?.text || id;
-      logActivity(action, targetType, id, title, visibilitySource).catch(()=>{});
+      trackSaveSideEffect('activity', logActivity(action, targetType, id, title, visibilitySource));
     }
 
     if(action === 'addComment'){
-      notifyCommentOwners(data).catch(()=>{});
+      trackSaveSideEffect('notification', notifyCommentOwners(data));
     }
 
     if(action.startsWith('update') && ['events','tasks','proposals'].includes(col)){
-      notifyManagerEditOwners(action, id, existingBefore, data).catch(()=>{});
+      trackSaveSideEffect('notification', notifyManagerEditOwners(action, id, existingBefore, data));
     }
 
     if(onSuccess) onSuccess(); 
@@ -3221,7 +3256,7 @@ function renderHome(){
   now.setHours(0,0,0,0);
 
   const weekEnd = new Date(now);
-  weekEnd.setDate(weekEnd.getDate()+7);
+  weekEnd.setDate(weekEnd.getDate() + (6 - weekEnd.getDay()));
   weekEnd.setHours(23,59,59,999);
 
   const weekStart = new Date(now);
@@ -3231,7 +3266,7 @@ function renderHome(){
   const todayKey = fmtDateFull(now);
   const homeProposalPool = proposals.filter(p => isMyProposal(p));
   const myTasks = tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t));
-  const activeTasks = myTasks.filter(t => normalizeTaskStatus(t.status) !== '완료');
+  const activeTasks = myTasks.filter(t => !isCompletedTask(t));
 
   const overdueTasks = activeTasks
     .filter(t => isOverdue(t))
@@ -3254,13 +3289,13 @@ function renderHome(){
   const weekDueTasks = activeTasks
     .filter(t => t.end && !isOverdue(t))
     .map(t => ({...t, _d:parseDateSafely(t.end)}))
-    .filter(t => t._d > now && t._d <= weekEnd)
+    .filter(t => fmtDateFull(t.end) > todayKey && t._d <= weekEnd)
     .sort((a,b)=>a._d-b._d);
 
   const weekDueProposals = homeProposalPool
     .filter(p => p.deadline)
     .map(p => ({...p, _d:parseDateSafely(p.deadline)}))
-    .filter(p => p._d > now && p._d <= weekEnd)
+    .filter(p => fmtDateFull(p.deadline) > todayKey && p._d <= weekEnd)
     .sort((a,b)=>a._d-b._d);
 
   function actionRow(item){
@@ -3705,7 +3740,7 @@ function getMyDynamicNotifications(){
   });
 
   tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t)).forEach(t=>{
-    if(normalizeTaskStatus(t.status) === '완료') return;
+    if(isCompletedTask(t)) return;
 
     const project = pj(t.project);
     const projectText = project ? ` · ${project.name}` : '';
@@ -3747,7 +3782,7 @@ function getManagerDynamicNotifications(){
   const items = [];
 
   tasks.filter(t => isPublicTask(t) && !isTaskForDeletedProject(t)).forEach(t=>{
-    if(normalizeTaskStatus(t.status) === '완료') return;
+    if(isCompletedTask(t)) return;
 
     const assignee = mb(t.assignee);
     const project = pj(t.project);
@@ -4219,7 +4254,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">— 없음</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">— 없음</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
-    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${todayVal}"></div></div>
+    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value=""><div class="ui-form-help">기한이 정해진 업무만 입력하세요. 미입력 시 지연으로 표시하지 않습니다.</div></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
     <div class="task-priority-box">
       <div class="fl">업무 분류</div>
@@ -4542,7 +4577,7 @@ function priorityToFlags(priority){
 }
 
 function taskDueSort(a,b){
-  if(a.status !== b.status) return a.status === '완료' ? 1 : -1;
+  if(isCompletedTask(a) !== isCompletedTask(b)) return isCompletedTask(a) ? 1 : -1;
   const ad = parseDateSafely(a.end).getTime() || 9999999999999;
   const bd = parseDateSafely(b.end).getTime() || 9999999999999;
   return ad - bd;
@@ -4552,7 +4587,7 @@ window.toggleTaskDone = function(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
 
-  const isDone = normalizeTaskStatus(t.status) === '완료';
+  const isDone = isCompletedTask(t);
   apiSave({
     action:'updateTask',
     ...t,
@@ -5359,7 +5394,7 @@ function projectSummaryStats(p){
   const now = new Date();
   now.setHours(0,0,0,0);
   const weekEnd = new Date(now);
-  weekEnd.setDate(weekEnd.getDate()+7);
+  weekEnd.setDate(weekEnd.getDate() + (6 - weekEnd.getDay()));
   weekEnd.setHours(23,59,59,999);
   const activeTasks = projTasks.filter(t=>!isCompletedTask(t));
   const doneTasks = projTasks.filter(t=>isCompletedTask(t));
@@ -8108,7 +8143,8 @@ function renderSettingsDiagnostics(){
   const stats=[['로그인 이메일',currentUser?.email||'-'],['권한',roleLabel(userRole())],['연결 팀원',`${me.name||'-'} (${selfId||'-'})`],['데이터 수',`팀원 ${members.length} · 사업 ${projects.length} · 업무 ${tasks.length} · 일정 ${events.length}`]];
   const errors=healthKeys.filter(k=>syncHealth[k]&&!syncHealth[k].ok);
   const healthHtml=healthKeys.map(k=>{ const h=syncHealth[k]; const label=({'events-public':'공유 일정','events-private':'비공개 일정','comments-team':'팀 댓글','comments-private':'비공개 댓글','activityLogs-team':'활동 로그','userInvites':'초대','users':'계정'}[k]||k); return `<div class="diagnostic-item ${h&&!h.ok?'error':''}"><span>${escapeHtml(label)}</span><strong>${h?(h.ok?'정상':'오류'):'대기'}</strong></div>`; }).join('');
-  box.innerHTML=`<div class="diagnostic-grid">${stats.map(([l,v])=>`<div class="diagnostic-card"><div class="diagnostic-label">${escapeHtml(l)}</div><div class="diagnostic-value">${escapeHtml(v)}</div></div>`).join('')}</div><div class="diagnostic-list">${healthHtml}</div>${errors.length?`<div style="font-size:12px;color:#A32D2D;line-height:1.5;margin-top:10px">오류 ${errors.length}건이 있습니다. Firestore Rules와 users/{uid}.memberId/role/active 값을 확인하세요.</div>`:`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:10px">표시된 리스너가 모두 정상 상태면 동기화 권한은 대체로 맞습니다.</div>`}`;
+  const saveHealthHtml = Object.entries(saveSideEffectHealth).map(([key,h]) => `<div class="diagnostic-item ${h.ok?'':'error'}"><span>${key==='activity'?'변경 이력 저장':'알림 저장'}</span><strong>${h.ok?'정상':'오류'}</strong>${h.ok?'':`<span>${escapeHtml(h.message || '')}</span>`}</div>`).join('');
+  box.innerHTML=`<div class="diagnostic-grid">${stats.map(([l,v])=>`<div class="diagnostic-card"><div class="diagnostic-label">${escapeHtml(l)}</div><div class="diagnostic-value">${escapeHtml(v)}</div></div>`).join('')}</div><div class="diagnostic-list">${healthHtml}${saveHealthHtml}</div>${errors.length?`<div style="font-size:12px;color:#A32D2D;line-height:1.5;margin-top:10px">오류 ${errors.length}건이 있습니다. Firestore Rules와 users/{uid}.memberId/role/active 값을 확인하세요.</div>`:`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:10px">읽기 동기화 상태입니다. 저장 권한은 별도이며, 변경 이력·알림 저장 상태는 이 접속 중 실행한 결과만 표시합니다.</div>`}`;
 }
 function csvEscape(value){ const str=String(value??''); return /[",\n\r]/.test(str)?`"${str.replace(/"/g,'""')}"`:str; }
 function downloadTextFile(filename,text,mime){ const blob=new Blob([text],{type:mime||'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),500); }
