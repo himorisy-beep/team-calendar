@@ -2075,11 +2075,35 @@ function isProposalShadowProject(p){
   return String(p?.id || '').startsWith('proposal_');
 }
 function getActiveProjects(){ return projects.filter(p => !isDeletedProject(p) && !isProposalShadowProject(p)); }
-function getEventSelectableProjects(selectedProjectId=''){
-  const selected = String(selectedProjectId || '');
+function canSelectProjectConnection(p){
+  return isTeamLeaderUser() || assigns.some(a =>
+    String(a.projectId || '') === String(p.id || '') &&
+    String(a.memberId || '') === String(selfId || '')
+  );
+}
+
+function canSelectProposalConnection(p){
+  return isTeamLeaderUser() || isMyProposal(p);
+}
+
+function getSelectableTaskProjects(preservedProjectId=''){
+  const preserved = String(preservedProjectId || '');
   return getActiveProjects()
-    .filter(p => !isClosedProject(p) || String(p.id || '') === selected)
+    .filter(p => String(p.id || '') === preserved ||
+      (isTaskLinkableProject(p) && canSelectProjectConnection(p)))
     .sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko-KR', {sensitivity:'base', numeric:true}));
+}
+
+function getSelectableTaskProposals(preservedProposalId=''){
+  const preserved = String(preservedProposalId || '');
+  return proposals
+    .filter(p => String(p.id || '') === preserved ||
+      (isTaskLinkableProposal(p) && canSelectProposalConnection(p)))
+    .sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko-KR', {sensitivity:'base', numeric:true}));
+}
+
+function getEventSelectableProjects(preservedProjectId=''){
+  return getSelectableTaskProjects(preservedProjectId);
 }
 const getSelfMember = () => mb(selfId)||getActiveMembers()[0]||members[0]||{id:'',name:'—',color:'#888',bg:'#eee',role:''}; 
 function normalizeRoleValue(role){
@@ -3208,7 +3232,7 @@ function renderHome(){
 
   const todayEventRows = todayEvents.slice(0,8).map(e => ({
     title:e.title || '일정',
-    meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${e.project ? ' · ' + (pj(e.project)?.name || '') : ''}`,
+    meta:`${formatEventPeriod(e)} · ${TL[e.type] || e.type}${eventConnectionInfo(e).name ? ' · ' + eventConnectionInfo(e).name : ''}`,
     dot:eventColor(e.type),
     badge:TL[e.type] || '일정',
     badgeClass:e.type === 'meeting' ? 'blue' : 'green',
@@ -3863,7 +3887,7 @@ function doGlobalSearch(){
   });
 
   events.forEach(e=>{
-    const p = pj(e.project||'');
+    const p = eventConnectionInfo(e).item;
     const hay = `${e.title||''} ${e.subtype||''} ${p?.name||''}`.toLowerCase();
     if(hay.includes(q)){
       rows.push(`<div class="search-result" onclick="closeModal();showEv('${e.id}')"><div class="search-type">일정</div><div class="search-title">${escapeHtml(e.title||'')}</div><div class="search-meta">${formatEventPeriod(e)} ${p?`· ${escapeHtml(p.name||'')}`:''}</div></div>`);
@@ -4090,10 +4114,8 @@ function openAddTask(existingTask=null, forcedProjectId=''){
   if(!requireMemberWrite()) return;
   const selectedProjectId = existingTask?.project || forcedProjectId || '';
   const selectedProposalId = existingTask?.proposal || '';
-  const linkableProjects = getActiveProjects()
-    .filter(p => isTaskLinkableProject(p) || p.id === selectedProjectId)
-    .sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'ko-KR', {sensitivity:'base', numeric:true}));
-  const linkableProposals = proposals.filter(p => isTaskLinkableProposal(p) || p.id === selectedProposalId);
+  const linkableProjects = getSelectableTaskProjects(selectedProjectId);
+  const linkableProposals = getSelectableTaskProposals(selectedProposalId);
   const projectOptions = linkableProjects.map(p=>`<option value="${p.id}" ${p.id===selectedProjectId?'selected':''}>${escapeHtml(p.name||'')}</option>`).join('');
   const proposalOptions = linkableProposals.map(p=>`<option value="${p.id}">${escapeHtml(p.name||'')}</option>`).join('');
   const taskAssigneeMembers = existingTask || canCreateForOtherMember()
@@ -4107,7 +4129,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     <input type="hidden" id="task-id">
     <div class="form-row full"><div><div class="fl">업무명</div><div class="task-title-autocomplete"><input id="task-title-input" type="text" placeholder="업무명을 입력하세요" autocomplete="off" aria-autocomplete="list" aria-controls="task-title-suggestions"><div id="task-title-suggestions" class="task-title-suggestions" role="listbox"></div></div></div></div>
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
-    <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">진행 중인 사업이 없습니다</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">진행 중인 제안이 없습니다</option>'}</select></div></div></div>
+    <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">— 없음</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">— 없음</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
     <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${todayVal}"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
@@ -4622,7 +4644,23 @@ function buildSidebar(){
   const s=getSelfMember(); const av=document.getElementById('self-av'); av.textContent=ini(s.name);av.style.background=lighten(s.color);av.style.color=s.color; document.getElementById('self-name').textContent=s.name + ' · ' + roleLabel(userRole());
   syncFilterSections();
 }
-function refreshProjSelect(){ const sel=document.getElementById('ev-proj');if(!sel)return; const cur=sel.value; sel.innerHTML='<option value="">— 없음</option>'; getEventSelectableProjects(cur).forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`); }
+function refreshProjSelect(){
+  const sel=document.getElementById('ev-proj');
+  if(!sel)return;
+  const cur=sel.value;
+  const originalEvent = editingEventId ? events.find(e => e.id === editingEventId) : null;
+  const original = originalEvent?.project || '';
+  sel.innerHTML='<option value="">— 없음</option>';
+  getEventSelectableProjects(original).forEach(p=>sel.innerHTML+=`<option value="${p.id}"${cur===p.id?' selected':''}>${escapeHtml(p.name || '')}</option>`);
+  sel.value=Array.from(sel.options).some(o=>o.value===cur) ? cur : '';
+  const proposalSel=document.getElementById('ev-proposal');
+  if(proposalSel){
+    const curProposal=proposalSel.value;
+    proposalSel.innerHTML='<option value="">— 없음</option>';
+    getSelectableTaskProposals(originalEvent?.proposal || '').forEach(p=>proposalSel.innerHTML+=`<option value="${p.id}">${escapeHtml(p.name || '')}</option>`);
+    proposalSel.value=Array.from(proposalSel.options).some(o=>o.value===curProposal) ? curProposal : '';
+  }
+}
 function renderActiveFilterBar(){
   // 필터 상태 표시 바는 제거했습니다. 각 화면의 체크박스/필터 버튼 상태로 확인합니다.
 }
@@ -5195,7 +5233,7 @@ function renderCalList(){
 
     const e = item.raw;
     const m2=mb(e.who);
-    const p=pj(e.project||'');
+    const p=eventConnectionInfo(e).item;
     const bgCol = eventColor(e.type);
 
     h+=`<div class="li" onclick="showEv('${e.id}')">
@@ -6678,7 +6716,7 @@ function renderMyWorkOverview(){
       <div class="li-dot" style="background:${eventColor(e.type)}"></div>
       <div class="work-item-main">
         <div class="work-item-title">${escapeHtml(e.title || '')}</div>
-        <div class="work-item-meta">${formatEventPeriod(e)}${e.project ? ' · '+escapeHtml(pj(e.project)?.name || '') : ''}</div>
+        <div class="work-item-meta">${formatEventPeriod(e)}${eventConnectionInfo(e).name ? ' · '+escapeHtml(eventConnectionInfo(e).name) : ''}</div>
       </div>
     </div>`).join('');
 
@@ -6861,7 +6899,7 @@ function renderPersonalList() {
   let mine = events.filter(e => e.who===selfId && !isEventForDeletedProject(e) && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
   if(hideP) mine=mine.filter(e=>!e._p); mine.sort((a,b)=>{ if(a._p!==b._p) return a._p?1:-1; const tA=parseDateSafely(a.start).getTime(), tB=parseDateSafely(b.start).getTime(); return a._p?tB-tA:tA-tB; });
   if(!mine.length){container.innerHTML='<div class="empty">없음</div>';return;}
-  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = pj(e.project || ''); h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color};color:${p.color}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="event.stopPropagation();deleteEventById('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
+  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = eventConnectionInfo(e).item; h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color || '#888'};color:${p.color || '#888'}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button onclick="openEditEvent('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button onclick="event.stopPropagation();deleteEventById('${e.id}')" style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
   container.innerHTML=h;
 }
 
@@ -6896,12 +6934,19 @@ function openEditEvent(id) {
   document.getElementById('pub-toggle').classList.toggle('on', !!e.public);
   onTypeChange();
   if(document.getElementById('ev-sub')) document.getElementById('ev-sub').value = e.subtype || "";
+  document.getElementById('ev-context-type').value = e.proposal ? 'proposal' : (e.project ? 'project' : 'none');
   if(document.getElementById('ev-proj')) document.getElementById('ev-proj').value = e.project || "";
+  if(document.getElementById('ev-proposal')) document.getElementById('ev-proposal').value = e.proposal || "";
+  onEventContextTypeChange();
   onSubChange();
 }
 function getEventFormHTML(isEdit) { 
-  const selectedProjectId = isEdit ? (events.find(ev => ev.id === editingEventId)?.project || '') : '';
-  const pOpts = getEventSelectableProjects(selectedProjectId).map(p => `<option value="${p.id}">${escapeHtml(p.name || '')}</option>`).join(''); 
+  const existingEvent = isEdit ? events.find(ev => ev.id === editingEventId) : null;
+  const selectedProjectId = existingEvent?.project || '';
+  const selectedProposalId = existingEvent?.proposal || '';
+  const contextType = selectedProposalId ? 'proposal' : (selectedProjectId ? 'project' : 'none');
+  const pOpts = getEventSelectableProjects(selectedProjectId).map(p => `<option value="${p.id}"${p.id===selectedProjectId?' selected':''}>${escapeHtml(p.name || '')}</option>`).join('');
+  const proposalOpts = getSelectableTaskProposals(selectedProposalId).map(p => `<option value="${p.id}"${p.id===selectedProposalId?' selected':''}>${escapeHtml(p.name || '')}</option>`).join('');
   const d = new Date(); 
   const def = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
   const newEventMemberOptions = getActiveMembers().map(m => `<option value="${m.id}" ${String(m.id)===String(selfId)?'selected':''}>${escapeHtml(m.name || '')}</option>`).join('');
@@ -6922,10 +6967,35 @@ function getEventFormHTML(isEdit) {
     <option value="personal">개인</option>
   </select></div></div>
   <div class="sub-row" id="sub-row"><div class="fl">세부</div><select id="ev-sub" onchange="onSubChange()"></select><div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="입력"></div></div>
-  <div class="form-row full" id="ev-proj-row"><div><div class="fl">사업</div><select id="ev-proj"><option value="">— 없음</option>${pOpts}</select></div></div>
+  <div class="form-row full" id="ev-proj-row"><div><div class="fl">일정 연결</div><div class="task-context-selects"><select id="ev-context-type" onchange="onEventContextTypeChange()"><option value="project"${contextType==='project'?' selected':''}>사업</option><option value="proposal"${contextType==='proposal'?' selected':''}>제안</option><option value="none"${contextType==='none'?' selected':''}>연결 없음</option></select><select id="ev-proj" style="display:${contextType==='project'?'block':'none'}"><option value="">— 없음</option>${pOpts}</select><select id="ev-proposal" style="display:${contextType==='proposal'?'block':'none'}"><option value="">— 없음</option>${proposalOpts}</select></div></div></div>
   <div class="toggle-row" id="pub-row"><div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--text2)">팀 캘린더 공유</span></div>
   <div id="personal-help" class="ui-form-caution" style="display:none;margin:-3px 0 10px">개인 일정은 본인에게만 표시됩니다. 관리자와 팀장도 확인할 수 없습니다.</div>
   <div style="display:flex;gap:8px;align-items:center">${isEdit?`<button class="btn-danger-sm" style="height:32px;padding:0 12px" onclick="deleteEventFromEdit()">삭제</button><span style="flex:1"></span>`:''}<button class="btn btn-primary" ${isEdit?'':'style="flex:1"'} onclick="submitEvent()">${isEdit?'저장':'추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`; 
+}
+
+function onEventContextTypeChange(){
+  const type=document.getElementById('ev-context-type')?.value || 'none';
+  const projectSel=document.getElementById('ev-proj');
+  const proposalSel=document.getElementById('ev-proposal');
+  if(projectSel) projectSel.style.display=type==='project'?'block':'none';
+  if(proposalSel) proposalSel.style.display=type==='proposal'?'block':'none';
+}
+
+function eventConnectionValues(isPersonal){
+  const type=document.getElementById('ev-context-type')?.value || 'none';
+  return {
+    project:!isPersonal && type==='project' ? (document.getElementById('ev-proj')?.value || '') : '',
+    proposal:!isPersonal && type==='proposal' ? (document.getElementById('ev-proposal')?.value || '') : ''
+  };
+}
+
+function eventConnectionInfo(e){
+  if(e?.proposal){
+    const item=pr(e.proposal);
+    return {type:'제안',item,name:item?.name || ''};
+  }
+  const item=pj(e?.project || '');
+  return {type:'사업',item,name:item?.name || ''};
 }
 
 function deleteEventFromEdit(){
@@ -7061,14 +7131,15 @@ function submitEvent(){
     createdBy:originalCreatedBy,
     updatedBy:selfId,
     updatedAt:new Date().toISOString(),
-    project:isPersonal ? '' : document.getElementById('ev-proj').value, 
+    ...eventConnectionValues(isPersonal),
     public:isPersonal ? false : document.getElementById('pub-toggle').classList.contains('on') 
   }, ()=>closeModal()); 
 }
 function showEv(id){ 
   const e=events.find(v=>v.id===id); 
   if(!e)return; 
-  const p = pj(e.project || '');
+  const connection = eventConnectionInfo(e);
+  const p = connection.item;
   const m = mb(e.who || '');
   const authorMember = mb(e.createdBy || e.who || '');
   const canEdit = canEditItem(e);
@@ -7076,7 +7147,7 @@ function showEv(id){
     <div class="dr"><span class="dl">기간</span><span>${formatEventPeriod(e)}</span></div>
     <div class="dr"><span class="dl">유형</span><span class="tag ${TT[e.type]}">${TL[e.type] || e.type}</span></div>
     ${e.subtype?`<div class="dr"><span class="dl">세부</span><span>${escapeHtml(e.subtype)}</span></div>`:''}
-    ${p?`<div class="dr"><span class="dl">사업</span><span>${escapeHtml(p.name || '')}</span></div>`:''}
+    ${p?`<div class="dr"><span class="dl">${connection.type}</span><span>${escapeHtml(p.name || '')}</span></div>`:''}
     <div class="dr"><span class="dl">작성자</span><span>${escapeHtml(authorMember?.name || m?.name || (e.who==='all'?'전체팀':'-'))}</span></div>
     <div class="dr"><span class="dl">공유</span><span>${e.public?'팀 공유':'비공개'}</span></div>
     ${canEdit?`<div style="margin-top:16px;text-align:right;"><button class="btn btn-secondary btn-sm" onclick="openEditEvent('${e.id}')">수정</button></div>`:''}
@@ -7934,7 +8005,7 @@ function exportCSV(type){
   if(!requireManager()) return; const now=new Date().toISOString().slice(0,10); let rows=[], headers=[];
   if(type==='projects'){ headers=['id','name','start','end','status','deleted','deletedAt','deletedBy','memberCount']; rows=projects.filter(p=>!isProposalShadowProject(p)).map(p=>({id:p.id,name:p.name||'',start:p.start||'',end:p.end||'',status:p.status||'',deleted:p.deleted===true,deletedAt:p.deletedAt||'',deletedBy:p.deletedBy||'',memberCount:assigns.filter(a=>a.projectId===p.id).length})); }
   else if(type==='tasks'){ headers=['id','title','project','projectName','proposal','proposalName','assignee','assigneeName','start','end','status','priority','showOnCalendar','note']; rows=tasks.map(t=>({id:t.id,title:t.title||'',project:t.project||'',projectName:pj(t.project)?.name||'',proposal:t.proposal||'',proposalName:pr(t.proposal)?.name||'',assignee:t.assignee||'',assigneeName:mb(t.assignee)?.name||'',start:t.start||'',end:t.end||'',status:normalizeTaskStatus(t.status),priority:t.priority||getTaskMatrixType(t),showOnCalendar:t.showOnCalendar===true,note:t.note||''})); }
-  else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',public:e.public===true})); }
+  else if(type==='events'){ headers=['id','title','type','subtype','start','end','who','whoName','project','projectName','proposal','proposalName','public']; rows=events.map(e=>({id:e.id,title:e.title||'',type:e.type||'',subtype:e.subtype||'',start:e.start||'',end:e.end||'',who:e.who||'',whoName:e.who==='all'?'전체':(mb(e.who)?.name||''),project:e.project||'',projectName:pj(e.project)?.name||'',proposal:e.proposal||'',proposalName:pr(e.proposal)?.name||'',public:e.public===true})); }
   else if(type==='proposals'){ headers=['id','name','status','result','start','deadline','demandOrg','participants','participantNames','note']; rows=proposals.map(p=>({id:p.id,name:p.name||'',status:proposalStatusLabel(proposalStatusValue(p)),result:proposalResultLabel(proposalResultValue(p)),start:p.start||'',deadline:p.deadline||'',demandOrg:p.demandOrg||'',participants:p.participants||'',participantNames:proposalParticipantNames(p).join('; '),note:p.note||''})); }
   else return;
   downloadTextFile(`calendar_${type}_${now}.csv`, rowsToCSV(rows,headers), 'text/csv;charset=utf-8');
