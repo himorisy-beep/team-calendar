@@ -39,9 +39,12 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .sb-btn.active{background:var(--bg3);color:var(--text);font-weight:500}
 .sb-btn .icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .sb-btn .icon svg{display:block;width:18px;height:18px}
-.mb-chip{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:var(--r-sm);cursor:pointer;transition:all .12s}
+.mb-chip{display:flex;align-items:center;gap:10px;padding:5px 6px;min-height:32px;width:100%;border:none;background:transparent;color:var(--text);font-family:inherit;text-align:left;border-radius:var(--r-sm);cursor:pointer;transition:all .12s}
 .mb-chip:hover{background:var(--bg2)}
-.mb-chip.off{opacity:.35}
+.mb-chip.off{color:var(--text3)}
+.member-filter-dot{width:9px;height:9px;box-sizing:border-box;border-radius:50%;flex-shrink:0;background:var(--member-color);border:1.5px solid var(--member-color)}
+.mb-chip.off .member-filter-dot{background:transparent}
+@media(pointer:coarse){.mb-chip{min-height:44px}}
 .av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
 .mb-chip-name{font-size:13px}
 .proj-chip{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:var(--r-sm);cursor:pointer;font-size:13px;color:var(--text2);transition:all .12s}
@@ -4660,8 +4663,8 @@ function renderTodos() {
 
 function buildSidebar(){
   const mc=document.getElementById('sb-members'); mc.innerHTML=''; getActiveMembers().forEach(m=>{
-    const bg=lighten(m.color); const d=document.createElement('div'); d.className='mb-chip'+(hiddenMb.has(m.id)?' off':''); d.onclick=()=>{hiddenMb.has(m.id)?hiddenMb.delete(m.id):hiddenMb.add(m.id); saveJsonArray('hiddenMembers', hiddenMb); refreshAll();};
-    d.innerHTML=`<div class="av" style="background:${bg};color:${m.color}">${ini(m.name)}</div><span class="mb-chip-name">${escapeHtml(m.name || '')}</span>`; mc.appendChild(d);
+    const d=document.createElement('button'); d.type='button'; d.className='mb-chip'+(hiddenMb.has(m.id)?' off':''); d.setAttribute('aria-pressed', String(!hiddenMb.has(m.id))); d.style.setProperty('--member-color', m.color); d.onclick=()=>{hiddenMb.has(m.id)?hiddenMb.delete(m.id):hiddenMb.add(m.id); saveJsonArray('hiddenMembers', hiddenMb); refreshAll();};
+    d.innerHTML=`<span class="member-filter-dot" aria-hidden="true"></span><span class="mb-chip-name">${escapeHtml(m.name || '')}</span>`; mc.appendChild(d);
   });
   const pc=document.getElementById('sb-projects'); pc.innerHTML=`<div class="proj-chip${selProj==='all'?' active':''}" onclick="toggleProj('all')"><div class="dot" style="background:var(--text2)"></div>전체</div>`;
   getActiveProjects().forEach(p=>{ const d=document.createElement('div'); d.className='proj-chip'+(selProj===p.id?' active':''); d.innerHTML=`<div class="dot" style="background:${p.color}"></div>${escapeHtml(p.name || '')}`; d.onclick=()=>toggleProj(p.id); pc.appendChild(d); });
