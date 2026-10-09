@@ -1766,6 +1766,7 @@ html[data-theme="dark"] .project-danger-zone{background:rgba(216,90,48,.07)}
 html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transparent}
 @media(max-width:680px){.project-danger-zone{flex-direction:row;align-items:center}.project-danger-zone .btn-danger-sm{height:30px;width:auto}}
 
+.proposal-file-link .attachment-icon{width:15px;height:15px;display:inline-block;vertical-align:-3px;flex-shrink:0}
 </style>
 <!-- Menu icons: Lucide v0.468.0, ISC license. -->
 </head>
@@ -1894,25 +1895,25 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
     <div id="my-task-matrix-wrap" style="display:none">
       <div class="eisenhower-grid">
         <div class="card eisen-card">
-          <div class="eisen-title" style="color:#D85A30">🔥 긴급·중요</div>
+          <div class="eisen-title" style="color:#D85A30">긴급·중요</div>
           <div class="eisen-desc">즉시 처리해야 하는 공식 업무</div>
           <div id="task-urgent-important-list" class="eisen-list"></div>
         </div>
 
         <div class="card eisen-card">
-          <div class="eisen-title" style="color:#185FA5">📌 중요·계획</div>
+          <div class="eisen-title" style="color:#185FA5">중요·계획</div>
           <div class="eisen-desc">중요하지만 계획해서 처리할 업무</div>
           <div id="task-important-list" class="eisen-list"></div>
         </div>
 
         <div class="card eisen-card">
-          <div class="eisen-title" style="color:#EF9F27">⚡ 긴급·단순</div>
+          <div class="eisen-title" style="color:#EF9F27">긴급·단순</div>
           <div class="eisen-desc">빠르게 처리하거나 위임할 업무</div>
           <div id="task-urgent-list" class="eisen-list"></div>
         </div>
 
         <div class="card eisen-card">
-          <div class="eisen-title" style="color:var(--text2)">🕓 보류</div>
+          <div class="eisen-title" style="color:var(--text2)">보류</div>
           <div class="eisen-desc">우선순위가 낮거나 대기 중인 업무</div>
           <div id="task-backlog-list" class="eisen-list"></div>
         </div>
@@ -5893,7 +5894,7 @@ function showProposal(id){
   if(!p) return;
   const fileLinks = normalizeFileLinks(p.fileLinks);
   const fileHtml = fileLinks.length
-    ? `<div style="margin-top:10px">${fileLinks.map(f=>`<a class="proposal-file-link" href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(f.name || '첨부파일 다운로드')}</a>`).join('')}</div>`
+    ? `<div style="margin-top:10px">${fileLinks.map(f=>`<a class="proposal-file-link" href="${escapeAttr(f.url)}" target="_blank" rel="noopener noreferrer"><svg class="attachment-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.234 20.252 21 12.3"/><path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486"/></svg> ${escapeHtml(f.name || '첨부파일 다운로드')}</a>`).join('')}</div>`
     : '<span>-</span>';
 
   const participantNames = proposalParticipantNames(p);
