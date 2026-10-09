@@ -114,7 +114,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#378ADD}
 .status-chip.ok{background:#E1F5EE;color:#0F6E56}
 .status-chip.warn{background:#FAEEDA;color:#854F0B}
 .status-chip.danger{background:#FAECE7;color:#D85A30}
-.avatar-stack{display:flex;align-items:center}
+.avatar-stack{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.member-name-label{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.member-card-header>.member-filter-dot{margin:0 5px}
 .avatar-stack .av{margin-left:-5px;border:2px solid var(--bg)}
 .avatar-stack .av:first-child{margin-left:0}
 :root{--proposal-db-cols:58px minmax(0,2fr) minmax(90px,.55fr) 90px 162px}
@@ -3478,7 +3480,7 @@ function renderProposalParticipantStartRows(){
     const val = proposalParticipantStartDraft[id] || defaultDate || '';
     proposalParticipantStartDraft[id] = val;
     return `<div class="proposal-participant-start-row">
-      ${m ? `<div class="av" style="width:22px;height:22px;font-size:9px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+      ${m ? `<span class="member-filter-dot" style="--member-color:${escapeAttr(m.color)}" aria-hidden="true"></span>` : '<div class="av">?</div>'}
       <div class="member-name">${escapeHtml(m?.name || '알 수 없음')}</div>
       <input type="date" data-proposal-participant-start data-member-id="${escapeAttr(id)}" value="${escapeAttr(val)}" onchange="proposalParticipantStartDraft[this.dataset.memberId]=this.value">
     </div>`;
@@ -5409,7 +5411,7 @@ function renderBoardProjectCards(vp){
       .filter(e=>!hideDoneTasks || !isCompletedScheduleItem(e))
       .map(e=>({...e,_kind:'event',_past:isCompletedScheduleItem(e),_date:e.end || e.start}));
 
-    const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><div class="av" style="width:16px;height:16px;font-size:8px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
+    const mt=projAssigns.map(a=>{const m2=mb(a.memberId); return m2?`<span class="member-tag"><span class="member-filter-dot" style="--member-color:${escapeAttr(m2.color)}" aria-hidden="true"></span>${escapeHtml(m2.name || '')}${a.role?` <span style="color:var(--text3);font-size:10px">${escapeHtml(a.role)}</span>`:''}</span>`:''}).join('');
 
     const rows = [
       ...projTasks.map(t=>{
@@ -5418,7 +5420,7 @@ function renderBoardProjectCards(vp){
         return {
           _past:t._past,
           _date:t._date,
-          html:`<div class="task-row ${t._past?'is-past':''}"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${overdue?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${overdue?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`
+          html:`<div class="task-row ${t._past?'is-past':''}"><div class="task-assignee">${a?`<span class="member-filter-dot" style="--member-color:${escapeAttr(a.color)}" aria-hidden="true"></span><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:'<span style="color:var(--text3);font-size:12px">미배정</span>'}</div><div class="task-title" style="cursor:pointer; ${overdue?'color:#D85A30;font-weight:600;':''}" onclick="showTask('${t.id}')">${overdue?'[지연] ':''}${escapeHtml(t.title || '')}</div><span class="tag ${STATUS_TAG[normalizeTaskStatus(t.status)]||'tag-sub'}" style="font-size:10px">${escapeHtml(normalizeTaskStatus(t.status) || '')}</span><div class="task-dates">${fmtDate(t.start)}~${fmtDate(t.end)}</div></div>`
         };
       }),
       ...projEvents.map(e=>{
@@ -5426,7 +5428,7 @@ function renderBoardProjectCards(vp){
         return {
           _past:e._past,
           _date:e._date,
-          html:`<div class="task-row ${e._past?'is-past':''}"><div class="task-assignee">${a?`<div class="av" style="width:18px;height:18px;font-size:8px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:${eventColor(e.type)};" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`
+          html:`<div class="task-row ${e._past?'is-past':''}"><div class="task-assignee">${a?`<span class="member-filter-dot" style="--member-color:${escapeAttr(a.color)}" aria-hidden="true"></span><span style="font-size:12px">${escapeHtml(a.name || '')}</span>`:e.who==='all'?'<span style="font-size:12px">전체</span>':'<span style="font-size:12px">미상</span>'}</div><div class="task-title" style="cursor:pointer; color:${eventColor(e.type)};" onclick="showEv('${e.id}')">${escapeHtml(e.title || '')}</div><span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type}</span><div class="task-dates">${formatEventPeriod(e)}</div></div>`
         };
       })
     ].sort(sortManagementRows).map(r=>r.html).join('');
@@ -5482,9 +5484,9 @@ function renderProjectTable(){
     const statusClass = residual ? 'warn' : overdue ? 'danger' : closed ? 'ok' : doing ? 'warn' : 'ok';
     const statusText = residual ? '기간 종료 · 잔여업무 있음' : overdue ? '지연 있음' : closed ? '완료' : doing ? '진행중' : '정상';
 
-    const memberAvatars = projAssigns.slice(0,4).map(a=>{
+    const memberAvatars = projAssigns.map(a=>{
       const m = mb(a.memberId);
-      return m ? `<div class="av" title="${escapeHtml(m.name || '')}" style="width:24px;height:24px;font-size:9px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '';
+      return m ? `<span class="member-name-label"><span class="member-filter-dot" style="--member-color:${escapeAttr(m.color)}" aria-hidden="true"></span>${escapeHtml(m.name || '')}</span>` : '';
     }).join('');
 
     return `<tr class="${closed?'is-past':''}">
@@ -5572,7 +5574,7 @@ function renderGantt() {
     let h = `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}${isClosedProject(p)?'<span style="margin-left:auto;font-size:11px;color:var(--text3)">완료</span>':''}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
     pt.forEach(t => {
       const a = mb(t.assignee);
-      h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<div class="av" style="width:24px;height:24px;font-size:10px;background:${lighten(a.color)};color:${a.color}">${ini(a.name)}</div>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`;
+      h += `<div class="gantt-row"><div class="gc-title" onclick="${t.isEvent?`showEv('${t.id}')`:`showTask('${t.id}')`}">${escapeHtml(t.title || '')}</div><div class="gc-worker">${a?`<span class="member-name-label"><span class="member-filter-dot" style="--member-color:${escapeAttr(a.color)}" aria-hidden="true"></span>${escapeHtml(a.name || '')}</span>`:'-'}</div><div class="gc-date">${fmtDate(t.start)}</div><div class="gc-date">${fmtDate(t.end)}</div></div>`;
     });
     h += `</div><div class="gantt-right-pane" style="width: ${totalDays * 36}px;"><div class="gantt-time-header">`;
     for(let i=0;i<totalDays;i++){
@@ -6658,7 +6660,7 @@ function renderMemberOverview(){
     const stats = memberManDayStats(m2.id);
     h += `<div class="member-card">
       <div class="member-card-header">
-        <div class="av" style="width:36px;height:36px;font-size:13px;background:${lighten(m2.color)};color:${m2.color}">${ini(m2.name)}</div>
+        <span class="member-filter-dot" style="--member-color:${escapeAttr(m2.color)}" aria-hidden="true"></span>
         <div class="member-card-info">
           <div class="member-card-name">${escapeHtml(m2.name || '')}</div>
           <div class="member-card-role">${escapeHtml(m2.role || '-')} · 참여사업 ${ma.length}개 · 총 ${stats.total} MD</div>
@@ -7700,7 +7702,7 @@ function projectMemberSavedRowHtml(a){
   const assignId = a.id || '';
   const projectId = a.projectId || '';
   return `<div class="project-member-edit-row unified-pm-row" id="pm-row-${escapeAttr(assignId)}" data-pm-row data-assign-id="${escapeAttr(assignId)}" data-member-id="${escapeAttr(a.memberId || '')}">
-    ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+    ${m ? `<span class="member-filter-dot" style="--member-color:${escapeAttr(m.color)}" aria-hidden="true"></span>` : '<div class="av">?</div>'}
     <div class="project-member-edit-main">
       <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')}</div>
       <div class="project-member-edit-fields">
@@ -7948,7 +7950,7 @@ function projectMemberManagerHtml(projectId){
       const appliedDate = assignAppliedDateValue(a);
       const endDate = assignEndDateValue(a);
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border)">
-        ${m ? `<div class="av" style="width:22px;height:22px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+        ${m ? `<span class="member-filter-dot" style="--member-color:${escapeAttr(m.color)}" aria-hidden="true"></span>` : '<div class="av">?</div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:500">${escapeHtml(m?.name || '알 수 없음')}</div>
           <div style="font-size:11px;color:var(--text2)">${escapeHtml(a.role || '-')} · 투입시작 ${appliedDate || '-'} · 투입종료 ${endDate || '사업 종료일'}</div>
@@ -7969,7 +7971,7 @@ function projectMemberManagerHtml(projectId){
     const appliedDate = assignAppliedDateValue(a);
     const endDate = assignEndDateValue(a);
     return `<div class="project-member-edit-row">
-      ${m ? `<div class="av" style="width:24px;height:24px;background:${lighten(m.color)};color:${m.color}">${ini(m.name)}</div>` : '<div class="av">?</div>'}
+      ${m ? `<span class="member-filter-dot" style="--member-color:${escapeAttr(m.color)}" aria-hidden="true"></span>` : '<div class="av">?</div>'}
       <div class="project-member-edit-main">
         <div style="font-size:13px;font-weight:700">${escapeHtml(m?.name || '알 수 없음')}</div>
         <div class="project-member-edit-fields">
