@@ -5543,7 +5543,7 @@ function renderGantt() {
     if(t.assignee !== 'all' && hiddenMb.has(t.assignee)) return false;
     if(t.isEvent && isCompletedScheduleItem(t)) return false;
     if(!t.isEvent && isCompletedTask(t)) return false;
-    return t.start && t.end;
+    return t.start && t.end && parseDateSafely(t.start).getTime() > 0 && parseDateSafely(t.end).getTime() > 0;
   });
 
   const dates = allTasks
@@ -5559,16 +5559,19 @@ function renderGantt() {
     return;
   }
 
-  let minD = new Date(Math.min(...dates)-2*864e5), maxD = new Date(Math.max(...dates)+3*864e5);
-  const totalDays = daysBetween(minD.toISOString().slice(0, 10), maxD.toISOString().slice(0, 10)) + 1;
-  const pct = (d) => {
-    const diff = daysBetween(minD.toISOString().slice(0, 10), parseDateSafely(d).toISOString().slice(0, 10));
-    return Math.max(0, Math.min(100, (diff / totalDays) * 100));
-  };
-
   const projectBlockHtml = (p) => {
     const pt = allTasks.filter(t => t.project === p.id);
     if(!pt.length) return '';
+    // Each project owns its date range; delayed tasks in other projects cannot expand it.
+    const projectDates = pt.flatMap(t => [parseDateSafely(t.start).getTime(), parseDateSafely(t.end).getTime()]);
+    const minD = new Date(Math.min(...projectDates));
+    const maxD = new Date(Math.max(...projectDates));
+    minD.setHours(0,0,0,0);
+    maxD.setHours(0,0,0,0);
+    minD.setDate(minD.getDate() - 2);
+    maxD.setDate(maxD.getDate() + 3);
+    const totalDays = daysBetween(fmtDateFull(minD), fmtDateFull(maxD)) + 1;
+    const pct = d => Math.max(0, Math.min(100, daysBetween(fmtDateFull(minD), fmtDateFull(d)) / totalDays * 100));
     let h = `<div class="gantt-project-block"><div class="gantt-project-header"><div style="width:14px;height:14px;border-radius:4px;background:${p.color}"></div>${escapeHtml(p.name || '')}${isClosedProject(p)?'<span style="margin-left:auto;font-size:11px;color:var(--text3)">완료</span>':''}</div><div class="gantt-body-wrap"><div class="gantt-left-pane"><div class="gantt-row gantt-header-row"><div class="gc-title">Event</div><div class="gc-worker">Worker</div><div class="gc-date">Start</div><div class="gc-date">End</div></div>`;
     pt.forEach(t => {
       const a = mb(t.assignee);
@@ -5576,8 +5579,9 @@ function renderGantt() {
     });
     h += `</div><div class="gantt-right-pane" style="width: ${totalDays * 36}px;"><div class="gantt-time-header">`;
     for(let i=0;i<totalDays;i++){
-      const dt = new Date(minD.getTime()+i*864e5);
-      h += `<div class="gantt-day-col"><span style="font-size:9px;">${['SU','MO','TU','WE','TH','FR','SA'][dt.getDay()]}</span><span style="font-size:11px;">${dt.getDate()}</span></div>`;
+      const dt = new Date(minD);
+      dt.setDate(dt.getDate() + i);
+      h += `<div class="gantt-day-col" title="${fmtDateFull(dt)}"><span style="font-size:9px;">${['SU','MO','TU','WE','TH','FR','SA'][dt.getDay()]}</span><span style="font-size:11px;">${dt.getMonth()+1}/${dt.getDate()}</span></div>`;
     }
     h += `</div>`;
     pt.forEach(t => {
@@ -7625,15 +7629,30 @@ async function submitMember(){
   if(!name){ showToast('이름을 입력해주세요'); return; }
 
   const now = new Date().toISOString();
+  let loginChanged = false;
   try{
     const batch = db.batch();
-    batch.set(db.collection('members').doc(id), { name, role:roleText, color, active:true }, { merge:true });
+    // Profile edits must not reactivate members or rewrite login permissions.
+    const memberPayload = { name, role:roleText, color };
+    if(!isEdit) memberPayload.active = true;
+    batch.set(db.collection('members').doc(id), memberPayload, { merge:true });
 
     const originalInviteId = document.getElementById('member-invite-original-id')?.value || '';
     const existingInvite = originalInviteId ? userInvites.find(x => x.id === originalInviteId) : userInvites.find(x => x.memberId === id);
     const memberUsers = users.filter(u => u.memberId === id);
 
-    if(loginEnabled){
+    const currentLogin = primaryLoginForMember(id);
+    const hadLogin = !!(currentLogin.user || currentLogin.invite);
+    const currentEmail = normalizeLoginEmail(currentLogin.user?.email || currentLogin.invite?.email || '');
+    const currentRole = normalizeRoleValue(currentLogin.user?.role || currentLogin.invite?.role || 'member');
+    const currentActive = !(mb(id)?.active === false || currentLogin.user?.active === false || currentLogin.invite?.active === false);
+    loginChanged = loginEnabled !== hadLogin || (loginEnabled && (
+      normalizeLoginEmail(document.getElementById('member-login-email')?.value || '') !== currentEmail ||
+      normalizeRoleValue(document.getElementById('member-login-role')?.value || 'member') !== currentRole ||
+      (document.getElementById('member-login-active')?.value !== 'false') !== currentActive
+    ));
+
+    if(loginEnabled && loginChanged){
       const email = normalizeLoginEmail(document.getElementById('member-login-email')?.value || '');
       const loginRole = normalizeRoleValue(document.getElementById('member-login-role')?.value || 'member');
       const active = isEdit ? document.getElementById('member-login-active')?.value !== 'false' : true;
@@ -7662,18 +7681,19 @@ async function submitMember(){
       if(linkedUid){
         batch.set(db.collection('users').doc(linkedUid), { memberId:id, role:loginRole, active, name, updatedAt:now, updatedBy:selfId }, { merge:true });
       }
-    } else if(isEdit){
+    } else if(isEdit && !loginEnabled && hadLogin){
       // 기존 팀원의 로그인 연결을 해제하면 초대와 연결 계정을 비활성화합니다. 업무 배정용 팀원 프로필은 유지됩니다.
       userInvites.filter(i => i.memberId === id).forEach(i => batch.set(db.collection('userInvites').doc(i.id), { active:false, status:'disabled', updatedAt:now, updatedBy:selfId }, { merge:true }));
       memberUsers.forEach(u => batch.set(db.collection('users').doc(u.uid || u.id), { active:false, updatedAt:now, updatedBy:selfId }, { merge:true }));
     }
 
     await batch.commit();
-    showToast(loginEnabled ? '팀원과 로그인 계정을 저장했습니다' : '팀원 정보를 저장했습니다');
+    showToast(loginChanged && loginEnabled ? '팀원과 로그인 계정을 저장했습니다' : '팀원 정보를 저장했습니다');
     closeModal();
     renderUserTeamManageList();
   }catch(e){
-    showToast('팀원 저장 실패: ' + (e.message || e));
+    const permissionDenied = e.code === 'permission-denied' || /Missing or insufficient permissions/i.test(e.message || '');
+    showToast(permissionDenied ? '팀원 저장 실패: 서버에서 저장 권한을 거부했습니다. ' + (loginChanged ? '로그인 계정·초대 변경 권한을 확인해주세요.' : '팀원 프로필(members) 수정 권한을 확인해주세요.') : '팀원 저장 실패: ' + (e.message || e));
   }
 }
 async function disableMember(id){ if(!requireManager()) return; const m=mb(id); if(!m) return; if(!confirm(`${m.name} 팀원을 비활성화할까요? 과거 기록은 유지되고, 연결된 계정/초대도 비활성화됩니다.`)) return; try{ const batch=db.batch(); const now=new Date().toISOString(); batch.set(db.collection('members').doc(id), {active:false,disabledAt:now,disabledBy:selfId}, {merge:true}); userInvites.filter(i=>i.memberId===id).forEach(i=>batch.set(db.collection('userInvites').doc(i.id), {active:false,status:'disabled',updatedAt:now,updatedBy:selfId}, {merge:true})); users.filter(u=>u.memberId===id).forEach(u=>batch.set(db.collection('users').doc(u.uid||u.id), {active:false,updatedAt:now,updatedBy:selfId}, {merge:true})); await batch.commit(); showToast('팀원을 비활성화했습니다'); }catch(e){ showToast('비활성화 실패: '+(e.message||e)); } }
@@ -8606,3 +8626,4 @@ initAuth();
 
 </body>
 </html>
+
