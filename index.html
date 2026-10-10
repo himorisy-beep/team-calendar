@@ -1932,7 +1932,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
     <div class="personal-actions">
       <div class="personal-tab-row">
         <button class="chip active" id="pv-work" onclick="setPV('work')">업무</button>
-        <button class="chip" id="pv-projects" onclick="setPV('projects')">사업·제안</button>
+        <button class="chip" id="pv-projects" onclick="setPV('projects')">내 사업·제안</button>
       </div>
     </div>
   </div>
@@ -1993,11 +1993,12 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
 
   <div class="card" id="my-project-wrap" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:0">내가 맡은 사업/제안</div>
+      <div class="card-title" style="margin-bottom:0">내 사업·제안 모아보기</div>
       <label class="header-check">
         <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 내역 숨기기</span><span class="label-mobile">완료 숨김</span>
       </label>
     </div>
+    <div class="privacy-help" style="margin-bottom:12px">참여한 사업·제안과 내 담당 업무·일정을 모아 보여줍니다.</div>
     <div id="my-project-list"></div>
   </div>
 </div>
@@ -6971,8 +6972,15 @@ function renderMyProjectsList(){
 
   const groups = [];
 
-  assigns.filter(a => a.memberId === selfId && !isAssignForDeletedProject(a)).forEach(a => {
-    const p = pj(a.projectId);
+  const myAssignments = assigns.filter(a => a.memberId === selfId && !isAssignForDeletedProject(a));
+  const myProjectIds = new Set([
+    ...myAssignments.map(a => a.projectId),
+    ...tasks.filter(t => t.assignee === selfId).map(t => t.project),
+    ...events.filter(e => e.who === selfId).map(e => e.project)
+  ].filter(Boolean));
+  myProjectIds.forEach(projectId => {
+    const a = myAssignments.find(a => a.projectId === projectId);
+    const p = pj(projectId);
     if(!p || isProposalShadowProject(p)) return;
     if(hideCompletedPersonalProjects && isClosedProject(p)) return;
     const taskRows = tasks
@@ -7009,13 +7017,13 @@ function renderMyProjectsList(){
       type:'project',
       color:p.color || '#888',
       title:p.name || '사업명 없음',
-      sub:`${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정'}${a.role ? ` · ${escapeHtml(a.role)}` : ''}`,
+      sub:`${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정'}${a?.role ? ` · ${escapeHtml(a.role)}` : ''}`,
       rows:[...taskRows, ...eventRows]
     });
   });
 
   proposals
-    .filter(p => normalizeIdArray(p.participantIds).includes(selfId) || tasks.some(t => t.proposal === p.id && t.assignee === selfId))
+    .filter(p => normalizeIdArray(p.participantIds).includes(selfId) || tasks.some(t => t.proposal === p.id && t.assignee === selfId) || events.some(e => e.proposal === p.id && e.who === selfId))
     .filter(p => !hideCompletedPersonalProjects || proposalStatusValue(p) !== 'submitted')
     .forEach(p => {
       const taskRows = tasks
@@ -7036,6 +7044,18 @@ function renderMyProjectsList(){
           </div>`};
         });
 
+    const eventRows = events
+      .filter(e => e.proposal === p.id && e.who === selfId)
+      .map(e => {
+        const past = isCompletedScheduleItem(e);
+        const sortDate = parseDateSafely(e.end || e.start).getTime() || 9999999999999;
+        return { _past: past, _completed: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+          <div class="task-title" ${uiActionAttrs([["showEv", [e.id]]], "click", false)} style="${past ? '' : 'color:#185FA5'}">${escapeHtml(e.title || '')}</div>
+          <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
+          <div class="task-dates">${formatEventPeriod(e)}</div>
+        </div>`};
+      });
+
       const proposalRows = [{
         _past:isPastProposal(p),
         _completed:proposalStatusValue(p) === 'submitted',
@@ -7052,12 +7072,12 @@ function renderMyProjectsList(){
         color:'#7C3AED',
         title:`제안: ${p.name || '제안명 없음'}`,
         sub:`${escapeHtml(p.demandOrg || '-')} · ${proposalStatusLabel(proposalStatusValue(p))} · ${proposalResultLabel(proposalResultValue(p))}`,
-        rows:[...proposalRows, ...taskRows]
+        rows:[...proposalRows, ...taskRows, ...eventRows]
       });
     });
 
   if(!groups.length){
-    container.innerHTML = '<div class="empty" style="padding:14px">배정된 사업/제안이 없습니다</div>';
+    container.innerHTML = '<div class="empty" style="padding:14px">참여하거나 담당 업무·일정이 연결된 사업·제안이 없습니다</div>';
     return;
   }
 
