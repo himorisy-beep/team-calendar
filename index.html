@@ -4310,7 +4310,6 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     </div>
     <div class="task-option-box">
       <label class="task-check-row"><input type="checkbox" id="task-show-calendar"><span>팀원 캘린더에도 표시</span></label>
-      <div class="task-form-help">체크하지 않아도 내 캘린더에는 표시됩니다.</div>
     </div>
     <div class="form-row full"><div><div class="fl">메모</div><textarea id="task-note" rows="4"></textarea></div></div>
     <div id="task-form-actions" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
@@ -5931,7 +5930,7 @@ function getProposalFormHTML(isEdit){
     : '<div style="font-size:12px;color:var(--text3)">등록된 팀원이 없습니다.</div>';
 
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
-    <div class="form-row"><div><div class="fl">제안시작일 <span style="color:var(--text3);font-weight:400">(수동 입력)</span></div><input type="date" id="proposal-start" onchange="syncProposalParticipantDefaultStarts()"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
+    <div class="form-row"><div><div class="fl">제안 시작일</div><input type="date" id="proposal-start" onchange="syncProposalParticipantDefaultStarts()"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
     <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="proposal-status">${proposalStatusOptions('preparing')}</select></div></div>
     <div class="form-row full"><div>
@@ -5946,7 +5945,7 @@ function getProposalFormHTML(isEdit){
     <div class="form-row full"><div><div class="fl">참여자</div><textarea id="proposal-participants" rows="3"></textarea></div></div>
     <div class="form-row full"><div><div class="fl">내용</div><textarea id="proposal-note" rows="3" placeholder="담당 역할, 준비 내용, 특이사항 등을 입력"></textarea></div></div>
     <div class="form-row full"><div>
-      <div class="fl">첨부파일 다운로드 링크 후보</div>
+      <div class="fl">첨부파일 링크</div>
       <textarea id="proposal-filelinks" rows="4" placeholder="한 줄에 하나씩 입력하세요.&#10;예: 제안요청서.hwp | https://www.g2b.go.kr/...&#10;예: 입찰공고서.pdf | https://www.g2b.go.kr/..."></textarea>
       <div class="ui-form-help" style="margin-top:4px">한 줄에 하나씩 파일명 | URL 형식으로 입력하세요.</div>
     </div></div>
