@@ -4307,11 +4307,10 @@ function openAddTask(existingTask=null, forcedProjectId=''){
         <option value="urgent">긴급·단순 — 빠르게 처리/위임</option>
         <option value="backlog">보류 — 낮은 우선순위</option>
       </select>
-      <div class="task-priority-help">화면에는 4분류로만 보여주고, 내부적으로만 긴급도·중요도를 계산합니다.</div>
     </div>
     <div class="task-option-box">
       <label class="task-check-row"><input type="checkbox" id="task-show-calendar"><span>팀원 캘린더에도 표시</span></label>
-      <div class="task-form-help">내 업무는 항상 내 캘린더에 표시됩니다. 체크하면 다른 팀원의 캘린더에도 표시됩니다.</div>
+      <div class="task-form-help">체크하지 않아도 내 캘린더에는 표시됩니다.</div>
     </div>
     <div class="form-row full"><div><div class="fl">메모</div><textarea id="task-note" rows="4"></textarea></div></div>
     <div id="task-form-actions" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary" style="flex:1" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>
