@@ -1998,7 +1998,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
         <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 내역 숨기기</span><span class="label-mobile">완료 숨김</span>
       </label>
     </div>
-    <div class="privacy-help" style="margin-bottom:12px">참여한 사업·제안과 내 담당 업무·일정을 모아 보여줍니다.</div>
+    <div class="privacy-help" style="margin-bottom:12px">참여 등록된 사업·제안별로 내 담당 업무·일정을 모아 보여줍니다.</div>
     <div id="my-project-list"></div>
   </div>
 </div>
@@ -6973,11 +6973,7 @@ function renderMyProjectsList(){
   const groups = [];
 
   const myAssignments = assigns.filter(a => a.memberId === selfId && !isAssignForDeletedProject(a));
-  const myProjectIds = new Set([
-    ...myAssignments.map(a => a.projectId),
-    ...tasks.filter(t => t.assignee === selfId).map(t => t.project),
-    ...events.filter(e => e.who === selfId).map(e => e.project)
-  ].filter(Boolean));
+  const myProjectIds = new Set(myAssignments.map(a => a.projectId).filter(Boolean));
   myProjectIds.forEach(projectId => {
     const a = myAssignments.find(a => a.projectId === projectId);
     const p = pj(projectId);
@@ -7024,7 +7020,7 @@ function renderMyProjectsList(){
   });
 
   proposals
-    .filter(p => normalizeIdArray(p.participantIds).includes(selfId) || tasks.some(t => t.proposal === p.id && t.assignee === selfId) || events.some(e => e.proposal === p.id && e.who === selfId))
+    .filter(p => normalizeIdArray(p.participantIds).includes(selfId))
     .filter(p => !hideCompletedPersonalProjects || proposalStatusValue(p) !== 'submitted')
     .forEach(p => {
       const taskRows = tasks
@@ -7084,7 +7080,7 @@ function renderMyProjectsList(){
     const pendingDates = visibleRows.filter(row => !row._completed).map(row => row._deadlineDate).filter(date => Number.isFinite(date) && date > 0 && date < 9999999999999);
     const fallbackDate = parseDateSafely(group.deadline).getTime();
     return {...group, rows:visibleRows, sortDeadline:pendingDates.length ? Math.min(...pendingDates) : (Number.isFinite(fallbackDate) && fallbackDate > 0 ? fallbackDate : 9999999999999)};
-  }).filter(group => !hideCompletedPersonalProjects || group.rows.length > 0)
+  })
     .sort((a,b) => a.sortDeadline - b.sortDeadline || a.title.localeCompare(b.title, 'ko'));
 
   if(!visibleGroups.length){
