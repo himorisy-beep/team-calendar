@@ -4362,7 +4362,7 @@ function openEditTask(id){
   document.getElementById('task-note').value = t.note || '';
   const actionBox = document.getElementById('task-form-actions');
   if(actionBox){
-    actionBox.innerHTML = `<button class="btn-danger-sm" style="height:32px;padding:0 12px" ${uiActionAttrs([["deleteTaskFromEdit", [t.id]]], "click", false)}>삭제</button><span style="flex:1"></span><button class="btn btn-primary" onclick="submitTask()">수정 저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button>`;
+    actionBox.innerHTML = `<button class="btn-danger-sm" style="height:32px;padding:0 12px" ${uiActionAttrs([["deleteTaskFromEdit", [t.id]]], "click", false)}>삭제</button><span style="flex:1"></span><button class="btn btn-primary" onclick="submitTask()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button>`;
   }
 }
 
@@ -4709,7 +4709,7 @@ window.openEditTodo = function(id) {
       <input type="text" id="edit-todo-text" value="${escapeHtml(t.text || '')}" onkeypress="if(event.key==='Enter') saveEditTodo('${t.id}')">
     </div>
     <div style="display:flex; gap:8px;">
-      <button class="btn btn-primary" style="flex:1" ${uiActionAttrs([["saveEditTodo", [t.id]]], "click", false)}>수정 완료</button>
+      <button class="btn btn-primary" style="flex:1" ${uiActionAttrs([["saveEditTodo", [t.id]]], "click", false)}>저장</button>
       <button class="btn btn-secondary" onclick="closeModal()">취소</button>
     </div>`;
 
@@ -5930,11 +5930,11 @@ function getProposalFormHTML(isEdit){
     : '<div style="font-size:12px;color:var(--text3)">등록된 팀원이 없습니다.</div>';
 
   return `<div class="form-row full"><div><div class="fl">사업명</div><input type="text" id="proposal-name" placeholder="예: ○○국 디지털정부 구축 제안"></div></div>
-    <div class="form-row"><div><div class="fl">제안 시작일</div><input type="date" id="proposal-start" onchange="syncProposalParticipantDefaultStarts()"></div><div><div class="fl">제안서제출 종료일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
+    <div class="form-row proposal-date-row"><div><div class="fl">제안 시작일</div><input type="date" id="proposal-start" onchange="syncProposalParticipantDefaultStarts()"></div><div><div class="fl">제안서 제출 마감일시</div><input type="datetime-local" id="proposal-deadline"></div></div>
     <div class="form-row full"><div><div class="fl">수요기관</div><input type="text" id="proposal-demand-org" placeholder="예: 한국국제협력단, ○○부처 등"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="proposal-status">${proposalStatusOptions('preparing')}</select></div></div>
     <div class="form-row full"><div>
-      <div class="fl">참여 멤버</div>
+      <div class="fl">참여 팀원</div>
       <input type="hidden" id="proposal-participant-ids" value="">
       <div id="proposal-selected-members" style="display:flex;gap:5px;flex-wrap:wrap;min-height:30px;align-items:center;border:.5px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;background:var(--bg)"></div>
       <button type="button" class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;display:flex;justify-content:center;gap:5px" onclick="toggleProposalMemberPicker()"><span>멤버 선택</span><span id="proposal-member-picker-icon">▾</span></button>
@@ -5950,7 +5950,7 @@ function getProposalFormHTML(isEdit){
       <div class="ui-form-help" style="margin-top:4px">한 줄에 하나씩 파일명 | URL 형식으로 입력하세요.</div>
     </div></div>
     <div class="form-row full"><div><div class="fl">수주 여부</div><select id="proposal-result" onchange="syncProposalStatusByResult()">${proposalResultOptions('pending')}</select><div class="ui-form-caution" style="margin-top:4px">수주 또는 미수주를 선택하면 상태가 자동으로 제출완료로 변경됩니다.</div></div></div>
-    <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitProposal()">${isEdit ? '수정 저장' : '제안 추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
+    <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" onclick="submitProposal()">${isEdit ? '저장' : '제안 추가'}</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
 }
 function openAddProposal(){
   if(!requireMemberWrite()) return;
@@ -6745,6 +6745,18 @@ function exportManDaysExcel(){
 }
 </style>
 
+<style id="proposal-date-mobile-fit">
+@media(max-width:680px){
+  .proposal-date-row{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:6px}
+  .proposal-date-row>div{min-width:0}
+  .proposal-date-row .fl{font-size:11px;line-height:1.35;min-height:2.7em}
+  .proposal-date-row input{width:100%;min-width:0;max-width:100%;padding:7px 4px;font-size:11px;box-sizing:border-box}
+}
+@media(max-width:390px){
+  .proposal-date-row{gap:4px}
+  .proposal-date-row input{padding-right:2px;padding-left:2px;font-size:10px}
+}
+</style>
 </body></html>`;
   downloadTextFile(`calendar_manday_${manDayYear === 'all' ? 'all' : manDayYear}_${now}.xls`, '\ufeff' + html, 'application/vnd.ms-excel;charset=utf-8');
 }
@@ -7189,7 +7201,7 @@ function getEventFormHTML(isEdit) {
     <option value="offsite">외근</option>
     <option value="personal">개인</option>
   </select></div></div>
-  <div class="sub-row" id="sub-row"><div class="fl">세부</div><select id="ev-sub" onchange="onSubChange()"></select><div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="입력"></div></div>
+  <div class="sub-row" id="sub-row"><div class="fl">세부 유형</div><select id="ev-sub" onchange="onSubChange()"></select><div id="sub-custom" style="display:none;margin-top:5px"><input type="text" id="ev-sub-txt" placeholder="입력"></div></div>
   <div class="form-row full" id="ev-proj-row"><div><div class="fl">일정 연결</div><div class="task-context-selects"><select id="ev-context-type" onchange="onEventContextTypeChange()"><option value="project"${contextType==='project'?' selected':''}>사업</option><option value="proposal"${contextType==='proposal'?' selected':''}>제안</option><option value="none"${contextType==='none'?' selected':''}>연결 없음</option></select><select id="ev-proj" style="display:${contextType==='project'?'block':'none'}"><option value="">— 없음</option>${pOpts}</select><select id="ev-proposal" style="display:${contextType==='proposal'?'block':'none'}"><option value="">— 없음</option>${proposalOpts}</select></div></div></div>
   <div class="toggle-row" id="pub-row"><div class="toggle on" id="pub-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--text2)">팀 캘린더 공유</span></div>
   <div id="personal-help" class="ui-form-caution" style="display:none;margin:-3px 0 10px">개인 일정은 앱에서 본인에게만 표시됩니다.</div>
@@ -7980,7 +7992,7 @@ function getProjectFormHTML(isEdit, project){
   const memberSection = isEdit ? projectMemberUnifiedEditorHtml(projectId) : '';
   const deleteSection = isEdit && canManageAll() ? `<div class="project-danger-zone clean"><div class="project-danger-title">사업 삭제</div><button class="btn-danger-sm" ${uiActionAttrs([["deleteProject", [projectId]]], "click", false)}>삭제</button></div>` : '';
   const saveActions = isEdit
-    ? `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">사업 정보 저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`
+    ? `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">저장</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`
     : `<div class="project-unified-save"><button class="btn btn-primary" style="flex:1" onclick="submitProject()">추가</button><button class="btn btn-secondary" onclick="closeModal()">취소</button></div>`;
   return `<input type="hidden" id="project-id">
     <div class="form-row full"><div><div class="fl">사업명</div><input id="project-name" type="text"></div></div>
