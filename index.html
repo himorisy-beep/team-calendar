@@ -2094,6 +2094,9 @@ let currentUserProfile = null;
 let currentPage = 'home';
 const PAST_HIDE_DAYS = 7;
 let listenersStarted = false;
+let realtimeUnsubscribers = [];
+let authSessionVersion = 0;
+const initialSnapshotLabels = new Set();
 let selfId = ls('selfId')||''; 
 let members = [], projects = [], proposals = [], events = [], tasks = [], assigns = [], todos = [], comments = [], activityLogs = [], notifications = [], userInvites = [], users = [];
 let holidays = [];
@@ -2656,6 +2659,11 @@ async function initAuth(){
   }
 
   auth.onAuthStateChanged(async user => {
+    const sessionVersion = ++authSessionVersion;
+    resetRealtimeSession();
+    currentUserProfile = null;
+    selfId = '';
+    showLoginScreen(user ? '로그인 정보를 확인하고 있습니다.' : '');
     if(!user){
       currentUser = null;
       currentUserProfile = null;
@@ -2669,12 +2677,14 @@ async function initAuth(){
 
     try{
       const doc = await db.collection('users').doc(user.uid).get();
+      if(sessionVersion !== authSessionVersion) return;
       let profile = null;
 
       if(doc.exists){
         profile = doc.data();
       } else {
         const linked = await buildUserProfileFromInvite(user);
+        if(sessionVersion !== authSessionVersion) return;
 
         if(linked.status === 'linked'){
           profile = linked.profile;
@@ -2709,10 +2719,12 @@ async function initAuth(){
       selfId = currentUserProfile.memberId || '';
       ls('selfId', selfId);
 
+      refreshAll(true);
       showApp();
       startRealtimeListeners();
 
     }catch(e){
+      if(sessionVersion !== authSessionVersion) return;
       console.error('auth profile error:', e);
       showLoginScreen(
         `사용자 등록 정보를 확인하지 못했습니다.<br>` +
@@ -3052,8 +3064,28 @@ let loadedCols = 0;
 let syncHealth = {};
 const INITIAL_LISTENER_COUNT = 12;
 function checkInitLoad() { 
-  loadedCols++; 
-  if(loadedCols === INITIAL_LISTENER_COUNT) { hideStatus(); refreshAll(); } 
+  loadedCols = initialSnapshotLabels.size;
+  if(loadedCols === INITIAL_LISTENER_COUNT) {
+    if(!Object.values(syncHealth).some(state => !state.ok)) hideStatus();
+    refreshAll();
+  }
+}
+function resetRealtimeSession(){
+  realtimeUnsubscribers.forEach(unsubscribe => unsubscribe());
+  realtimeUnsubscribers = [];
+  listenersStarted = false;
+  initialSnapshotLabels.clear();
+  loadedCols = 0;
+  syncHealth = {};
+  members = []; projects = []; proposals = []; events = []; tasks = [];
+  assigns = []; todos = []; comments = []; activityLogs = []; notifications = [];
+  userInvites = []; users = [];
+  publicEvents = []; myPersonalEvents = []; publicComments = []; myScopedComments = [];
+  publicActivityLogs = []; myScopedActivityLogs = [];
+  closeModal();
+  closeDetailPanel();
+  document.getElementById('modal-body').innerHTML = '';
+  document.getElementById('detail-body').innerHTML = '';
 }
 function getSyncErrorGuide(collectionName){
   const guides = {
@@ -3122,13 +3154,17 @@ function startRealtimeListeners() {
   showStatus('Firebase 동기화 중...', 'loading');
 
   function listen(label, query, onData){
-    query.onSnapshot(
+    const sessionVersion = authSessionVersion;
+    const unsubscribe = query.onSnapshot(
       snap => {
+        if(sessionVersion !== authSessionVersion) return;
+        if(!['userInvites','users'].includes(label)) initialSnapshotLabels.add(label);
         markSyncOk(label);
         onData(snap);
       },
-      err => handleSnapshotError(label, err)
+      err => { if(sessionVersion === authSessionVersion) handleSnapshotError(label, err); }
     );
+    realtimeUnsubscribers.push(unsubscribe);
   }
 
   listen('events-public', db.collection("events").where("public", "==", true), snap => {
@@ -3252,7 +3288,7 @@ function syncPersistentControls(){
   if(pfHide) pfHide.checked = ls('personalHidePast') === 'Y';
 }
 
-function refreshAll(){ prunePersistedFilters(); syncPersistentControls(); buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(preserveFilters=false){ if(preserveFilters !== true) prunePersistedFilters(); syncPersistentControls(); buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
   const container = document.getElementById('home-summary');
@@ -4301,9 +4337,14 @@ function onTaskContextTypeChange(){
 }
 
 function openEditTask(id){
-  closeDetailPanel();
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
+  if(!canEditItem(t)){
+    if(canReassignTask(t)) return openReassignTask(id);
+    showToast('권한이 없습니다.');
+    return;
+  }
+  closeDetailPanel();
 
   openAddTask(t);
   document.getElementById('modal-title').textContent = '업무 수정';
@@ -4395,6 +4436,8 @@ function submitTask(){
 }
 
 function canEditItem(item){
+  if(!isMemberUser() || !item) return false;
+  if(item.type === 'personal') return item.who === selfId;
   return canManageAll() || item?.who === selfId || item?.assignee === selfId;
 }
 
@@ -4704,13 +4747,13 @@ function renderTaskMatrix(){
   };
 
   let myTasks = tasks.filter(t => String(t.assignee) === String(selfId) && !isTaskForDeletedProject(t));
-  if(hideDone) myTasks = myTasks.filter(t => t.status !== '완료');
+  if(hideDone) myTasks = myTasks.filter(t => !isCompletedTask(t));
 
   myTasks.sort(taskDueSort);
 
   myTasks.forEach(t => {
     const type = getTaskMatrixType(t);
-    const isDone = t.status === '완료';
+    const isDone = isCompletedTask(t);
     const od = isOverdue(t);
     const context = taskContextLabel(t, '');
 
@@ -7066,9 +7109,10 @@ function deleteEventById(id){
 
 function openAddEvent() { if(!requireMemberWrite()) return; editingEventId = null; document.getElementById('modal-body').innerHTML = getEventFormHTML(false); openModal('새 일정 추가'); onTypeChange(); }
 function openEditEvent(id) {
-  closeDetailPanel();
   const e = events.find(ev => ev.id === id);
   if (!e) return;
+  if(!canEditItem(e)){ showToast('권한이 없습니다.'); return; }
+  closeDetailPanel();
   editingEventId = id;
   document.getElementById('modal-body').innerHTML = getEventFormHTML(true);
   openModal('일정 수정');
