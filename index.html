@@ -1998,7 +1998,6 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
         <input class="header-check-input" type="checkbox" id="personal-project-hide-completed" onchange="togglePersonalProjectHideCompleted(this.checked)"><span class="label-desktop">완료 내역 숨기기</span><span class="label-mobile">완료 숨김</span>
       </label>
     </div>
-    <div class="privacy-help" style="margin-bottom:12px">참여 등록된 사업·제안별로 내 담당 업무·일정을 모아 보여줍니다.</div>
     <div id="my-project-list"></div>
   </div>
 </div>
@@ -4298,7 +4297,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">— 없음</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">— 없음</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
-    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value=""><div class="ui-form-help">기한이 정해진 업무만 입력하세요. 미입력 시 지연으로 표시하지 않습니다.</div></div></div>
+    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value=""></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
     <div class="task-priority-box">
       <div class="fl">업무 분류</div>
