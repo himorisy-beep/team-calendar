@@ -1931,13 +1931,13 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
     <span class="page-title">내 업무</span>
     <div class="personal-actions">
       <div class="personal-tab-row">
-        <button class="chip active" id="pv-work" onclick="setPV('work')">업무</button>
-        <button class="chip" id="pv-projects" onclick="setPV('projects')">내 사업·제안</button>
+        <button class="chip" id="pv-work" onclick="setPV('work')">업무</button>
+        <button class="chip active" id="pv-projects" onclick="setPV('projects')">내 사업·제안</button>
       </div>
     </div>
   </div>
 
-  <div id="my-work-wrap">
+  <div id="my-work-wrap" style="display:none">
     <div class="personal-work-toolbar">
       <div class="personal-work-view-tabs" aria-label="내 업무 보기 방식">
         <button class="chip active" id="pw-list" onclick="setPersonalWorkView('list')">목록</button>
@@ -1991,7 +1991,7 @@ html[data-theme="dark"] .project-danger-zone .btn-danger-sm{background:transpare
     </div>
   </div>
 
-  <div class="card" id="my-project-wrap" style="display:none">
+  <div class="card" id="my-project-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
       <div class="card-title" style="margin-bottom:0">내 사업·제안 모아보기</div>
       <label class="header-check">
@@ -2126,7 +2126,7 @@ let selProj = ls('selectedProject') || 'all';
 let vm = ['cal','list'].includes(ls('calendarView')) ? ls('calendarView') : 'cal',
     ovMode = ['board','table','gantt','members'].includes(ls('overviewMode')) ? ls('overviewMode') : 'board',
     pFilter = ['all','public','private'].includes(ls('personalFilter')) ? ls('personalFilter') : 'all',
-    pvMode = 'work',
+    pvMode = 'projects',
     personalWorkView = ['list','matrix'].includes(ls('personalWorkView')) ? ls('personalWorkView') : 'list',
     calListMode = ['window','all'].includes(ls('calendarListMode')) ? ls('calendarListMode') : 'window';
 let hideCompletedPersonalProjects = ls('personalHideCompletedProjects') !== 'N'; 
