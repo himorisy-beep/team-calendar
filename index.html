@@ -6992,7 +6992,7 @@ function renderMyProjectsList(){
         const past = done;
         const cls = STATUS_TAG[status] || 'tag-sub';
         const sortDate = parseDateSafely(t.end || t.start).getTime() || 9999999999999;
-        return { _past: past, _completed: done, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+        return { _past: past, _completed: done, _sortDate: sortDate, _deadlineDate:parseDateSafely(t.end).getTime(), html:`<div class="task-row ${past ? 'is-past' : ''}">
           <div class="task-title" ${uiActionAttrs([["showTask", [t.id]]], "click", false)} style="${od && !past ? 'color:#D85A30;font-weight:600;' : ''}">
             ${od && !past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
           </div>
@@ -7006,7 +7006,7 @@ function renderMyProjectsList(){
       .map(e => {
         const past = isCompletedScheduleItem(e);
         const sortDate = parseDateSafely(e.end || e.start).getTime() || 9999999999999;
-        return { _past: past, _completed: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+        return { _past: past, _completed: past, _sortDate: sortDate, _deadlineDate:parseDateSafely(e.end || e.start).getTime(), html:`<div class="task-row ${past ? 'is-past' : ''}">
           <div class="task-title" ${uiActionAttrs([["showEv", [e.id]]], "click", false)} style="${past ? '' : 'color:#185FA5'}">${escapeHtml(e.title || '')}</div>
           <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
           <div class="task-dates">${formatEventPeriod(e)}</div>
@@ -7015,6 +7015,7 @@ function renderMyProjectsList(){
 
     groups.push({
       type:'project',
+      deadline:p.end || '',
       color:p.color || '#888',
       title:p.name || '사업명 없음',
       sub:`${p.start || p.end ? `${fmtDateFull(p.start)} ~ ${fmtDateFull(p.end)}` : '기간 미정'}${a?.role ? ` · ${escapeHtml(a.role)}` : ''}`,
@@ -7035,7 +7036,7 @@ function renderMyProjectsList(){
           const past = done;
           const cls = STATUS_TAG[status] || 'tag-sub';
           const sortDate = parseDateSafely(t.end || t.start).getTime() || 9999999999999;
-          return { _past: past, _completed: done, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+          return { _past: past, _completed: done, _sortDate: sortDate, _deadlineDate:parseDateSafely(t.end).getTime(), html:`<div class="task-row ${past ? 'is-past' : ''}">
             <div class="task-title" ${uiActionAttrs([["showTask", [t.id]]], "click", false)} style="${od && !past ? 'color:#D85A30;font-weight:600;' : ''}">
               ${od && !past ? '[지연] ' : ''}${escapeHtml(t.title || '')}
             </div>
@@ -7049,7 +7050,7 @@ function renderMyProjectsList(){
       .map(e => {
         const past = isCompletedScheduleItem(e);
         const sortDate = parseDateSafely(e.end || e.start).getTime() || 9999999999999;
-        return { _past: past, _completed: past, _sortDate: sortDate, html:`<div class="task-row ${past ? 'is-past' : ''}">
+        return { _past: past, _completed: past, _sortDate: sortDate, _deadlineDate:parseDateSafely(e.end || e.start).getTime(), html:`<div class="task-row ${past ? 'is-past' : ''}">
           <div class="task-title" ${uiActionAttrs([["showEv", [e.id]]], "click", false)} style="${past ? '' : 'color:#185FA5'}">${escapeHtml(e.title || '')}</div>
           <span class="tag ${TT[e.type] || 'tag-sub'}" style="font-size:10px">${TL[e.type] || e.type || '일정'}</span>
           <div class="task-dates">${formatEventPeriod(e)}</div>
@@ -7060,6 +7061,7 @@ function renderMyProjectsList(){
         _past:isPastProposal(p),
         _completed:proposalStatusValue(p) === 'submitted',
         _sortDate:parseDateSafely(p.deadline || p.start).getTime() || 9999999999999,
+        _deadlineDate:parseDateSafely(p.deadline).getTime(),
         html:`<div class="task-row ${isPastProposal(p) ? 'is-past' : ''}">
           <div class="task-title" ${uiActionAttrs([["showProposal", [p.id]]], "click", false)} style="${isPastProposal(p) ? '' : 'color:#7C3AED'}">${escapeHtml(p.name || '')}</div>
           <span class="tag tag-training" style="font-size:10px">${proposalResultLabel(proposalResultValue(p))}</span>
@@ -7069,6 +7071,7 @@ function renderMyProjectsList(){
 
       groups.push({
         type:'proposal',
+        deadline:p.deadline || '',
         color:'#7C3AED',
         title:`제안: ${p.name || '제안명 없음'}`,
         sub:`${escapeHtml(p.demandOrg || '-')} · ${proposalStatusLabel(proposalStatusValue(p))} · ${proposalResultLabel(proposalResultValue(p))}`,
@@ -7076,13 +7079,21 @@ function renderMyProjectsList(){
       });
     });
 
-  if(!groups.length){
-    container.innerHTML = '<div class="empty" style="padding:14px">참여하거나 담당 업무·일정이 연결된 사업·제안이 없습니다</div>';
+  const visibleGroups = groups.map(group => {
+    const visibleRows = group.rows.filter(row => !hideCompletedPersonalProjects || !row._completed);
+    const pendingDates = visibleRows.filter(row => !row._completed).map(row => row._deadlineDate).filter(date => Number.isFinite(date) && date > 0 && date < 9999999999999);
+    const fallbackDate = parseDateSafely(group.deadline).getTime();
+    return {...group, rows:visibleRows, sortDeadline:pendingDates.length ? Math.min(...pendingDates) : (Number.isFinite(fallbackDate) && fallbackDate > 0 ? fallbackDate : 9999999999999)};
+  }).filter(group => !hideCompletedPersonalProjects || group.rows.length > 0)
+    .sort((a,b) => a.sortDeadline - b.sortDeadline || a.title.localeCompare(b.title, 'ko'));
+
+  if(!visibleGroups.length){
+    container.innerHTML = '<div class="empty" style="padding:14px">표시할 내 사업·제안 내역이 없습니다. 완료 내역 숨기기 설정을 확인해주세요.</div>';
     return;
   }
 
   let h = '<div class="overview-grid">';
-  groups.forEach(group => {
+  visibleGroups.forEach(group => {
     const rows = group.rows
       .filter(row => !hideCompletedPersonalProjects || !row._completed)
       .sort(sortRows)
