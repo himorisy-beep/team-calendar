@@ -2612,7 +2612,10 @@ async function buildUserProfileFromInvite(user){
     return { status:'incomplete', email, inviteKey, reason:'memberId 없음' };
   }
 
-  const role = ['admin','team_leader','member','viewer'].includes(invite.role) ? invite.role : 'member';
+  if(invite.active !== true || !['admin','team_leader','member','viewer'].includes(invite.role)){
+    return { status:'incomplete', email, inviteKey, reason:'active는 true, role은 admin/team_leader/member/viewer 중 하나여야 함' };
+  }
+  const role = invite.role;
   const now = new Date().toISOString();
 
   const profile = {
@@ -2693,8 +2696,12 @@ async function initAuth(){
         }
       }
 
-      if(profile.active === false){
-        showLoginScreen('비활성화된 계정입니다. 관리자에게 계정 활성화를 요청하세요.');
+      if(profile.active !== true){
+        showLoginScreen(profile.active === false ? '비활성화된 계정입니다. 관리자에게 계정 활성화를 요청하세요.' : '계정의 활성 상태가 올바르게 등록되지 않았습니다. 관리자에게 users 문서의 active 값을 확인해 달라고 요청하세요.');
+        return;
+      }
+      if(!['admin','team_leader','member','viewer'].includes(profile.role)){
+        showLoginScreen('계정 권한 값이 서버 규칙과 일치하지 않습니다. 관리자에게 users 문서의 role 값을 확인해 달라고 요청하세요.');
         return;
       }
 
@@ -7561,19 +7568,19 @@ async function submitInvite(){
   const existing = originalId ? userInvites.find(x => x.id === originalId) : userInvites.find(x => x.id === inviteId);
   const member = mb(memberId);
   const now = new Date().toISOString();
-  const existingEmail = normalizeLoginEmail(existing?.email || decodeURIComponent(existing?.id || '') || '');
+  const linkedUser = users.find(u => u.memberId === memberId) || null;
+  const linkedUid = existing?.linkedUid || linkedUser?.uid || linkedUser?.id || '';
+  const existingEmail = normalizeLoginEmail(existing?.email || linkedUser?.email || decodeURIComponent(existing?.id || '') || '');
   const actuallyLinked = linkedAlready || !!(existing?.linkedUid || existing?.status === 'linked' || users.some(u => u.memberId === memberId));
   if(actuallyLinked && existingEmail && email !== existingEmail){ showToast('이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결해주세요.'); return; }
-  const payload = { email, memberId, role, active, name:member?.name || existing?.name || '', status: active ? (actuallyLinked ? 'linked' : 'pending') : 'disabled', invitedBy: existing?.invitedBy || selfId, invitedAt: existing?.invitedAt || now, updatedBy:selfId, updatedAt:now };
+  const payload = { email, memberId, role, active, name:member?.name || existing?.name || '', status: active ? (actuallyLinked ? 'linked' : 'pending') : 'disabled', ...(!existing ? {invitedBy:selfId, invitedAt:now} : {}), updatedBy:selfId, updatedAt:now };
   try{
     const batch = db.batch();
-    batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
+    if(existing || !linkedUid) batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
     if(originalId && originalId !== inviteId) batch.delete(db.collection('userInvites').doc(originalId));
-    const linkedUser = users.find(u => u.memberId === memberId) || null;
-    const linkedUid = existing?.linkedUid || linkedUser?.uid || linkedUser?.id || '';
     if(linkedUid){ batch.set(db.collection('users').doc(linkedUid), { memberId, role, active, name:payload.name, updatedAt:now, updatedBy:selfId }, { merge:true }); }
     await batch.commit();
-    showToast(originalId ? '초대 정보를 수정했습니다' : '초대 사용자를 등록했습니다');
+    showToast(originalId ? '초대 정보를 수정했습니다' : linkedUid ? '연결된 계정 정보를 저장했습니다' : '초대 사용자를 등록했습니다');
     closeModal(); renderUserTeamManageList();
   }catch(e){ showToast('초대 저장 실패: ' + (e.message || e)); }
 }
@@ -7695,6 +7702,7 @@ async function submitMember(){
       if(!email || !email.includes('@')){ showToast('로그인 이메일을 확인해주세요'); return; }
       if(loginRole === 'admin' && !isAdminUser()){ showToast('Admin 권한 부여는 Admin만 가능합니다.'); return; }
       const inviteId = inviteDocIdFromEmail(email);
+      const linkedUid = existingInvite?.linkedUid || memberUsers[0]?.uid || memberUsers[0]?.id || '';
       const existingEmail = normalizeLoginEmail(existingInvite?.email || memberUsers[0]?.email || decodeURIComponent(existingInvite?.id || '') || '');
       const actuallyLinked = linkedAlready || !!(existingInvite?.linkedUid || existingInvite?.status === 'linked' || memberUsers.length);
       if(actuallyLinked && existingEmail && email !== existingEmail){ showToast('이미 연결된 로그인 계정의 이메일은 변경할 수 없습니다. 기존 연결을 비활성화한 뒤 새 이메일로 다시 연결해주세요.'); return; }
@@ -7705,14 +7713,12 @@ async function submitMember(){
         active,
         name,
         status: active ? (actuallyLinked ? 'linked' : 'pending') : 'disabled',
-        invitedBy: existingInvite?.invitedBy || selfId,
-        invitedAt: existingInvite?.invitedAt || now,
+        ...(!existingInvite ? {invitedBy:selfId, invitedAt:now} : {}),
         updatedBy:selfId,
         updatedAt:now
       };
-      batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
+      if(existingInvite || !linkedUid) batch.set(db.collection('userInvites').doc(inviteId), payload, { merge:true });
       if(originalInviteId && originalInviteId !== inviteId){ batch.delete(db.collection('userInvites').doc(originalInviteId)); }
-      const linkedUid = existingInvite?.linkedUid || memberUsers[0]?.uid || memberUsers[0]?.id || '';
       if(linkedUid){
         batch.set(db.collection('users').doc(linkedUid), { memberId:id, role:loginRole, active, name, updatedAt:now, updatedBy:selfId }, { merge:true });
       }
