@@ -8253,8 +8253,9 @@ function dispatchUiAction(event){
     element = element.parentElement?.closest?.(`[${attr}]`);
   }
 }
-document.addEventListener('click', dispatchUiAction);
-document.addEventListener('change', dispatchUiAction);
+// Handle delegated actions before popup containers stop bubbling.
+document.addEventListener('click', dispatchUiAction, true);
+document.addEventListener('change', dispatchUiAction, true);
 
 function escapeHtml(str){ return String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 function escapeAttr(str){ return escapeHtml(str).replace(/`/g, '&#96;'); }
