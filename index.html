@@ -4132,28 +4132,6 @@ function taskTitleUsageSuggestions(query=''){
 
 let taskTitleSuggestionIndex = -1;
 
-function closeTaskTitleSuggestions(){
-  const input = document.getElementById('task-title-input');
-  const box = document.getElementById('task-title-suggestions');
-  const button = document.getElementById('task-title-recent-toggle');
-  if(input){ input.dataset.suggestionsOpen = 'N'; input.setAttribute('aria-expanded','false'); }
-  if(box) box.classList.remove('show');
-  if(button){ button.setAttribute('aria-expanded','false'); button.textContent = '최근 업무명 ▾'; }
-  taskTitleSuggestionIndex = -1;
-}
-
-function toggleTaskTitleSuggestions(){
-  const input = document.getElementById('task-title-input');
-  if(!input) return;
-  if(input.dataset.suggestionsOpen === 'Y'){ closeTaskTitleSuggestions(); return; }
-  input.dataset.suggestionsOpen = 'Y';
-  input.setAttribute('aria-expanded','true');
-  const button = document.getElementById('task-title-recent-toggle');
-  if(button){ button.setAttribute('aria-expanded','true'); button.textContent = '최근 업무명 ▴'; }
-  input.focus();
-  renderTaskTitleSuggestions();
-}
-
 function renderTaskTitleSuggestions(){
   const input = document.getElementById('task-title-input');
   const box = document.getElementById('task-title-suggestions');
@@ -4161,11 +4139,11 @@ function renderTaskTitleSuggestions(){
 
   const query = input.value || '';
   const exactKey = normalizeTaskTitleKey(query);
-  const rows = taskTitleUsageSuggestions(query)
-    .filter(row => !exactKey || normalizeTaskTitleKey(row.title) !== exactKey);
+  const rows = exactKey ? taskTitleUsageSuggestions(query)
+    .filter(row => normalizeTaskTitleKey(row.title) !== exactKey) : [];
 
   taskTitleSuggestionIndex = -1;
-  if(input.dataset.suggestionsOpen !== 'Y' || document.activeElement !== input){
+  if(document.activeElement !== input || !rows.length){
     box.innerHTML = '';
     box.classList.remove('show');
     return;
@@ -4175,13 +4153,13 @@ function renderTaskTitleSuggestions(){
     <button type="button" class="task-title-suggestion" data-index="${idx}" data-value="${escapeAttr(row.title)}" onmousedown="event.preventDefault()" onclick="chooseTaskTitleSuggestion(this.dataset.value)">
       <span class="task-title-suggestion-name">${escapeHtml(row.title)}</span>
     </button>`).join('');
-  if(!rows.length) box.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:var(--text3)">추천할 업무명이 없습니다.</div>';
   box.classList.add('show');
 }
 
 function hideTaskTitleSuggestionsSoon(){
   setTimeout(() => {
-    if(document.activeElement !== document.getElementById('task-title-input')) closeTaskTitleSuggestions();
+    const box = document.getElementById('task-title-suggestions');
+    if(box) box.classList.remove('show');
   }, 120);
 }
 
@@ -4190,7 +4168,8 @@ function chooseTaskTitleSuggestion(title){
   const box = document.getElementById('task-title-suggestions');
   if(!input) return;
   input.value = title || '';
-  closeTaskTitleSuggestions();
+  if(box) box.classList.remove('show');
+  taskTitleSuggestionIndex = -1;
   input.focus();
 }
 
@@ -4210,7 +4189,8 @@ function handleTaskTitleAutocompleteKey(event){
     event.preventDefault();
     chooseTaskTitleSuggestion(items[taskTitleSuggestionIndex]?.dataset.value || '');
   } else if(event.key === 'Escape'){
-    closeTaskTitleSuggestions();
+    box.classList.remove('show');
+    taskTitleSuggestionIndex = -1;
   }
 }
 
@@ -4218,7 +4198,6 @@ function setupTaskTitleAutocomplete(){
   const input = document.getElementById('task-title-input');
   if(!input || input.dataset.autocompleteBound === 'Y') return;
   input.dataset.autocompleteBound = 'Y';
-  closeTaskTitleSuggestions();
   input.addEventListener('focus', renderTaskTitleSuggestions);
   input.addEventListener('input', renderTaskTitleSuggestions);
   input.addEventListener('keydown', handleTaskTitleAutocompleteKey);
@@ -4318,7 +4297,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
 
   document.getElementById('modal-body').innerHTML = `
     <input type="hidden" id="task-id">
-    <div class="form-row full"><div><div class="fl">업무명</div><div class="task-title-autocomplete"><input id="task-title-input" type="text" placeholder="업무명을 입력하세요" autocomplete="off" aria-autocomplete="list" aria-controls="task-title-suggestions" aria-expanded="false"><button type="button" class="btn btn-secondary btn-sm" style="margin-top:6px" aria-controls="task-title-suggestions" aria-expanded="false" id="task-title-recent-toggle" onmousedown="event.preventDefault()" onclick="toggleTaskTitleSuggestions()">최근 업무명 ▾</button><div id="task-title-suggestions" class="task-title-suggestions" role="listbox"></div></div></div></div>
+    <div class="form-row full"><div><div class="fl">업무명</div><div class="task-title-autocomplete"><input id="task-title-input" type="text" placeholder="업무명을 입력하세요" autocomplete="off" aria-autocomplete="list" aria-controls="task-title-suggestions"><div id="task-title-suggestions" class="task-title-suggestions" role="listbox"></div></div></div></div>
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">— 없음</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">— 없음</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
