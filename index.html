@@ -3025,6 +3025,7 @@ async function apiSave(payload, onSuccess){
     }
 
     const existingBefore = getExistingItem(col, id);
+    if(action === 'addTask') data.createdBy = selfId;
     const dateError = validateSaveDateRange(action, data, existingBefore);
     if(dateError){ showToast(dateError); return; }
     if(col === 'tasks' && /^(add|update)/.test(action) && Object.prototype.hasOwnProperty.call(data, 'status')){
@@ -4102,7 +4103,11 @@ function normalizeTaskTitleKey(value){
 
 function taskTitleUsageSuggestions(query=''){
   const map = new Map();
+  const myCreatedTaskIds = new Set(activityLogs
+    .filter(log => log.action === 'addTask' && log.targetType === 'task' && log.who === selfId)
+    .map(log => log.targetId));
   tasks.forEach(t => {
+    if(!selfId || (t.createdBy ? t.createdBy !== selfId : !myCreatedTaskIds.has(t.id))) return;
     const title = String(t?.title || '').trim().replace(/\s+/g, ' ');
     if(!title) return;
     const key = normalizeTaskTitleKey(title);
