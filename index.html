@@ -4139,8 +4139,8 @@ function renderTaskTitleSuggestions(){
 
   const query = input.value || '';
   const exactKey = normalizeTaskTitleKey(query);
-  const rows = taskTitleUsageSuggestions(query)
-    .filter(row => !exactKey || normalizeTaskTitleKey(row.title) !== exactKey);
+  const rows = exactKey ? taskTitleUsageSuggestions(query)
+    .filter(row => normalizeTaskTitleKey(row.title) !== exactKey) : [];
 
   taskTitleSuggestionIndex = -1;
   if(document.activeElement !== input || !rows.length){
