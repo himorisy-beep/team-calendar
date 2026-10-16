@@ -2338,7 +2338,7 @@ function formatEventPeriod(e){
   return `${s} ~ ${en}`;
 }
 function daysBetween(a, b){ const d1 = parseDateSafely(a); const d2 = parseDateSafely(b); d1.setHours(0,0,0,0); d2.setHours(0,0,0,0); return Math.round((d2 - d1) / 86400000); }
-const todayStr = fmtDateFull(today);
+let todayStr = fmtDateFull(today);
 function inDay(e,y,m,d){ const s = parseDateSafely(e.start); s.setHours(0,0,0,0); const en = parseDateSafely(e.end || e.start); en.setHours(23,59,59,999); const day = new Date(y,m,d); return day >= s && day <= en; }
 function eventColor(type){
   if(type==='vacation') return '#2E7D32';      // 초록
@@ -2355,7 +2355,7 @@ function isPrivatePersonal(e){
   return e && e.type === 'personal';
 }
 function isPast(dateStr){ if(!dateStr) return false; const target = new Date(today.getTime() - (PAST_HIDE_DAYS * 24 * 60 * 60 * 1000)); const en = parseDateSafely(dateStr); return en < target; }
-function isOverdue(t){ if(!t.end || isCompletedTask(t)) return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < today; }
+function isOverdue(t){ if(!t.end || isCompletedTask(t)) return false; const en = parseDateSafely(t.end); en.setHours(23,59,59,999); return en < todayStartDate(); }
 
 function taskCompletedDate(t){
   if(!t || !isCompletedTask(t)) return '';
@@ -3015,6 +3015,7 @@ function validateSaveDateRange(action, data, existing){
 }
 
 async function apiSave(payload, onSuccess){ 
+  todayStr = fmtDateFull(new Date());
   try { 
     const { action, id, ...data } = payload; 
     const col = getCollectionFromAction(action);
@@ -3030,7 +3031,12 @@ async function apiSave(payload, onSuccess){
     if(dateError){ showToast(dateError); return; }
     if(col === 'tasks' && /^(add|update)/.test(action) && Object.prototype.hasOwnProperty.call(data, 'status')){
       data.status = normalizeTaskStatus(data.status);
-      if(existingBefore && Object.prototype.hasOwnProperty.call(existingBefore, 'done')) data.done = data.status === '완료';
+      const completed = data.status === '완료';
+      if(Object.prototype.hasOwnProperty.call(existingBefore || {}, 'done') || Object.prototype.hasOwnProperty.call(data, 'done')) data.done = completed;
+      if(!completed){
+        data.completedAt = '';
+        if(Object.prototype.hasOwnProperty.call(existingBefore || {}, 'completedDate') || Object.prototype.hasOwnProperty.call(data, 'completedDate')) data.completedDate = '';
+      }
     }
 
     if(action.startsWith('add') || action.startsWith('update')) { 
@@ -3288,9 +3294,10 @@ function syncPersistentControls(){
   if(pfHide) pfHide.checked = ls('personalHidePast') === 'Y';
 }
 
-function refreshAll(preserveFilters=false){ if(preserveFilters !== true) prunePersistedFilters(); syncPersistentControls(); buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
+function refreshAll(preserveFilters=false){ todayStr = fmtDateFull(new Date()); if(preserveFilters !== true) prunePersistedFilters(); syncPersistentControls(); buildSidebar(); renderActiveFilterBar(); refreshProjSelect(); renderHome(); renderCal(); renderOverview(); renderProposalPage(); renderPersonalCurrentView(); renderTodos(); renderUserTeamManageList(); renderProjectManageList(); renderSettingsDiagnostics(); renderNotificationBadge(); applyPermissionUI(); }
 
 function renderHome(){
+  todayStr = fmtDateFull(new Date());
   const container = document.getElementById('home-summary');
   if(!container) return;
   requestHolidayYearsForCurrentView();
