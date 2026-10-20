@@ -2368,6 +2368,10 @@ function taskEndForTodayWeek(t){
 }
 
 function inDayForTodayWeekTask(t,y,m,d){
+  if(!t) return false;
+  const day = new Date(y,m,d);
+  if(isOverdue(t) && fmtDateFull(day) === fmtDateFull(todayStartDate())) return true;
+  if(!t.start || !t.end) return false;
   return inDay({...t, end:taskEndForTodayWeek(t)}, y,m,d);
 }
 
@@ -3471,9 +3475,8 @@ function renderHome(){
     });
 
     myTasks
-      .filter(t => t.start && t.end)
       .filter(t => inDayForTodayWeekTask(t, day.getFullYear(), day.getMonth(), day.getDate()))
-      .forEach(t => dayItems.push({kind:'task', id:t.id, title:t.title || '업무', onClick:[["showTask", [t.id]]],
+      .forEach(t => dayItems.push({kind:'task', id:t.id, title:`${isOverdue(t) && fmtDateFull(day) === todayKey ? '[지연] ' : ''}${t.title || '업무'}`, onClick:[["showTask", [t.id]]],
       quickDone:t.id}));
 
     // 오늘 탭의 이번 주 일정·마감은 축약하지 않고 해당 날짜의 항목을 모두 보여줍니다.
