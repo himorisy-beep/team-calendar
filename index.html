@@ -4135,7 +4135,7 @@ function taskTitleUsageSuggestions(query=''){
 
   const q = normalizeTaskTitleKey(query);
   return Array.from(map.values())
-    .filter(row => !q || normalizeTaskTitleKey(row.title).includes(q))
+    .filter(row => q && normalizeTaskTitleKey(row.title).startsWith(q))
     .sort((a,b) => b.count - a.count || b.latest - a.latest || a.title.localeCompare(b.title, 'ko'))
     .slice(0, 7);
 }
