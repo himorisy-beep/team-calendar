@@ -936,11 +936,14 @@ input[type="checkbox"]{
 }
 .today-section-grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:14px;
   margin-bottom:14px;
 }
-.today-priority-card{margin-bottom:0}
+.today-priority-card{margin-bottom:0;min-width:0}
+.today-priority-card .action-item{min-width:0;max-width:100%}
+.today-priority-card .action-meta{overflow-wrap:anywhere}
+.today-priority-card .action-quick-btn,.today-priority-card .action-badge{flex-shrink:0}
 .today-section-head{
   display:flex;
   align-items:center;
