@@ -8887,23 +8887,39 @@ initAuth();
   #modal-body .quick-card{overflow-wrap:anywhere}
 }
 
-/* Give mobile date/time fields a full row at the readable input size. */
+/* Compact mobile dates: keep paired dates together without native Safari oversizing. */
 @media(max-width:680px){
   #modal-body .form-row:has(input[type="date"]),
   #modal-body .form-row:has(input[type="time"]),
-  #modal-body .form-row:has(input[type="datetime-local"]),
   #modal-body .bulk-md-date-pair,
   #modal-body .project-member-edit-fields{
-    grid-template-columns:minmax(0,1fr);
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
+  }
+  #modal-body .form-row:has(input[type="datetime-local"]){
+    grid-template-columns:minmax(0,1fr);
   }
   #modal-body .proposal-date-row .fl{min-height:0}
   #modal-body input[type="date"],
   #modal-body input[type="time"],
   #modal-body input[type="datetime-local"]{
-    min-height:44px;
-    padding:10px 8px;
-    line-height:1.4;
+    -webkit-appearance:none;
+    appearance:none;
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    height:36px;
+    min-height:36px;
+    padding:6px 4px;
+    line-height:normal;
+    text-align:left;
+    box-sizing:border-box;
+  }
+  #modal-body input::-webkit-date-and-time-value{
+    min-width:0;
+    margin:0;
+    text-align:left;
   }
 }
 </style>
