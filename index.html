@@ -8886,6 +8886,26 @@ initAuth();
   #modal-body input[type="datetime-local"]{width:100%}
   #modal-body .quick-card{overflow-wrap:anywhere}
 }
+
+/* Give mobile date/time fields a full row at the readable input size. */
+@media(max-width:680px){
+  #modal-body .form-row:has(input[type="date"]),
+  #modal-body .form-row:has(input[type="time"]),
+  #modal-body .form-row:has(input[type="datetime-local"]),
+  #modal-body .bulk-md-date-pair,
+  #modal-body .project-member-edit-fields{
+    grid-template-columns:minmax(0,1fr);
+    gap:8px;
+  }
+  #modal-body .proposal-date-row .fl{min-height:0}
+  #modal-body input[type="date"],
+  #modal-body input[type="time"],
+  #modal-body input[type="datetime-local"]{
+    min-height:44px;
+    padding:10px 8px;
+    line-height:1.4;
+  }
+}
 </style>
 
 </body>
