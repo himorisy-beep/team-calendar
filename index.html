@@ -8848,6 +8848,44 @@ initAuth();
   #page-personal .my-task-list-row{display:flex!important;width:100%;min-width:0}
   #page-personal .my-task-list-main{display:block!important;min-width:0}
 }
+
+/* Keep add/edit dialogs within the mobile viewport and avoid iOS input zoom. */
+@media(max-width:680px){
+  .modal-bg{padding:12px;box-sizing:border-box}
+  .modal-bg > .modal{
+    width:400px;
+    min-width:0;
+    max-width:100%;
+    max-height:calc(100vh - 24px);
+    max-height:calc(100dvh - 24px);
+    padding:16px;
+    box-sizing:border-box;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  #modal-body,.modal-hdr,.modal-title{min-width:0;max-width:100%}
+  .modal-title{overflow-wrap:anywhere}
+  .modal-close{flex-shrink:0}
+  #modal-body .form-row,#modal-body .quick-menu{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  #modal-body .form-row.full{grid-template-columns:minmax(0,1fr)}
+  #modal-body .form-row > *,#modal-body .quick-menu > *,
+  #modal-body .task-context-selects > *,#modal-body .proposal-date-row > *{
+    min-width:0;
+    max-width:100%;
+  }
+  #modal-body input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  #modal-body select,#modal-body textarea{
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+    font-size:16px!important;
+  }
+  #modal-body input[type="date"],#modal-body input[type="time"],
+  #modal-body input[type="datetime-local"]{width:100%}
+  #modal-body .quick-card{overflow-wrap:anywhere}
+}
 </style>
 
 </body>
