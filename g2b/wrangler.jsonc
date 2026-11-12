@@ -1,0 +1,10 @@
+{
+  "name": "team-calendar-g2b",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://himorisy-beep.github.io",
+    "FIREBASE_PROJECT_ID": "team-calendar-e30d3"
+  }
+}
