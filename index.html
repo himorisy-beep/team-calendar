@@ -1159,6 +1159,8 @@ input[type="checkbox"]{
 .proposal-result-pending{background:#F3F4F6;color:#6B7280}
 .proposal-result-won{background:#E1F5EE;color:#0F6E56}
 .proposal-result-lost{background:#FAECE7;color:#D85A30}
+.proposal-result-unsuccessful{background:#FAEEDA;color:#854F0B}
+.proposal-result-cancelled{background:#F3F4F6;color:#6B7280}
 .proposal-db-row.is-past{opacity:.52;filter:grayscale(.85);background:var(--bg2)}
 .proposal-db-row.is-past .proposal-db-title{text-decoration:line-through;color:var(--text3)}
 .proposal-filter-panel{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
@@ -5753,7 +5755,9 @@ const PROPOSAL_STATUS_ALIASES = {
 const PROPOSAL_RESULT_LABELS = {
   pending:'미정',
   won:'수주',
-  lost:'미수주'
+  lost:'미수주',
+  unsuccessful:'유찰',
+  cancelled:'공고취소'
 };
 
 let proposalStatusFilter = ls('proposalStatusFilter') || 'active';
@@ -5766,7 +5770,7 @@ function proposalFilterLabel(filter){
 }
 
 function proposalResultFilterLabel(filter){
-  return ({all:'전체', pending:'미정', won:'수주', lost:'미수주'})[filter] || '전체';
+  return ({all:'전체', ...PROPOSAL_RESULT_LABELS})[filter] || '전체';
 }
 
 function proposalStatusFilterMatches(p){
@@ -5799,7 +5803,7 @@ function setProposalStatusFilter(filter){
 }
 
 function setProposalResultFilter(filter){
-  proposalResultFilter = ['all','pending','won','lost'].includes(filter) ? filter : 'all';
+  proposalResultFilter = ['all', ...Object.keys(PROPOSAL_RESULT_LABELS)].includes(filter) ? filter : 'all';
   ls('proposalResultFilter', proposalResultFilter);
   renderProposalPage();
   renderActiveFilterBar();
@@ -5820,7 +5824,7 @@ function toggleProposalMobileFilters(){
 
 function proposalStatusFilterChips(){
   const statusFilters = ['active','submitted','hold','all'];
-  const resultFilters = ['all','pending','won','lost'];
+  const resultFilters = ['all', ...Object.keys(PROPOSAL_RESULT_LABELS)];
   const appliedCount = (proposalStatusFilter !== 'active' ? 1 : 0) + (proposalResultFilter !== 'all' ? 1 : 0) + (proposalHidePast ? 1 : 0);
   const filterBadge = appliedCount ? ` <span class="filter-count">${appliedCount}</span>` : '';
   return `<div class="proposal-filter-shell ${proposalMobileFilterOpen ? 'open' : ''}">
