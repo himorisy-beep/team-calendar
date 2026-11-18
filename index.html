@@ -67,7 +67,7 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
 .chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);transition:all .12s}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .tag{font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
-.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#DBEAFE;color:#1D4ED8} .tag-training{background:#F3E8FF;color:#7C3AED} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFEDD5;color:#F97316} .tag-meeting{background:#DBEAFE;color:#1E3A8A} .tag-personal{background:#F3F4F6;color:#6B7280} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
+.tag-vacation{background:#E8F5E9;color:#2E7D32} .tag-offsite{background:#DBEAFE;color:#1D4ED8} .tag-training{background:#F3E8FF;color:#7C3AED} .tag-work{background:#ECEFF1;color:#455A64} .tag-trip{background:#FFEDD5;color:#F97316} .tag-meeting{background:#DBEAFE;color:#1E3A8A} .tag-presentation{background:#F3E8FF;color:#7C3AED} .tag-personal{background:#F3F4F6;color:#6B7280} .tag-project{background:#EAF3DE;color:#2E5A0E} .tag-sub{background:#F1EFE8;color:#5F5E5A} .tag-todo{background:#F1EFE8;color:#5F5E5A} .tag-doing{background:#E6F1FB;color:#185FA5} .tag-done{background:#E1F5EE;color:#0F6E56}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .form-row.full{grid-template-columns:1fr}
 .fl{font-size:11px;color:var(--text2);margin-bottom:4px}
@@ -2089,8 +2089,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-const TL = {vacation:'휴가',offsite:'외근',training:'연수',work:'기타 일정',trip:'출장',meeting:'회의',personal:'개인'};
-const TT = {vacation:'tag-vacation',offsite:'tag-offsite',training:'tag-training',work:'tag-sub',trip:'tag-trip',meeting:'tag-meeting',personal:'tag-personal'};
+const TL = {vacation:'휴가',offsite:'외근',training:'연수',work:'기타 일정',trip:'출장',meeting:'회의',proposal_presentation:'제안발표',personal:'개인'};
+const TT = {vacation:'tag-vacation',offsite:'tag-offsite',training:'tag-training',work:'tag-sub',trip:'tag-trip',meeting:'tag-meeting',proposal_presentation:'tag-presentation',personal:'tag-personal'};
 const STATUS_TAG = {'할 일':'tag-todo','진행중':'tag-doing','대기':'tag-todo','진행':'tag-doing','검토':'tag-doing','완료':'tag-done','보류':'tag-sub'};
 
 let currentUser = null;
@@ -2352,6 +2352,7 @@ function eventColor(type){
   if(type==='work') return '#455A64';          // 청회색(과거 호환)
   if(type==='trip') return '#F97316';          // 주황
   if(type==='meeting') return '#1E3A8A';       // 남색
+  if(type==='proposal_presentation') return '#7C3AED';
   if(type==='personal') return '#6B7280';      // 회색
   return '#888';
 }
@@ -5763,7 +5764,7 @@ const PROPOSAL_RESULT_LABELS = {
 let proposalStatusFilter = ls('proposalStatusFilter') || 'active';
 if(proposalStatusFilter === 'review') proposalStatusFilter = 'active';
 let proposalResultFilter = ls('proposalResultFilter') || 'all';
-let proposalHidePast = ls('proposalHidePast') === 'Y';
+let proposalHidePast = ls('proposalHideResolved') !== 'N';
 
 function proposalFilterLabel(filter){
   return ({active:'진행중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
@@ -5786,13 +5787,8 @@ function proposalResultFilterMatches(p){
 }
 
 function isPastProposal(p){
-  if(!p?.deadline) return false;
-  const d = parseDateSafely(p.deadline);
-  if(!d || isNaN(d.getTime()) || d.getTime() === 0) return false;
-  d.setHours(23,59,59,999);
-  const now = new Date();
-  now.setHours(0,0,0,0);
-  return d < now;
+  // 목록에서 지난 제안으로 분류하는 기준은 제출기한이 아닌 수주여부입니다.
+  return proposalResultValue(p) !== 'pending';
 }
 
 function setProposalStatusFilter(filter){
@@ -5811,7 +5807,7 @@ function setProposalResultFilter(filter){
 
 function toggleProposalHidePast(checked){
   proposalHidePast = !!checked;
-  ls('proposalHidePast', proposalHidePast ? 'Y' : null);
+  ls('proposalHideResolved', proposalHidePast ? 'Y' : 'N');
   renderProposalPage();
   renderActiveFilterBar();
 }
@@ -5831,7 +5827,7 @@ function proposalStatusFilterChips(){
     <button class="btn btn-secondary btn-sm proposal-filter-toggle" onclick="toggleProposalMobileFilters()">필터${filterBadge}</button>
     <div class="proposal-filter-panel">
       <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" ${uiActionAttrs([["setProposalStatusFilter", [f]]], "click", false)}>${proposalFilterLabel(f)}</button>`).join('')}</div>
-      <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" ${uiActionAttrs([["setProposalResultFilter", [f]]], "click", false)}>${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">지난 제안 숨기기</span><span class="label-mobile">지난 숨김</span></label></div>
+      <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" ${uiActionAttrs([["setProposalResultFilter", [f]]], "click", false)}>${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">결과 확정 제안 숨기기</span><span class="label-mobile">결과 확정 숨김</span></label></div>
     </div>
   </div>`;
 }
@@ -7148,7 +7144,7 @@ function renderPersonalList() {
   let mine = events.filter(e => e.who===selfId && !isEventForDeletedProject(e) && (pFilter==='all'||(pFilter==='public'?e.public:!e.public))).map(e => { const enD = parseDateSafely(e.end||e.start); enD.setHours(23,59,59); return {...e, _p: enD<startP} });
   if(hideP) mine=mine.filter(e=>!e._p); mine.sort((a,b)=>{ if(a._p!==b._p) return a._p?1:-1; const tA=parseDateSafely(a.start).getTime(), tB=parseDateSafely(b.start).getTime(); return a._p?tB-tA:tA-tB; });
   if(!mine.length){container.innerHTML='<div class="empty">없음</div>';return;}
-  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':'#888'; const p = eventConnectionInfo(e).item; h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color || '#888'};color:${p.color || '#888'}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button ${uiActionAttrs([["openEditEvent", [e.id]]], "click", false)} style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button ${uiActionAttrs([["deleteEventById", [e.id]]], "click", true)} style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
+  let h=''; mine.forEach(e=>{ const bg=e.type==='vacation'?'#1D9E75':e.type==='work'?'#378ADD':e.type==='trip'?'#EF9F27':e.type==='meeting'?'#533AB7':e.type==='proposal_presentation'?'#7C3AED':'#888'; const p = eventConnectionInfo(e).item; h+=`<div class="li ${e._p?'is-past':''}" style="cursor:default"><div class="li-dot" style="background:${bg}"></div><div class="li-info"><div class="li-title">${escapeHtml(e.title || '')}</div><div class="li-meta">${formatEventPeriod(e)}</div><div class="tag-row"><span class="tag ${TT[e.type]}">${TL[e.type]}</span>${e.subtype?`<span class="tag tag-sub">${escapeHtml(e.subtype)}</span>`:''}${p?`<span class="tag tag-project" style="border-color:${p.color || '#888'};color:${p.color || '#888'}">${escapeHtml(p.name || '')}</span>`:''}<span class="tag ${e.public?'tag-work':'tag-sub'}">${e.public?'공유':'비공개'}</span></div></div><div style="display:flex;gap:4px;"><button ${uiActionAttrs([["openEditEvent", [e.id]]], "click", false)} style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;">수정</button><button ${uiActionAttrs([["deleteEventById", [e.id]]], "click", true)} style="border:none;background:none;cursor:pointer;color:var(--text3);font-size:16px;">✕</button></div></div>`; });
   container.innerHTML=h;
 }
 
@@ -7216,6 +7212,7 @@ function getEventFormHTML(isEdit) {
   <div id="ev-time-help" class="ui-form-caution" style="display:none;margin:-2px 0 9px">시간을 비워두면 종일 일정으로 저장됩니다.</div>
   <div class="form-row full"><div><div class="fl">유형</div><select id="ev-type" onchange="onTypeChange()">
     <option value="meeting">회의</option>
+    <option value="proposal_presentation">제안발표</option>
     <option value="trip">출장</option>
     <option value="training">연수</option>
     <option value="vacation">휴가</option>
@@ -7296,10 +7293,10 @@ function onTypeChange(){
     ss.innerHTML='';
   }
 
-  if(timeRow) timeRow.style.display = t === 'meeting' ? 'grid' : 'none';
-  if(timeHelp) timeHelp.style.display = t === 'meeting' ? 'block' : 'none';
+  if(timeRow) timeRow.style.display = ['meeting','proposal_presentation'].includes(t) ? 'grid' : 'none';
+  if(timeHelp) timeHelp.style.display = ['meeting','proposal_presentation'].includes(t) ? 'block' : 'none';
 
-  if(t !== 'meeting'){
+  if(!['meeting','proposal_presentation'].includes(t)){
     const st = document.getElementById('ev-start-time');
     const et = document.getElementById('ev-end-time');
     if(st) st.value = '';
@@ -7350,8 +7347,8 @@ function submitEvent(){
     sub=v==='custom'?document.getElementById('ev-sub-txt').value.trim():v; 
   } 
 
-  const startTime = ty === 'meeting' ? document.getElementById('ev-start-time').value : '';
-  const endTime = ty === 'meeting' ? document.getElementById('ev-end-time').value : '';
+  const startTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-start-time').value : '';
+  const endTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-end-time').value : '';
   if((startTime && !endTime) || (!startTime && endTime)){
     showToast('회의 시간은 시작/종료 시간을 함께 입력해주세요');
     return;
