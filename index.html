@@ -4292,8 +4292,7 @@ function isTaskLinkableProject(p){
 }
 
 function isTaskLinkableProposal(p){
-  // 마감일이 지난 진행중 제안은 지연 상태이므로 유지하고, 제출완료된 제안만 제외합니다.
-  return !!p && proposalStatusValue(p) !== 'submitted';
+  return !!p && proposalResultValue(p) === 'pending';
 }
 
 function openAddTask(existingTask=null, forcedProjectId=''){
@@ -5764,7 +5763,7 @@ const PROPOSAL_RESULT_LABELS = {
 let proposalStatusFilter = ls('proposalStatusFilter') || 'active';
 if(proposalStatusFilter === 'review') proposalStatusFilter = 'active';
 let proposalResultFilter = ls('proposalResultFilter') || 'all';
-let proposalHidePast = ls('proposalHideResolved') !== 'N';
+let proposalHidePast = ls('proposalHidePast') === 'Y';
 
 function proposalFilterLabel(filter){
   return ({active:'진행중', submitted:'제출완료', hold:'보류', all:'전체'})[filter] || '전체';
@@ -5787,8 +5786,13 @@ function proposalResultFilterMatches(p){
 }
 
 function isPastProposal(p){
-  // 목록에서 지난 제안으로 분류하는 기준은 제출기한이 아닌 수주여부입니다.
-  return proposalResultValue(p) !== 'pending';
+  if(!p?.deadline) return false;
+  const d = parseDateSafely(p.deadline);
+  if(!d || isNaN(d.getTime()) || d.getTime() === 0) return false;
+  d.setHours(23,59,59,999);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  return d < now;
 }
 
 function setProposalStatusFilter(filter){
@@ -5807,7 +5811,7 @@ function setProposalResultFilter(filter){
 
 function toggleProposalHidePast(checked){
   proposalHidePast = !!checked;
-  ls('proposalHideResolved', proposalHidePast ? 'Y' : 'N');
+  ls('proposalHidePast', proposalHidePast ? 'Y' : null);
   renderProposalPage();
   renderActiveFilterBar();
 }
@@ -5827,7 +5831,7 @@ function proposalStatusFilterChips(){
     <button class="btn btn-secondary btn-sm proposal-filter-toggle" onclick="toggleProposalMobileFilters()">필터${filterBadge}</button>
     <div class="proposal-filter-panel">
       <div class="proposal-filter-line"><span class="proposal-filter-label">상태</span>${statusFilters.map(f=>`<button class="chip ${proposalStatusFilter===f?'active':''}" ${uiActionAttrs([["setProposalStatusFilter", [f]]], "click", false)}>${proposalFilterLabel(f)}</button>`).join('')}</div>
-      <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" ${uiActionAttrs([["setProposalResultFilter", [f]]], "click", false)}>${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">결과 확정 제안 숨기기</span><span class="label-mobile">결과 확정 숨김</span></label></div>
+      <div class="proposal-filter-line"><span class="proposal-filter-label">수주 여부</span>${resultFilters.map(f=>`<button class="chip ${proposalResultFilter===f?'active':''}" ${uiActionAttrs([["setProposalResultFilter", [f]]], "click", false)}>${proposalResultFilterLabel(f)}</button>`).join('')}<label class="header-check" style="margin-left:auto"><input class="header-check-input" type="checkbox" ${proposalHidePast?'checked':''} onchange="toggleProposalHidePast(this.checked)"><span class="label-desktop">지난 제안 숨기기</span><span class="label-mobile">지난 숨김</span></label></div>
     </div>
   </div>`;
 }
