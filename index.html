@@ -4296,6 +4296,11 @@ function isTaskLinkableProposal(p){
   return !!p && proposalResultValue(p) === 'pending';
 }
 
+function syncNewFormEndDate(startInput, endId){
+  const endInput = document.getElementById(endId);
+  if(endInput && startInput.value) endInput.value = startInput.value;
+}
+
 function openAddTask(existingTask=null, forcedProjectId=''){
   if(!requireMemberWrite()) return;
   const selectedProjectId = existingTask?.project || forcedProjectId || '';
@@ -4317,7 +4322,7 @@ function openAddTask(existingTask=null, forcedProjectId=''){
     ${forcedProjectId ? `<div class="reopen-project-note"><strong>${escapeHtml(pj(forcedProjectId)?.name || '완료 사업')}</strong>에 새 업무를 추가합니다. 저장하면 이 사업은 자동으로 진행중으로 이동합니다.</div>` : ''}
     <div class="form-row full"><div><div class="fl">업무 연결</div><div class="task-context-selects"><select id="task-context-type" onchange="onTaskContextTypeChange()"><option value="project" selected>사업</option><option value="proposal">제안</option><option value="none">연결 없음</option></select><select id="task-project">${projectOptions || '<option value="">— 없음</option>'}</select><select id="task-proposal" style="display:none">${proposalOptions || '<option value="">— 없음</option>'}</select></div></div></div>
     <div class="form-row full"><div><div class="fl">담당자</div>${(!existingTask && !canCreateForOtherMember()) ? `<input type="text" value="${escapeAttr(getSelfMember().name || '')}" readonly><input type="hidden" id="task-assignee" value="${escapeAttr(selfId)}">` : `<select id="task-assignee">${memberOptions}</select>`}</div></div>
-    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"></div><div><div class="fl">마감일</div><input id="task-end" type="date" value=""></div></div>
+    <div class="form-row"><div><div class="fl">시작일</div><input id="task-start" type="date" value="${todayVal}"${existingTask ? '' : ' onchange="syncNewFormEndDate(this, &quot;task-end&quot;)"'}></div><div><div class="fl">마감일</div><input id="task-end" type="date" value="${existingTask ? '' : todayVal}"></div></div>
     <div class="form-row full"><div><div class="fl">상태</div><select id="task-status">${taskStatusOptions('진행')}</select></div></div>
     <div class="task-priority-box">
       <div class="fl">업무 분류</div>
@@ -7212,7 +7217,7 @@ function getEventFormHTML(isEdit) {
     : '';
 
   return `<input type="hidden" id="ev-original-who" value="${escapeAttr(selfId)}"><input type="hidden" id="ev-created-by" value="${escapeAttr(selfId)}"><div class="form-row full"><input type="text" id="ev-title" placeholder="제목"></div>${eventMemberField}
-  <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
+  <div class="form-row"><div><div class="fl">시작일</div><input type="date" id="ev-start" value="${def}"${isEdit ? '' : ' onchange="syncNewFormEndDate(this, &quot;ev-end&quot;)"'}></div><div><div class="fl">종료일</div><input type="date" id="ev-end" value="${def}"></div></div>
   <div class="form-row" id="ev-time-row" style="display:none"><div><div class="fl">시작 시간</div><input type="time" id="ev-start-time"></div><div><div class="fl">종료 시간</div><input type="time" id="ev-end-time"></div></div>
   <div id="ev-time-help" class="ui-form-caution" style="display:none;margin:-2px 0 9px">시간을 비워두면 종일 일정으로 저장됩니다.</div>
   <div class="form-row full"><div><div class="fl">유형</div><select id="ev-type" onchange="onTypeChange()">
