@@ -7192,7 +7192,10 @@ function openEditEvent(id) {
   const subtypeSelect = document.getElementById('ev-sub');
   if(subtypeSelect){
     const subtype = e.subtype || '';
-    if(subtype && (subtype === 'custom' || !Array.from(subtypeSelect.options).some(option => option.value === subtype))){
+    if(e.type === 'vacation' && subtype && !Array.from(subtypeSelect.options).some(option => option.value === subtype)){
+      subtypeSelect.add(new Option(subtype, subtype));
+      subtypeSelect.value = subtype;
+    } else if(subtype && (subtype === 'custom' || !Array.from(subtypeSelect.options).some(option => option.value === subtype))){
       subtypeSelect.value = 'custom';
       document.getElementById('ev-sub-txt').value = subtype;
     } else {
@@ -7291,7 +7294,7 @@ function onTypeChange(){
   const timeHelp=document.getElementById('ev-time-help');
 
   const options = {
-    vacation:'<option value="연차">연차</option><option value="오전 반차">오전 반차</option><option value="오후 반차">오후 반차</option><option value="custom">직접 입력</option>',
+    vacation:'<option value="연차">연차</option><option value="오전 반차">오전 반차</option><option value="오후 반차">오후 반차</option>',
     offsite:'<option value="기관방문">기관방문</option><option value="custom">직접 입력</option>',
     trip:'<option value="국내출장">국내출장</option><option value="해외출장">해외출장</option><option value="custom">직접 입력</option>',
     training:'<option value="초청연수">초청연수</option><option value="강의">강의</option><option value="워크숍">워크숍</option><option value="교육">교육</option><option value="custom">직접 입력</option>',
@@ -7336,7 +7339,7 @@ function onTypeChange(){
 function onSubChange(){ 
   const box = document.getElementById('sub-custom'); 
   const sel = document.getElementById('ev-sub'); 
-  if(box && sel) box.style.display = sel.value === 'custom' ? 'block' : 'none'; 
+  if(box && sel) box.style.display = sel.value === 'custom' && document.getElementById('ev-type').value !== 'vacation' ? 'block' : 'none'; 
 }
 
 function submitEvent(){ 
@@ -7358,7 +7361,7 @@ function submitEvent(){
   }
 
   const subtypeValue = document.getElementById('ev-sub').value;
-  const sub = subtypeValue === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : subtypeValue;
+  const sub = subtypeValue === 'custom' && ty !== 'vacation' ? document.getElementById('ev-sub-txt').value.trim() : subtypeValue;
 
   const startTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-start-time').value : '';
   const endTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-end-time').value : '';
