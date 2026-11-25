@@ -15,10 +15,9 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    outputs:
+      artifact_name: ${{ steps.artifact.outputs.name }}
     runs-on: ubuntu-latest
 
     steps:
@@ -28,14 +27,25 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Name Pages artifact
+        id: artifact
+        run: echo "name=pages-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
-          name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ steps.artifact.outputs.name }}
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
         with:
-          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          artifact_name: ${{ needs.build.outputs.artifact_name }}
