@@ -7191,10 +7191,13 @@ function openEditEvent(id) {
   onTypeChange();
   const subtypeSelect = document.getElementById('ev-sub');
   if(subtypeSelect){
-    if(e.subtype && !Array.from(subtypeSelect.options).some(option => option.value === e.subtype)){
-      subtypeSelect.add(new Option(e.subtype, e.subtype));
+    const subtype = e.subtype || '';
+    if(subtype && (subtype === 'custom' || !Array.from(subtypeSelect.options).some(option => option.value === subtype))){
+      subtypeSelect.value = 'custom';
+      document.getElementById('ev-sub-txt').value = subtype;
+    } else {
+      subtypeSelect.value = subtype;
     }
-    subtypeSelect.value = e.subtype || "";
   }
   document.getElementById('ev-context-type').value = e.proposal ? 'proposal' : (e.project ? 'project' : 'none');
   if(document.getElementById('ev-proj')) document.getElementById('ev-proj').value = e.project || "";
@@ -7292,9 +7295,12 @@ function onTypeChange(){
     offsite:'<option value="기관방문">기관방문</option><option value="custom">직접 입력</option>',
     trip:'<option value="국내출장">국내출장</option><option value="해외출장">해외출장</option><option value="custom">직접 입력</option>',
     training:'<option value="초청연수">초청연수</option><option value="강의">강의</option><option value="워크숍">워크숍</option><option value="교육">교육</option><option value="custom">직접 입력</option>',
-    meeting:'<option value="내부회의">내부회의</option><option value="외부회의">외부회의</option>'
+    meeting:'<option value="내부회의">내부회의</option><option value="외부회의">외부회의</option><option value="custom">직접 입력</option>',
+    proposal_presentation:'<option value="">— 없음</option><option value="custom">직접 입력</option>',
+    personal:'<option value="">— 없음</option><option value="custom">직접 입력</option>'
   };
 
+  document.getElementById('ev-sub-txt').value = '';
   if(options[t]){
     sr.classList.add('show'); 
     ss.innerHTML=options[t];
@@ -7351,11 +7357,8 @@ function submitEvent(){
     return;
   }
 
-  let sub=''; 
-  if(['vacation','offsite','trip','training','meeting'].includes(ty)){ 
-    const v=document.getElementById('ev-sub').value; 
-    sub=v==='custom'?document.getElementById('ev-sub-txt').value.trim():v; 
-  } 
+  const subtypeValue = document.getElementById('ev-sub').value;
+  const sub = subtypeValue === 'custom' ? document.getElementById('ev-sub-txt').value.trim() : subtypeValue;
 
   const startTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-start-time').value : '';
   const endTime = ['meeting','proposal_presentation'].includes(ty) ? document.getElementById('ev-end-time').value : '';
